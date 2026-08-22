@@ -110,7 +110,7 @@ Criterios, no features. Cada uno tiene su contraparte en `DECISIONS.md` §6 (mem
 | 7.5 | El docente ve el **agregado** («qué no entiende el grupo en backprop»), no la vigilancia individual. | 2.3, §3 docente | `dificultades/<modulo>.md`; «quien crea el agente ve lo que el agente escribe» |
 | 7.6 | Las respuestas del agente están **ancladas en el material del curso, citan y se abstienen** si no hay fuente. Es lo único que demostró funcionar. `[B5]` `[A6]` | 2.3 | Reglas 1 y 2 del agente; bloques `cite`; documentos base del canal |
 | 7.7 | Cuando algo cambia, la página vieja **no se edita: se reemplaza** y queda el rastro. | 2.4, 6.4 | `supersedes`; estado `reemplazada`; páginas tipo `decisión` |
-| 7.8 | El agente es **un miembro más**, creado por la comunidad, con nombre y canales; no «el bot» de la plataforma. | 6.3 | Compromiso 1 de `DECISIONS.md`; Buzz como sustrato |
+| 7.8 | El agente es **un miembro más**, creado por la comunidad, con nombre y canales; no «el bot» de la plataforma. | 6.3 | Compromiso 1 de `DECISIONS.md`; topología identidad + carpeta + runner (§14) |
 
 Cómo medirlo después, en un curso real (no es el cierre del pitch; es cómo saber si el fichero está vivo): **qué porción de las preguntas de `#dudas` se responde componiendo solo desde fichas, sin volver a `raw/`**; **cuántas fichas se conectan o enriquecen por semana frente a cuántas nacen duplicadas**; y **cuántas sobreviven al cambio de cuatrimestre**. Reusar no es el objetivo; lo es que cada pregunta nueva encuentre comprensión ya compilada sobre la cual componer.
 
@@ -122,10 +122,16 @@ Cómo medirlo después, en un curso real (no es el cierre del pitch; es cómo sa
 
 Por qué educación: un curso es el caso más puro del problema. Tiene fecha de inicio y de fin, cambia de gente cada cuatro meses, concentra preguntas repetidas por diseño (todos estudian lo mismo a la vez) y hoy es el lugar donde la IA privada ya ganó sin que nadie lo decidiera. Si la memoria compartida entre humanos y agentes funciona acá, funciona en cualquier grupo que aprende.
 
-Por qué ahora: la ventana de veinte meses de la sección 4. La fuga 2.3 es nueva y se está cerrando mal (memoria privada, lock-in); las piezas para cerrarla bien existen desde hace semanas.
+Por qué ahora: la ventana de veinte meses de la sección 4, que se sostiene en cuatro patas verificables (fuentes y niveles de verificación en `research/2026-08-22-por-que-ahora.md` §1):
+
+1. **El agente-sobre-archivos ya es un producto masivo, no un experimento.** Claude Code pasó de lanzarse (feb 2025) a $1B anualizado en 6 meses; Codex CLI multiplicó descargas ~500x en un año. Un agente que lee y escribe una wiki en una carpeta es hoy tecnología aburrida — y el costo por token cayó más de 10x desde 2023.
+2. **Los estándares para "agentes como miembros" tienen meses.** MCP (nov 2024), ACP (2025), y Buzz de Block (21/07/2026): agentes con identidad propia conviviendo con personas en canales. La forma de producto que Ada necesita se volvió legible para el mercado hace semanas.
+3. **Los incumbentes eligieron memoria privada, y quedó escrito.** Canvas + OpenAI (jul 2025) declara textual que lo del alumno "remains private to the Canvas user"; Claude/ChatGPT memory es por usuario; el RCT de dos años de Khanmigo (ago 2026) da 0,06–0,08 SD/año con ~15% de uso. La ventana de "memoria del grupo" está vacía no por descuido sino por diseño de negocio (causa raíz 6.3) — un incumbente no la puede copiar sin canibalizar su retención.
+4. **Las instituciones pasaron de prohibir a exigir.** UNESCO: 61% de instituciones con lineamientos hechos o en curso (sep 2025); Argentina aprobó contenidos de IA obligatorios (2025) y CABA alfabetización en IA obligatoria (ago 2026). El docente que adopte Ada ya no rema contra la política institucional; la política le pide exactamente esto.
 
 ## 9. Qué NO es el problema (y por qué dejamos atrás la solución del TFG)
 
+- **No es (principalmente) atención.** El TFG partía de "los alumnos se distraen"; la evidencia 2024-2026 muestra un cambio real de conducta (cambio de pantalla cada ~47 s, lectura NAEP en baja) pero una narrativa de "crisis de atención" contestada por los propios investigadores (parte es pánico moral; el "goldfish de 8 segundos" no existe; prohibir celulares da efectos mixtos/nulos), y **ninguna encuesta grande a docentes o instituciones la nombra como problema #1** (RAND 2025: conducta y sueldo; EDUCAUSE: confianza; HEPI: misconduct). La atención entra en Ada solo como consecuencia: menos re-preguntar, menos ruido, fichas en vez de scroll. Detalle y fuentes: `research/2026-08-22-por-que-ahora.md` §2.
 - **No es motivación.** El TFG proponía puntos y tablero de líderes. El alumno de 2026 no está desmotivado: está resolviendo, en privado, con una IA. El riesgo no es que no participe; es que participe donde nada queda. `[A2]` `[A4]`
 - **No es personalización algorítmica por alumno.** Más IA individual sin contexto del curso es exactamente lo que perjudica el aprendizaje. `[A6]` La personalización útil es la del agente personal que escribe en una wiki que el alumno posee (7.4), no un perfil con puntaje.
 - **No es corrección automática ni vigilancia.** Ver el agregado, sí; leer los chats privados, no. `[B1]` (el miedo a la visibilidad es causa, no accidente).
@@ -143,5 +149,7 @@ Para no sobrevender (detalle en `research/…§G`):
 3. Las cifras de pérdida de conocimiento en organizaciones son de 2012–2018 o de proveedores con interés comercial.
 4. No hay dato argentino universitario grande sobre uso de IA; el dato regional (DEC LATAM) no lista países.
 5. No hay literatura que mida la pérdida entre cohortes; `[B1]` es un proxy.
+6. La evidencia causal de tutoría con IA que citamos (`[A7]` Harvard, `[A8]` Nigeria) la leímos en cobertura secundaria (primarias paywalled/bloqueadas), y los meta-análisis con efectos 0,7–0,9 SD lucen inflados (pocos estudios >6 meses). El mecanismo "ritmo fijo pierde a las dos puntas" es plausible pero sin RCT de aula a escala; el 2-sigma de Bloom no replica (~0,37 SD real).
+7. Números que circulan y **no** deben usarse en ningún material: "goldfish de 8 segundos", "2 sigma" como vigente, "Khanmigo +22% (n=340.000)" (rastrea a un blog de marketing), "$8B run-rate de Claude Code".
 
-Lo que la demo del 23/08 puede probar: que 7.1, 7.2, 7.3, 7.6 y 7.7 son posibles hoy con Claude Code sobre una carpeta y Buzz como relay. Lo que no puede probar: el impacto en un curso real. Eso es lo primero después de la hackathon.
+Lo que la demo del 23/08 puede probar: que 7.1, 7.2, 7.3, 7.6 y 7.7 son posibles hoy con Claude Code sobre una carpeta y nuestro server local como comunidad (`DECISIONS.md` §14-§15). Lo que no puede probar: el impacto en un curso real. Eso es lo primero después de la hackathon.

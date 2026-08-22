@@ -252,3 +252,21 @@ Consejo del mentor, adoptado: *"prefiero que el sistema sea acotado — como un 
 - La **arquitectura completa a futuro** (runners remotos, tiers, hosted, open source a escala): §14 de este archivo + `docs/como-funciona.html` y `docs/usecases-api.html`, que son **inspiración a futuro, no descripción del código**.
 - Cada área del repo lleva su propio `AGENTS.md` corto: qué es hoy, y cómo crecería mañana. Regla: si tocás el área, mantené ese archivo al día.
 
+## 16. Posicionamiento del pitch: open source amplio, con lo premium como secuencia (22/08, noche — recomendación, a confirmar por Ignacio)
+
+Dos opciones sobre la mesa para el pitch de Aleph: **(A)** monetizar apuntando a colegios privados top; **(B)** open source para la mayor amplitud posible (contribuidores, adopción docente por docente), monetizando después vía hosting. Evidencia completa en `research/2026-08-22-open-source-vs-premium.md`.
+
+**Recomendación: B como identidad y pitch, con A como capítulo futuro del tier hosted.** Razones:
+
+1. **La evidencia carga toda para un lado.** Los precedentes de B funcionan y tienen nombre (Moodle: gratis 2002 → MoodleCloud + partners → revenue de decenas de millones; WordPress: GPL 2003 → WordPress.com 2005 → VIP enterprise 2012; GitLab, Supabase, Ghost). Para A casi no hay datos y los que hay están en contra: ciclos de venta de 6-18 meses con comités, y ninguna evidencia de que un equipo de 2 personas sin marca sea creíble en ese canal.
+2. **A y B no compiten: se secuencian.** Es literalmente lo que ya dice §4 ("el hackathon demuestra (a) local; el producto vende (c) hosted"). El colegio de élite es un early customer del hosted (agentes gestionados, backups, analíticas institucionales), no el pitch de la hackathon.
+3. **El jurado de Aleph puntúa Technicality, Originality, UI/UX/DX** (criterio listado en DoraHacks, no verificado en fuente oficial) — no modelo de negocio. La narrativa B apunta a los tres; una proyección de ventas a colegios top no suma puntos y abre flancos.
+4. **Coherencia con todo lo ya decidido:** Apache-2.0 (§4), la topología runner que hace el self-host gratis posible (§14), el pivot del mentor a "un desarrollo para un profesor puntual" (§15), y la tesis misma ("el conocimiento vive en archivos que el grupo posee" casa mal con un producto cerrado para élites).
+5. **La advertencia de Kahoot queda anotada:** el docente enamorado no paga. El que paga es la institución que quiere hosting y soporte — por eso el modelo es Moodle (institución paga hosting), no freemium por docente.
+
+**Frase de posicionamiento para el pitch:** "Open source como Moodle, arquitectura como los runners de GitHub Actions: cualquier profesor lo corre gratis en su compu hoy; las instituciones nos pagarán el hosted mañana."
+
+Contraejemplos que obligan a ejecutar bien, no a dudar del rumbo: Sakai (comunidad sin motor comercial → declive), Cal.com (se cerró en 2026), Open edX (adopción plana). La lección de los tres: open source sin un dueño comercial del hosting muere; el hosted no es opcional en el roadmap.
+
+Estado: **pendiente de confirmación de Ignacio.** Si se confirma, el pitch se construye sobre esta sección + `PROBLEM.md` §8 ("por qué ahora" en cuatro patas verificadas) + §9/§10 (qué no decir y qué números no usar).
+
