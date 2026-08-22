@@ -4,23 +4,23 @@
 - [x] 1.2 Mover `src/`, `index.html`, `public/`, `vite.config.ts`, `tsconfig.app.json`, `components.json`, `.oxlintrc.json` a `apps/web/`; `package.json` de `apps/web` con los scripts actuales. Verificar `npm run build` y `#figuras`.
 - [x] 1.3 `package.json` raíz como workspace (`apps/*`, `packages/*`) con scripts `dev` (server + web en paralelo), `dev:web`, `dev:server`, `runner`, `seed`, `build`, `lint`, `typecheck`.
 - [x] 1.4a `packages/protocol`: `types.ts` movido; `apps/web/src/lib/types.ts` re-exporta.
-- [ ] 1.4b Eventos de la API con `zod` en `@ada/protocol` (se hace junto con el grupo 2).
+- [x] 1.4b Eventos de la API con `zod` en `@ada/protocol` (se hace junto con el grupo 2).
 - [x] 1.5 `README.md` nuevo + `LICENSE` Apache-2.0: qué es Ada, diagrama server/runner/runtime, "correr la demo en 4 comandos", licencia Apache-2.0 con `LICENSE`.
 
 ## 2. Servidor de la comunidad (≈2 h)
 
-- [ ] 2.1 `apps/server` con Hono + `node:sqlite`; `schema.sql`; `db.ts` con funciones por tabla.
-- [ ] 2.2 `GET /api/community` devolviendo `Community` (sin `meId`; lo pone el cliente).
-- [ ] 2.3 `POST /api/channels/:id/messages`, `POST /api/threads`; emisión de `message.created` / `thread.created` por `/ws`.
-- [ ] 2.4 Detección de menciones `@handle` → `agent.mention` al runner conectado, con los últimos 20 mensajes del contexto.
-- [ ] 2.5 `/ws/runner?token=`: validación por hash, presencia `en-linea`/`ausente`, eventos `presence`, `message.create`, `page.publish` con verificación de `authorId`.
-- [ ] 2.6 `POST /api/pages` + `page.publish`: dedupe por `(authorId, path)`, versionado, `replaces`, mensaje con `publishes`, evento `page.published`.
-- [ ] 2.7 Agentes desde `community.json` en el seed (token plano por agente); sin endpoint de creación (§15).
-- [ ] 2.8 `npm run seed` desde `data/<curso>/community.json`; ficha base `backprop.md` con `base: true`.
+- [x] 2.1 `apps/server` con Hono + `node:sqlite`; `schema.sql`; `db.ts` con funciones por tabla.
+- [x] 2.2 `GET /api/community` devolviendo `Community` (sin `meId`; lo pone el cliente).
+- [x] 2.3 `POST /api/channels/:id/messages`, `POST /api/threads`; emisión de `message.created` / `thread.created` por `/ws`.
+- [x] 2.4 Detección de menciones `@handle` → `agent.mention` al runner conectado, con los últimos 20 mensajes del contexto.
+- [x] 2.5 `/ws/runner?token=`: validación por token plano (sin hash, según el pivot de `DECISIONS.md` §15), presencia `en-linea`/`ausente`, eventos `presence`, `message.create`, `page.publish` con verificación de `authorId`.
+- [x] 2.6 `POST /api/pages` + `page.publish`: dedupe por `(authorId, path)`, versionado, `replaces`, mensaje con `publishes`, evento `page.published`.
+- [x] 2.7 Agentes desde `community.json` en el seed (token plano por agente); sin endpoint de creación (§15).
+- [x] 2.8 `npm run seed` desde `data/<curso>/community.json`; ficha base `backprop.md` con `base: true`.
 
 ## 3. Curso semilla y agente Ada (≈40 min)
 
-- [ ] 3.1 `data/redes-neuronales-2c-2026/community.json` (curso, canales, personas, agente `ada`, token de demo fijo para no copiarlo en vivo).
+- [x] 3.1 `data/redes-neuronales-2c-2026/community.json` (curso, canales, personas, agente `ada`, token de demo fijo para no copiarlo en vivo).
 - [ ] 3.2 `raw/martin/modulos/03-backprop/backprop.md`: documento base en español, ~3 páginas, ficticio.
 - [ ] 3.3 `packages/runner/templates/CLAUDE.md` con las seis reglas de `agent-wiki`, sintaxis `[[path]]`, ingest, formato de respuesta; `agents/ada/CLAUDE.md` = template + instrucciones de Ada; `wiki/index.md`, `wiki/log.md` vacíos.
 - [ ] 3.4 `git init` dentro de `agents/ada/` (lo hace el runner en 5.6; acá solo verificar).

@@ -2,4 +2,5 @@
    Lo consumen las tres piezas: apps/web, apps/server y packages/runner.
    Los eventos de la API (REST + WS) se agregan acá cuando se implemente
    el server (openspec/changes/demo-local-backend/specs/community-server). */
-export * from "./types"
+export * from "./types.js"
+export * from "./events.js"

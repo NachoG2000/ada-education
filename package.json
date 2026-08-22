@@ -5,14 +5,18 @@
   "type": "module",
   "workspaces": ["apps/*", "packages/*"],
   "scripts": {
-    "dev": "npm run dev -w @ada/web",
+    "dev": "concurrently \"npm run dev:web\" \"npm run dev:server\"",
     "dev:web": "npm run dev -w @ada/web",
+    "dev:server": "npm run dev -w @ada/server",
+    "seed": "npm run seed -w @ada/server",
     "build": "npm run build -w @ada/web",
     "lint": "oxlint apps packages",
     "typecheck": "tsc -b apps/web"
   },
   "devDependencies": {
+    "concurrently": "^10.0.5",
     "oxlint": "^1.75.0",
+    "tsx": "^4.23.12",
     "typescript": "~6.0.2"
   }
 }

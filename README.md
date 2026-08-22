@@ -13,14 +13,19 @@ Lo que hay hoy y el alcance del fin de semana: un desarrollo **local para un pro
 | Pieza | Estado |
 |---|---|
 | `apps/web` — cliente web (SPA React 19 + Vite, sistema de diseño «El fichero») | ✅ funcionando contra una comunidad sintética |
-| `apps/server` — servidor de comunidad (mensajes, canales, fichas; nunca corre modelos) | 🧩 esqueleto + spec aprobada |
+| `apps/server` — servidor de comunidad (mensajes, canales, fichas; nunca corre modelos) | ✅ funcionando local |
 | `packages/runner` — `ada-runner`: conecta un agente y ejecuta su runtime (`claude`) en su carpeta | 🧩 esqueleto + spec aprobada |
-| `data/<curso>/` — la wiki del agente en markdown + git | 📋 spec aprobada |
+| `data/<curso>/` — configuración del curso y documento base en markdown | ✅ curso semilla listo; wiki del agente pendiente |
 
 ```bash
 npm install
-npm run dev     # cliente web con la comunidad de demo → http://localhost:5173
+npm run seed     # carga el curso semilla en la DB local
+npm run dev      # web + server en paralelo → http://localhost:5173 y :8787
+# En otra terminal, con el server levantado:
+npx tsx apps/server/scripts/smoke.ts
 ```
+
+La web sigue mostrando la comunidad sintética de fallback y `packages/runner` sigue siendo un esqueleto; el server y el seed locales son las piezas implementadas en este corte.
 
 ## Cómo está pensado (a futuro)
 

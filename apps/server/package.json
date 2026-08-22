@@ -4,9 +4,18 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "echo 'todavía no implementado: ver openspec/changes/demo-local-backend (grupo 2)' && exit 1"
+    "dev": "tsx watch src/index.ts",
+    "seed": "tsx src/seed.ts",
+    "check": "tsc --noEmit"
   },
   "dependencies": {
-    "@ada/protocol": "*"
+    "@ada/protocol": "*",
+    "@hono/node-server": "^2.1.1",
+    "hono": "^4.13.3",
+    "ws": "^8.21.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/ws": "^8.18.1"
   }
 }

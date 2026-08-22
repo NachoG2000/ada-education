@@ -8,7 +8,7 @@ Reglas del repo para cualquier agente que trabaje acá (Claude Code, Codex, Curs
 
 **Alcance vigente (pivot del 22/08, `DECISIONS.md` §15):** este finde Ada se construye como un desarrollo a medida para **un profesor puntual, todo local en su computadora**. La arquitectura completa (runners remotos, hosted, tiers) es dirección a futuro, no código.
 
-**Estado real del código hoy:** una SPA Vite + React 19 (`src/`) que corre contra una comunidad sintética (`src/lib/demo.ts`), más el monorepo armado (la SPA en `apps/web`, tipos en `packages/protocol`) con `apps/server`, `packages/runner` y `data/<curso>/` como esqueletos documentados, a implementar según `openspec/changes/demo-local-backend/`. El plan de forkear Buzz quedó descartado (`DECISIONS.md` §7 → §14). Leé `DECISIONS.md` §14-§15 antes de tocar arquitectura, memoria de agentes o alcance.
+**Estado real del código hoy:** una SPA Vite + React 19 (`apps/web/`) que todavía corre contra una comunidad sintética (`apps/web/src/lib/demo.ts`), un server local implementado en `apps/server/`, tipos/eventos compartidos en `packages/protocol/`, el seed de ejemplo en `data/redes-neuronales-2c-2026/` y `packages/runner/` como esqueleto documentado. El plan de forkear Buzz quedó descartado (`DECISIONS.md` §7 → §14). Leé `DECISIONS.md` §14-§15 antes de tocar arquitectura, memoria de agentes o alcance.
 
 **Cada área del repo tiene su `AGENTS.md`** corto con qué es hoy y cómo crece mañana (`src/`, `docs/`, y cada workspace nuevo debe traer el suyo). Si tocás un área, mantené su archivo al día.
 
@@ -44,11 +44,16 @@ Cómo lo aplica un agente:
 
 ## Comandos
 
-Monorepo con **npm workspaces** (sin Turborepo): `apps/web` (SPA), `apps/server` y `packages/runner` (esqueletos, sin código todavía), `packages/protocol` (tipos compartidos), `data/<curso>/` (cursos). Cada área tiene su `AGENTS.md`.
+Monorepo con **npm workspaces** (sin Turborepo): `apps/web` (SPA), `apps/server` (API local), `packages/runner` (esqueleto), `packages/protocol` (tipos y eventos compartidos), `data/<curso>/` (cursos). Cada área tiene su `AGENTS.md`.
 
 ```bash
 npm install            # una sola vez, en la raíz (instala todos los workspaces)
-npm run dev            # la SPA con HMR (alias de dev:web) → http://localhost:5173
+npm run seed           # carga data/redes-neuronales-2c-2026 en la DB local
+npm run dev            # web + server en paralelo → http://localhost:5173 y :8787
+npm run dev:web        # solo la SPA con HMR → http://localhost:5173
+npm run dev:server     # solo el server → http://localhost:8787
+npm run check -w @ada/server # typecheck del server
+npx tsx apps/server/scripts/smoke.ts # smoke WS/REST, con el server levantado
 npm run build          # tsc -b && vite build de apps/web → apps/web/dist/
 npm run lint           # oxlint sobre apps y packages; warnings only-export-components en ficha.tsx y ui/sidebar.tsx son conocidos
 npm run typecheck      # tsc -b apps/web (noUnusedLocals/Parameters activos: una variable sin usar rompe el build)

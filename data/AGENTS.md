@@ -1,6 +1,6 @@
 # data/ — los cursos (la memoria vive acá, no en la DB)
 
-**Hoy:** solo la estructura del curso semilla `redes-neuronales-2c-2026`, vacía. El contenido (documento base, `community.json`, `CLAUDE.md` del agente) se crea en el grupo 3 de `openspec/changes/demo-local-backend/tasks.md`.
+**Hoy:** el curso semilla `redes-neuronales-2c-2026` tiene `community.json` con sus tres canales, personas, el agente `ada` y el documento base declarado; `raw/martin/modulos/03-backprop/backprop.md` es todavía un placeholder. El seed del server lee esta configuración y publica el documento base como ficha `base`.
 
 **Layout por curso** (`DECISIONS.md` §6):
 

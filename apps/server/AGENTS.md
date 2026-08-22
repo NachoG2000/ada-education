@@ -1,8 +1,10 @@
 # apps/server — el servidor de la comunidad
 
-**Hoy:** esqueleto sin código. Se implementa según `openspec/changes/demo-local-backend/specs/community-server/spec.md` (grupo 2 de `tasks.md`).
+**Hoy:** implementación local de la fuente de verdad de un curso. Hono sirve `GET /api/community`, mensajes, threads y publicaciones por REST; `ws` comparte `/ws` para clientes y `/ws/runner` para runners. SQLite vive en un archivo mediante `node:sqlite`/`DatabaseSync`; la presencia de agentes se mantiene en memoria y las menciones se entregan solo al runner conectado.
 
-**Qué va a ser:** la fuente de verdad de miembros, canales, mensajes, threads y fichas publicadas de *un* curso. Node 24 + Hono + `node:sqlite` (un archivo, sin Docker) + WebSocket. Detecta menciones `@agente` y se las reenvía al runner conectado. **Regla de oro: nunca ejecuta modelos ni guarda credenciales de IA** (`DECISIONS.md` §14.1): es un bus y un archivo.
+Configuración: `PORT` (default `8787`), `ADA_DB` (default `apps/server/data/ada.db`) y `ADA_COURSE` (default `data/redes-neuronales-2c-2026`). `npm run seed` carga el curso desde `community.json` de forma idempotente mediante upserts: no duplica ni pisa mensajes o fichas dinámicas ya publicadas. `npm run check` valida TypeScript; el smoke reproducible corre con `npx tsx apps/server/scripts/smoke.ts` mientras el server está levantado.
+
+**Responsabilidad:** es la fuente de verdad de miembros, canales, mensajes, threads y fichas publicadas de *un* curso. Usa Node 24 + Hono + `node:sqlite` (un archivo, sin Docker) + WebSocket. Detecta menciones `@agente` y se las reenvía al runner conectado. **Regla de oro: nunca ejecuta modelos ni guarda credenciales de proveedores de IA** (`DECISIONS.md` §14.1): es un bus y un archivo.
 
 **Alcance del finde (`DECISIONS.md` §15):** un curso, agentes definidos en `data/<curso>/community.json` con token plano, sin auth de personas, corriendo en la computadora del profesor.
 
