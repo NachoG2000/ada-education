@@ -1,0 +1,122 @@
+/* ============================================================
+   Dirección B "Bloques" — override sobre ada.css
+   Más saturado, bloques sólidos con canto inferior (ladrillo/puzzle), sidebar amarilla,
+   tarjetas de página de color pleno. Mismo layout, distinto carácter.
+   ============================================================ */
+:root {
+  --bg: #efe6d6;
+  --panel: #fffdf8;
+  --panel-2: #f6efe2;
+  --line: rgba(28,27,24,.10);
+  --line-strong: rgba(28,27,24,.22);
+  --r-md: 14px; --r-lg: 18px; --r-xl: 24px;
+  --edge: 0 3px 0 rgba(28,27,24,.16);
+  --edge-sm: 0 2px 0 rgba(28,27,24,.16);
+  --shadow-card: 0 3px 0 rgba(28,27,24,.10);
+
+  --yellow: #ffd232;  --yellow-soft: #ffe98a;  --yellow-deep: #6b5200;
+  --mint: #9fe3c0;    --mint-soft: #d5f3e3;    --mint-deep: #146646;
+  --lavender: #c9c1ff;--lavender-soft: #e6e1ff;--lavender-deep: #4a3bbf;
+  --peach: #ffc39f;   --peach-soft: #ffe0cd;   --peach-deep: #a3440f;
+  --pink: #ffb9d3;    --pink-soft: #ffdce8;    --pink-deep: #a52a64;
+  --sky: #b3d4ff;     --sky-soft: #dcebff;     --sky-deep: #1f56a8;
+  --green: #5fc872;   --green-deep: #1f6b31;
+}
+.screen { background: var(--bg); }
+.screen::before {
+  content: ""; position: absolute; inset: 0; opacity: .35; pointer-events: none;
+  background-image: radial-gradient(rgba(28,27,24,.08) 1px, transparent 1px); background-size: 18px 18px;
+}
+.surface { border: none; box-shadow: var(--edge); border-radius: var(--r-xl); }
+
+/* Sidebar: bloque amarillo */
+.sb { background: var(--yellow); color: var(--ink); }
+.sb-community { border-bottom-color: rgba(28,27,24,.14); }
+.sb-community .cname { font-weight: 700; font-size: 17px; }
+.sb-community .csub { color: rgba(28,27,24,.6); }
+.cavatar { background: var(--ink); color: var(--yellow); border-radius: 12px; }
+.sb-section .mono { color: rgba(28,27,24,.55); font-weight: 500; }
+.sb-item { color: rgba(28,27,24,.8); border-radius: 11px; }
+.sb-item .hash { color: rgba(28,27,24,.4); }
+.sb-item.active { background: var(--panel); color: var(--ink); font-weight: 600; box-shadow: var(--edge-sm); }
+.sb-item.active .hash { color: var(--ink); }
+.sb-item.unread { color: var(--ink); }
+.sb-item .cnt, .sb-member .role { color: rgba(28,27,24,.5); }
+.sb-member { color: rgba(28,27,24,.85); }
+.sb-me { border-top-color: rgba(28,27,24,.14); }
+.sb-me .kbd { border-color: rgba(28,27,24,.25); color: rgba(28,27,24,.55); }
+.av .pres, .blob .pres { border-color: var(--yellow); }
+main .av .pres, main .blob .pres, aside:not(.sb) .av .pres, aside:not(.sb) .blob .pres { border-color: var(--panel); }
+.wstat { border-radius: 50%; }
+
+/* Channel header */
+.ch-head .ch-name { font-size: 22px; font-weight: 700; }
+.ch-head .ch-name .hash { color: var(--peach-deep); font-weight: 700; }
+
+/* Páginas: bloques sólidos por tipo */
+.pages-strip { background: var(--panel-2); border-bottom: none; padding: 14px 20px; }
+.page-card { background: var(--pc, var(--sky)); border: none; box-shadow: var(--edge-sm); border-radius: 14px; padding: 10px 12px 9px; }
+.page-card::before { display: none; }
+.page-card .pt { font-weight: 600; font-size: 14px; }
+.page-card .pm { color: rgba(28,27,24,.62); }
+.page-card .pm .chip { background: rgba(255,255,255,.55); color: var(--ink); border: none; font-weight: 600; }
+.page-card.base { background: var(--panel); border: 2px dashed var(--line-strong); box-shadow: none; }
+.page-card.new { box-shadow: 0 2px 0 rgba(28,27,24,.16), 0 0 0 3px var(--ink); }
+.page-card .tag { background: var(--ink); color: var(--yellow); }
+.page-card.more, .page-card.add { background: transparent; box-shadow: none; border: 2px dashed var(--line-strong); color: var(--ink-2); }
+
+/* Chips sólidos */
+.chip.apunte { background: var(--sky); color: var(--sky-deep); }
+.chip.consigna { background: var(--peach); color: var(--peach-deep); }
+.chip.decision { background: var(--lavender); color: var(--lavender-deep); }
+.chip.respuesta { background: var(--mint); color: var(--mint-deep); }
+.chip.entrega { background: var(--pink); color: var(--pink-deep); }
+.chip { border-radius: 999px; font-weight: 600; }
+
+/* Mensajes: agente en bloque menta, persona plano */
+.msg { border-radius: 14px; }
+.msg.agent .body { border-left: none; padding: 10px 12px; background: var(--mint-soft); border-radius: 4px 14px 14px 14px; box-shadow: var(--edge-sm); display: inline-block; }
+.msg.agent.frompage .body { background: var(--lavender-soft); }
+.msg .who .kind { color: var(--mint-deep); background: var(--mint); padding: 1px 6px; border-radius: 999px; }
+.msg.me { background: transparent !important; }
+.msg.me .body { background: var(--yellow-soft); display: inline-block; padding: 10px 12px; border-radius: 4px 14px 14px 14px; box-shadow: var(--edge-sm); }
+.cite { background: #fff; border: 1.5px solid var(--ink); color: var(--ink); box-shadow: 0 2px 0 var(--ink); border-radius: 999px; padding: 1px 9px 1px 5px; }
+.cite i { border-radius: 50%; }
+.msg .react span { background: #fff; border: 1.5px solid var(--line-strong); }
+.day-sep { color: var(--ink-2); }
+.day-sep::before, .day-sep::after { background: var(--line-strong); }
+
+/* Página publicada como mensaje */
+.page-msg-card { background: var(--pc, var(--mint)); border: none; box-shadow: var(--edge); border-radius: 16px; }
+.page-msg-card::before { display: none; }
+.page-msg-card .ptitle { font-weight: 700; }
+.page-msg-card .pmeta { color: rgba(28,27,24,.65); }
+.page-msg-card .chip.respuesta { background: rgba(255,255,255,.6); color: var(--ink); }
+.page-msg-card .chip.vis { background: rgba(255,255,255,.6); border: none; color: var(--ink); }
+
+/* Botones ladrillo */
+.btn { border: 1.5px solid var(--ink); box-shadow: 0 2px 0 var(--ink); border-radius: 11px; background: #fff; font-weight: 600; }
+.btn.primary { background: var(--green); color: var(--ink); border-color: var(--ink); }
+.btn.yellow { background: var(--yellow); color: var(--ink); border-color: var(--ink); }
+.btn.ghost { border-color: transparent; box-shadow: none; background: transparent; }
+
+/* Composer */
+.composer { border: 1.5px solid var(--ink); box-shadow: 0 3px 0 var(--ink); border-radius: 16px; }
+.composer .tools .send { background: var(--green); color: var(--ink); border-radius: 9px; }
+
+/* Panel derecho: cabecera lavanda */
+.panel-tabs { background: var(--lavender); border-bottom: none; padding: 8px 10px 0; }
+.panel-tab { color: rgba(28,27,24,.6); border-bottom: none; border-radius: 10px 10px 0 0; padding: 8px 12px 9px; }
+.panel-tab.active { background: var(--panel); color: var(--ink); }
+.panel-tab .n { background: rgba(255,255,255,.5); border: none; }
+.thread-root { background: var(--panel-2); border-bottom: none; }
+.thread-count { color: var(--ink-2); }
+.published-card { background: var(--mint); border: none; box-shadow: var(--edge-sm); border-radius: 14px; }
+.published-card .ico { background: var(--ink); color: var(--mint); }
+.published-card .k { color: var(--mint-deep); }
+.published-card .btn { background: #fff; }
+
+/* Documento */
+.doc .doc-title { font-weight: 700; }
+.doc-body blockquote { border-left-color: var(--lavender-deep); }
+.icon-btn { color: var(--ink-2); }

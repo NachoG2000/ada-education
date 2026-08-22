@@ -1,0 +1,653 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Casos de uso y API del MVP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,500;7..72,600&family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* Tokens: espejo de src/index.css («El fichero»). Tema claro, deliberado. */
+  :root {
+    --ground: #f1f1ef; --panel: #ffffff; --panel-2: #f7f6f3; --panel-3: #efede8;
+    --line: #ebe9e4; --line-strong: #dedbd4;
+    --ink: #1b1b20; --ink-2: #5a5a63; --ink-3: #8b8b95; --ink-4: #b9b9c2;
+    --sol: #ffd43b; --sol-soft: #fff3c4; --sol-ink: #6f5200;
+    --sello: #2f55d4; --sello-soft: #e9eefc;
+    --alerta: #e0493f; --alerta-soft: #fde9e7;
+    --ok: #d9f4e6; --ok-ink: #1f7a4a;
+    --tab-apunte: #d9e8ff; --tab-apunte-ink: #1f55a8;
+    --tab-consigna: #ffe4c7; --tab-consigna-ink: #9a4f0a;
+    --tab-decision: #d7f3de; --tab-decision-ink: #1f6b3c;
+    --tab-respuesta: #fff0b3; --tab-respuesta-ink: #7a5a00;
+    --tab-entrega: #ffdbe6; --tab-entrega-ink: #a8335f;
+    --r-panel: 12px; --r-card: 16px; --r-control: 10px; --r-pill: 999px;
+    --shadow-card: 0 1px 2px rgba(24,24,36,.04), 0 8px 20px -12px rgba(24,24,36,.18);
+    --sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --serif: "Literata", Georgia, "Times New Roman", serif;
+    --mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { color-scheme: light; }
+  body {
+    margin: 0; background: var(--ground); color: var(--ink);
+    font-family: var(--sans); font-size: 15px; line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--sello); text-decoration: none; }
+  a:hover, a:focus-visible { text-decoration: underline; }
+  :focus-visible { outline: 2px solid var(--sello); outline-offset: 2px; border-radius: 4px; }
+  code, pre, .mono { font-family: var(--mono); font-size: .88em; }
+  code { background: var(--panel-2); padding: .1em .35em; border-radius: 5px; color: var(--ink); }
+  pre { margin: 0; background: var(--panel-2); border-radius: var(--r-control); padding: 14px 16px; overflow-x: auto; line-height: 1.5; font-size: 12.5px; color: var(--ink); }
+  pre code { background: none; padding: 0; font-size: inherit; }
+  h1, h2, h3, h4 { font-family: var(--serif); font-weight: 500; margin: 0; text-wrap: balance; letter-spacing: -.005em; }
+  h1 { font-size: 38px; line-height: 1.12; }
+  h2 { font-size: 24px; line-height: 1.2; }
+  h3 { font-size: 18px; line-height: 1.3; }
+  h4 { font-size: 15px; font-family: var(--sans); font-weight: 600; }
+  p { margin: 0; }
+  p + p { margin-top: .7em; }
+  .label { font-family: var(--sans); font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+  .meta { font-size: 12.5px; color: var(--ink-3); }
+  .measure { max-width: 68ch; }
+
+  /* Layout */
+  .shell { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 36px; max-width: 1180px; margin: 0 auto; padding: 40px 28px 96px; }
+  nav.toc { position: sticky; top: 28px; align-self: start; display: flex; flex-direction: column; gap: 3px; }
+  nav.toc .label { margin-bottom: 8px; }
+  nav.toc a { color: var(--ink-2); font-size: 13px; padding: 5px 8px; border-radius: 7px; }
+  nav.toc a:hover { background: var(--panel); text-decoration: none; color: var(--ink); }
+  nav.toc a .n { font-family: var(--mono); color: var(--ink-4); margin-right: 6px; font-size: 11px; }
+  main { display: flex; flex-direction: column; gap: 44px; min-width: 0; }
+  section { display: flex; flex-direction: column; gap: 16px; scroll-margin-top: 24px; }
+  .sec-head { display: flex; flex-direction: column; gap: 6px; }
+  .sec-head .label::before { content: "§ "; }
+
+  .panel { background: var(--panel); border-radius: var(--r-card); box-shadow: var(--shadow-card); padding: 22px 24px; }
+  .panel.quiet { background: var(--panel-2); box-shadow: none; }
+  .panel.sun { background: var(--sol); box-shadow: none; }
+  .panel.sun code { background: rgba(255,255,255,.55); }
+  .panel.sun pre { background: rgba(255,255,255,.6); }
+  .panel.sun .meta, .panel.sun .label { color: var(--sol-ink); }
+
+  header.hero { display: flex; flex-direction: column; gap: 14px; }
+  header.hero .kicker { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: var(--r-pill); font-size: 12px; font-weight: 500; background: var(--panel-2); color: var(--ink-2); white-space: nowrap; }
+  .pill.ok { background: var(--ok); color: var(--ok-ink); }
+  .pill.sol { background: var(--sol-soft); color: var(--sol-ink); }
+  .pill.sello { background: var(--sello-soft); color: var(--sello); }
+  .pill.alerta { background: var(--alerta-soft); color: var(--alerta); }
+  .pill .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+  .pill.buzz { background: var(--sello-soft); color: var(--sello); }
+  .pill.own { background: var(--ink); color: #fff; }
+
+  /* Tablas */
+  .tablewrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th, td { text-align: left; vertical-align: top; padding: 9px 10px; border-bottom: 1px solid var(--line); }
+  th { font-family: var(--sans); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; }
+  tr:last-child td { border-bottom: 0; }
+  td code { white-space: nowrap; }
+  td.num { font-variant-numeric: tabular-nums; }
+
+  /* Fichas de caso de uso */
+  .uc-grid { display: grid; grid-template-columns: 1fr; gap: 22px; }
+  .uc { position: relative; background: var(--panel); border-radius: var(--r-card); box-shadow: var(--shadow-card); padding: 22px 24px 20px; display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 18px 28px; }
+  .uc .tab { position: absolute; top: -10px; left: 22px; height: 10px; width: 44px; border-radius: 7px 7px 0 0; background: var(--tab, var(--panel-3)); }
+  .uc .head { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .uc .head .id { font-family: var(--mono); color: var(--ink-3); font-size: 12px; }
+  .uc .head h3 { flex: 1 1 auto; }
+  .uc .col { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .uc .row { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 10px; font-size: 13.5px; }
+  .uc .row .k { color: var(--ink-3); font-size: 12px; padding-top: 2px; }
+  .uc ol, .uc ul { margin: 0; padding-left: 18px; font-size: 13.5px; }
+  .uc li + li { margin-top: 4px; }
+  .uc .files { font-family: var(--mono); font-size: 12px; line-height: 1.6; background: var(--panel-2); border-radius: var(--r-control); padding: 10px 12px; overflow-x: auto; white-space: pre; }
+  .uc.sun { background: var(--sol); box-shadow: none; }
+  .uc.sun .files { background: rgba(255,255,255,.6); }
+  .uc.sun .row .k, .uc.sun .head .id { color: var(--sol-ink); }
+  .uc.sun code { background: rgba(255,255,255,.55); }
+
+  /* Endpoints */
+  .ep { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .ticket { background: var(--panel); border-radius: var(--r-card); box-shadow: var(--shadow-card); padding: 18px 22px; display: flex; flex-direction: column; gap: 12px; }
+  .ticket .line { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .method { font-family: var(--mono); font-size: 11.5px; font-weight: 500; padding: 2px 8px; border-radius: 6px; background: var(--panel-3); color: var(--ink-2); letter-spacing: .02em; }
+  .method.post { background: var(--sello-soft); color: var(--sello); }
+  .method.get { background: var(--ok); color: var(--ok-ink); }
+  .method.patch { background: var(--sol-soft); color: var(--sol-ink); }
+  .method.del { background: var(--alerta-soft); color: var(--alerta); }
+  .method.sse { background: var(--panel-3); color: var(--ink-2); }
+  .path { font-family: var(--mono); font-size: 14px; color: var(--ink); }
+  .ticket .why { font-size: 13.5px; color: var(--ink-2); }
+  .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; }
+  .two > div { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+
+  /* Pipeline */
+  .pipe { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+  .step { background: var(--panel-2); border-radius: var(--r-control); padding: 12px 13px; display: flex; flex-direction: column; gap: 5px; font-size: 13px; }
+  .step .label { font-size: 10.5px; }
+  .step b { font-weight: 600; }
+
+  /* Mapa */
+  .dot-type { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: middle; background: var(--d, var(--ink-4)); }
+
+  .callout { border-left: 3px solid var(--sello); padding: 4px 0 4px 14px; font-size: 13.5px; color: var(--ink-2); }
+  .callout.warn { border-color: var(--alerta); }
+  .list-tight { margin: 0; padding-left: 18px; font-size: 13.5px; }
+  .list-tight li + li { margin-top: 5px; }
+
+  @media (max-width: 900px) {
+    .shell { grid-template-columns: 1fr; padding: 24px 16px 72px; }
+    nav.toc { position: static; flex-direction: row; flex-wrap: wrap; gap: 4px 10px; }
+    nav.toc .label { width: 100%; }
+    .uc { grid-template-columns: 1fr; }
+    h1 { font-size: 30px; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+  html { scroll-behavior: smooth; }
+</style>
+</head>
+<body>
+<div class="shell">
+  <nav class="toc" aria-label="Índice">
+    <div class="label">Índice</div>
+    <a href="#marco"><span class="n">0</span>Marco y supuestos</a>
+    <a href="#mapa"><span class="n">1</span>Del problema al caso de uso</a>
+    <a href="#buzz"><span class="n">1b</span>Qué da Buzz, qué es nuestro</a>
+    <a href="#casos"><span class="n">2</span>Casos de uso del MVP</a>
+    <a href="#modelo"><span class="n">3</span>Qué vive dónde</a>
+    <a href="#crud"><span class="n">4</span>API: recursos (CRUD)</a>
+    <a href="#logica"><span class="n">5</span>API: lógica de negocio</a>
+    <a href="#eventos"><span class="n">6</span>Eventos en vivo</a>
+    <a href="#orden"><span class="n">7</span>Orden de implementación</a>
+    <a href="#decisiones"><span class="n">8</span>Decisiones que esto fuerza</a>
+  </nav>
+
+  <main>
+    <header class="hero">
+      <div class="kicker">
+        <span class="pill sello">Ada · Aleph 2026</span>
+        <span class="pill">sábado 22/08 · corte domingo 04:00</span>
+        <span class="pill sol">inspiración a futuro · no es el código de hoy</span>
+      </div>
+      <h1>Casos de uso y API del MVP</h1>
+      <p class="measure" style="font-size:16px;color:var(--ink-2)">Nueve casos de uso que cierran las cuatro fugas de <code>PROBLEM.md</code>, el reparto entre base de datos y filesystem, una API CRUD chica y los cinco endpoints de lógica que hacen que el fichero exista. El centro es uno solo: <b>el agente compone desde las fichas, no repite una respuesta.</b></p>
+      <div style="border-left:3px solid var(--sol); background:var(--sol-soft); padding:12px 16px; border-radius:0 12px 12px 0; max-width:72ch; font-size:15px"><b>Inspiración a futuro.</b> Esta página dibuja el MVP completo (casos de uso, API, hosted). El alcance real del finde es más chico: una instalación local para un profesor puntual, definida en <code>openspec/changes/demo-local-backend/</code> y <code>DECISIONS.md</code> §15. Si esta página contradice al código o al spec, mandan ellos.</div>
+    </header>
+
+    <!-- 0 -->
+    <section id="marco">
+      <div class="sec-head"><div class="label">0</div><h2>Marco y supuestos</h2></div>
+      <div class="panel" style="display:flex;flex-direction:column;gap:12px">
+        <ul class="list-tight">
+          <li><b>Transporte.</b> <code>DECISIONS.md</code> §4 dice «el relay es la API» (Buzz). Este documento describe la API como <i>recursos + operaciones</i>: hoy se implementa como HTTP + JSON (Plan B: servicio propio + Postgres/SQLite + Agent SDK); si Buzz levanta, cada operación mapea a un evento Nostr o a un comando de <code>buzz-cli</code>. Lo que no cambia en ningún caso es la sección 5.</li>
+          <li><b>La base de datos es índice; el fichero vive en archivos.</b> Mensajes, canales y miembros van a la DB. Las fichas son archivos markdown en <code>data/&lt;curso&gt;/</code>; la DB guarda solo una fila de índice por ficha (id, path, tipo, estado, versión) para listar rápido. Si se borra la DB, el fichero sigue entero. Si se borra el fichero, no hay producto.</li>
+          <li><b>El agente es un CLI sobre una carpeta.</b> Claude Code (o Codex) corre con <code>cwd = data/&lt;curso&gt;/agents/&lt;agente&gt;/</code>, su <code>CLAUDE.md</code> son las reglas de <code>DECISIONS.md</code> §6, y devuelve un JSON con contrato fijo. El servidor nunca escribe fichas por su cuenta: aplica lo que el agente devolvió.</li>
+          <li><b>Se compila una vez, se compone cada vez.</b> <code>ingest</code> es lo caro (leer raw, entender, escribir fichas conectadas). <code>answer</code> es barato y siempre fresco: lee <code>index.md</code>, abre ≤5 fichas, compone para quien pregunta. No hay caché de respuestas.</li>
+          <li><b>Fuera de scope</b> (no diseñado acá): permisos finos, corrección de entregas, edición colaborativa, búsqueda, multi-curso, notificaciones, canales de trabajo más allá del estado.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 1 -->
+    <section id="mapa">
+      <div class="sec-head"><div class="label">1</div><h2>Del problema al caso de uso</h2><p class="meta">Cada fuga de <code>PROBLEM.md</code> §2 se cierra con uno o más criterios de §7, y cada criterio con un caso de uso. Si un endpoint no aparece en esta tabla, no va al MVP.</p></div>
+      <div class="panel tablewrap">
+        <table>
+          <thead><tr><th>Fuga</th><th>Criterio (§7)</th><th>Caso de uso</th><th>Paso de la demo</th></tr></thead>
+          <tbody>
+            <tr><td>2.1 Se repregunta lo respondido</td><td>7.1 la comprensión queda como ficha · 7.2 se compone desde las fichas</td><td><a href="#uc4">UC4</a> · <a href="#uc5">UC5</a></td><td class="num">4 · 5</td></tr>
+            <tr><td>2.2 Se pregunta donde nada queda</td><td>7.4 preguntar en privado no implica perder</td><td><a href="#uc7">UC7</a></td><td class="num">7</td></tr>
+            <tr><td>2.3 Se pregunta a una IA que no conoce el curso</td><td>7.6 anclado en el material, cita, se abstiene · 7.5 el docente ve el agregado · 7.8 el agente es miembro</td><td><a href="#uc3">UC3</a> · <a href="#uc4">UC4</a> · <a href="#uc8">UC8</a> · <a href="#uc2">UC2</a></td><td class="num">2 · 3 · 4</td></tr>
+            <tr><td>2.4 Al terminar el cuatrimestre no queda nada</td><td>7.3 el grupo posee los archivos · 7.7 se reemplaza, no se edita</td><td><a href="#uc6">UC6</a> · <a href="#uc9">UC9</a></td><td class="num">6 · 8</td></tr>
+            <tr><td>— (entrada)</td><td>7.8</td><td><a href="#uc1">UC1</a></td><td class="num">1</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 1b -->
+    <section id="buzz">
+      <div class="sec-head"><div class="label">1b</div><h2>Qué da Buzz, qué es nuestro</h2><p class="meta">Verificado contra el README de Buzz (21/07/2026; ver <code>research/2026-08-22-impacto-del-problema-en-2026.md</code> §C8): Buzz memoriza en un <b>log de eventos</b> (Postgres/S3); no tiene wiki en filesystem, fichas, ni <code>supersedes</code>. Los chips <span class="pill buzz">Buzz</span> / <span class="pill own">nuestro</span> de cada caso salen de acá.</p></div>
+      <div class="two">
+        <div class="panel quiet">
+          <h3>Ya está en Buzz (1-1, consumir)</h3>
+          <ul class="list-tight" style="margin-top:10px">
+            <li>Identidad y llaves Nostr de personas <b>y agentes</b>; agentes como miembros con canales propios y audit trail.</li>
+            <li>Comunidades, invitaciones, roles; canales, threads, DMs, reacciones.</li>
+            <li>Media upload (el «documento base» llega por acá), presencia, búsqueda, audit log.</li>
+            <li><code>buzz-cli</code> (el agente postea mensajes y canvases) y <code>buzz-acp</code>: @mention → invoca Claude Code/Codex → respuesta. <b>El transporte de UC4 ya existe.</b></li>
+            <li>Canvases (espejo publicable de una ficha), deploy a Railway, multi-tenant.</li>
+          </ul>
+          <div class="callout" style="margin-top:12px"><b>Asterisco 1:</b> esto vale si <code>just dev</code> levanta (checkpoint 14:00). En <b>Plan B</b> toda esta columna también es nuestra — pero es el CRUD mecánico de §4, no producto. Por eso el pipeline se escribe como <code>applyDelta(agentDir, delta)</code> puro: idéntico en ambos planes.</div>
+        </div>
+        <div class="panel">
+          <h3>No existe en Buzz — el producto</h3>
+          <ul class="list-tight" style="margin-top:10px">
+            <li><b>La wiki en filesystem por agente</b>: fichas de concepto enlazadas, <code>index.md</code>, <code>log.md</code>, frontmatter con <code>sources</code> y <code>supersedes</code>, un commit por run.</li>
+            <li><b>El skill <code>ada-wiki</code></b>: los dos prompts (ingest, answer) y el <b>contrato JSON</b> (<code>composedFrom</code>, <code>pagesRead[]</code>, delta <code>none|create|enrich|supersede</code>, <code>difficulty</code>).</li>
+            <li><b>Aplicar deltas</b>: enriquecer sin duplicar, reemplazar sin editar, estados <code>nueva|actualizada|reemplazada|compilando</code>, índice de fichas.</li>
+            <li><b>Las carpetas con semántica</b>: <code>preguntas/</code>, <code>dificultades/</code>, <code>about/</code>, <code>people/</code>, y permisos por composición (quién monta qué).</li>
+            <li><b>La capa «curso»</b>: presets de canales, roles profesor/alumno, canal de trabajo con estado.</li>
+            <li><b>UI del fork</b>: franja de fichas, pills de cita, sello «desde el fichero», ficha de agente, animaciones de estado. El transporte es de Buzz; estos componentes no.</li>
+          </ul>
+          <div class="callout warn" style="margin-top:12px"><b>Asterisco 2</b> (duda abierta, <code>DECISIONS.md</code> §12): si el canvas de Buzz soporta el markdown completo con frontmatter o la ficha vive en el archivo y el canvas es espejo. Resolver antes del paso 3 del orden (§7).</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2 -->
+    <section id="casos">
+      <div class="sec-head"><div class="label">2</div><h2>Casos de uso del MVP</h2><p class="meta">La pestaña de cada ficha indica el tipo de página que el caso produce. Prioridad: <span class="pill alerta">P0</span> sin esto no hay demo · <span class="pill sol">P1</span> cierra una tesis · <span class="pill">P2</span> se puede fakear.</p></div>
+      <div class="uc-grid">
+
+        <article class="uc" id="uc1" style="--tab:var(--panel-3)">
+          <div class="tab"></div>
+          <div class="head"><span class="id">UC1</span><h3>Entrar al curso por invitación</h3><span class="pill">P2 · fakeable</span><span class="pill buzz">Buzz 1-1</span></div>
+          <div class="col">
+            <div class="row"><span class="k">Actor</span><span>Persona (profesor o alumno) con un link de invitación.</span></div>
+            <div class="row"><span class="k">Flujo</span><ol><li>Abre el link; el servidor valida el token y sabe el rol.</li><li>Crea identidad local: nombre, iniciales, tono. Sin email.</li><li>Entra a <code>#general</code>; aparece en miembros.</li></ol></div>
+            <div class="row"><span class="k">UI</span><span>Onboarding; sidebar con la persona «en línea».</span></div>
+          </div>
+          <div class="col">
+            <div class="row"><span class="k">Endpoints</span><span><code>POST /invites/:token/join</code> · <code>GET /me</code> · <code>GET /community</code></span></div>
+            <div class="row"><span class="k">Fichero</span><span>Nada. Si es alumno, se reserva <code>people/&lt;alumno&gt;/</code> vacío.</span></div>
+            <div class="row"><span class="k">Para la demo</span><span>Puede ir hardcodeado: tres miembros sembrados. La invitación es la primera cosa que se tira si falta tiempo.</span></div>
+          </div>
+        </article>
+
+        <article class="uc" id="uc2" style="--tab:var(--panel-3)">
+          <div class="tab"></div>
+          <div class="head"><span class="id">UC2</span><h3>Crear un agente y agregarlo a canales</h3><span class="pill sol">P1 · criterio 7.8</span><span class="pill buzz">miembro: Buzz</span><span class="pill own">carpeta wiki: nuestra</span></div>
+          <div class="col">
+            <div class="row"><span class="k">Actor</span><span>Profesor (agente de comunidad).</span></div>
+            <div class="row"><span class="k">Flujo</span><ol><li>Nombre, instrucciones, proveedor (suscripción u API key), canales.</li><li>El servidor crea la carpeta del agente con <code>CLAUDE.md</code> (reglas §6), <code>wiki/index.md</code> vacío, <code>wiki/log.md</code>, y hace el primer commit.</li><li>El agente aparece como miembro en los canales elegidos, con personaje por seed.</li></ol></div>
+            <div class="row"><span class="k">UI</span><span>Lista de agentes; ficha de agente con «en qué canales está / qué fichas publicó».</span></div>
+          </div>
+          <div class="col">
+            <div class="row"><span class="k">Endpoints</span><span><code>POST /agents</code> · <code>PATCH /agents/:id</code> · <code>GET /agents/:id</code></span></div>
+            <div class="row"><span class="k">Fichero</span><div class="files">data/rn-2c-2026/agents/ada/
+  CLAUDE.md          ← reglas §6 + nombre + canales
+  wiki/index.md      ← vacío, con cabecera
+  wiki/log.md</div></div>
+            <div class="row"><span class="k">Regla</span><span>«Quien crea el agente ve lo que el agente escribe.» El creador queda en la fila del agente y manda sobre la lectura de la wiki (UC9).</span></div>
+          </div>
+        </article>
+
+        <article class="uc" id="uc3" style="--tab:var(--tab-apunte)">
+          <div class="tab"></div>
+          <div class="head"><span class="id">UC3</span><h3>Documento base → ingest → fichas conectadas</h3><span class="pill alerta">P0 · criterios 7.3 · 7.6</span><span class="pill buzz">upload: Buzz</span><span class="pill own">pipeline: nuestro</span></div>
+          <div class="col">
+            <div class="row"><span class="k">Actor</span><span>Profesor sube <code>backprop.md</code> en la configuración de <code>#03-backprop</code>; el agente del canal compila.</span></div>
+            <div class="row"><span class="k">Flujo</span><ol><li>El archivo va a <code>raw/martin/modulos/03-backprop/backprop.md</code> y queda como página <i>base</i> del canal.</li><li>Se dispara <code>ingest</code>: el agente lee el raw <b>una vez</b> y escribe fichas de tema (una por concepto, no una por sección del PDF), con links entre ellas y <code>sources</code>.</li><li>Actualiza <code>index.md</code> (qué ficha cubre qué) y <code>log.md</code>; commit.</li><li>El servidor indexa las fichas nuevas y las publica como tarjetas en el canal.</li></ol></div>
+            <div class="row"><span class="k">UI</span><span>Franja de fichas: <code>compilando</code> → <code>nueva</code> (amarillo, &lt; 24 h). Presencia del agente «publicando».</span></div>
+          </div>
+          <div class="col">
+            <div class="row"><span class="k">Endpoints</span><span><code>POST /channels/:id/base</code> · <code>POST /channels/:id/ingest</code> · eventos <code>ingest.progress</code>, <code>page.created</code></span></div>
+            <div class="row"><span class="k">Fichero</span><div class="files">raw/martin/modulos/03-backprop/backprop.md
+agents/ada/wiki/
+  index.md                          (+5 entradas)
+  modulos/03-backprop/
+    regla-de-la-cadena.md
+    gradiente-que-explota.md   → [[inicializacion]] [[learning-rate]]
+    inicializacion.md
+    learning-rate.md
+    vanishing.md</div></div>
+            <div class="row"><span class="k">Lo que importa</span><span>La calidad de todo lo demás se juega acá: fichas chicas, con nombre de concepto, enlazadas. Una ficha «backprop.md» de 3.000 palabras es un PDF con otro nombre.</span></div>
+          </div>
+        </article>
+
+        <article class="uc" id="uc4" style="--tab:var(--tab-respuesta)">
+          <div class="tab"></div>
+          <div class="head"><span class="id">UC4</span><h3>Pregunta en un thread → respuesta con citas → la comprensión queda</h3><span class="pill alerta">P0 · criterios 7.1 · 7.6</span><span class="pill buzz">transporte: buzz-acp</span><span class="pill own">contrato y delta: nuestros</span></div>
+          <div class="col">
+            <div class="row"><span class="k">Actor</span><span>Sofía pregunta en <code>#dudas</code> «¿por qué me explota el gradiente?» y menciona a <code>@Ada</code> (o Ada está en el canal y responde en el thread).</span></div>
+            <div class="row"><span class="k">Flujo</span><ol><li><code>message.created</code> con mención dispara <code>answer</code>.</li><li>El agente lee <code>index.md</code>, abre ≤5 fichas, compone la respuesta <b>citando por path</b>. Si no hay ficha que la cubra, puede ir a <code>raw/</code> (y lo declara).</li><li>Devuelve un <i>delta</i> de conocimiento: <code>none</code> · <code>create</code> (un concepto o una conexión que faltaba) · <code>enrich</code> (un ángulo nuevo en una ficha existente) · <code>supersede</code>.</li><li>El servidor publica el mensaje con pills de cita, aplica el delta, commitea y, si hubo <code>create</code>, cierra el thread con la tarjeta «publicado como respuesta».</li></ol></div>
+            <div class="row"><span class="k">UI</span><span>Thread con pills de cita que abren la ficha; tarjeta al pie del thread; ficha nueva resaltada en la franja.</span></div>
+          </div>
+          <div class="col">
+            <div class="row"><span class="k">Endpoints</span><span><code>POST /channels/:id/messages</code> (dispara) · <code>POST /agents/:id/answer</code> (interno) · eventos <code>agent.presence</code>, <code>message.created</code>, <code>page.*</code></span></div>
+            <div class="row"><span class="k">Fichero</span><div class="files">modulos/03-backprop/gradiente-que-explota.md   (leída)
+modulos/03-backprop/learning-rate.md           (leída)
+preguntas/por-que-explota.md  ← create: ángulo + links a las dos fichas
+dificultades/03-backprop.md   ← +1 línea (ver UC8)</div></div>
+            <div class="row"><span class="k">Regla</span><span>Se archiva <b>la comprensión, no la conversación</b>: <code>preguntas/</code> es el índice de cómo se preguntó un tema y apunta a fichas de concepto. Nunca se guarda el texto de la respuesta como «la respuesta».</span></div>
+          </div>
+        </article>
+
+        <article class="uc sun" id="uc5">
+          <div class="tab" style="background:var(--sol-ink);opacity:.35"></div>
+          <div class="head"><span class="id">UC5</span><h3>«Lo mismo», preguntado distinto → compuesto desde el fichero</h3><span class="pill" style="background:rgba(255,255,255,.6);color:var(--sol-ink)">P0 · criterio 7.2 · el momento de la demo</span><span class="pill own">100% nuestro</span></div>
+          <div class="col">
+            <div class="row"><span class="k">Actor</span><span>Dos días después, Ignacio pregunta «¿es normal que con ReLU la loss se vaya a NaN en la tercera época?». Otro lenguaje, otro hueco: no sabe que eso es el gradiente que explota.</span></div>
+            <div class="row"><span class="k">Flujo</span><ol><li>Mismo pipeline que UC4. El agente encuentra en <code>index.md</code> las fichas <i>gradiente-que-explota</i>, <i>inicialización</i> y <i>learning-rate</i>.</li><li>Compone una respuesta <b>nueva</b> para Ignacio: conecta NaN → explosión → inicialización, que Sofía nunca necesitó conectar. <b>No releyó el apunte.</b> Declara <code>composedFrom: "fichero"</code>.</li><li>Delta <code>enrich</code>: la ficha <i>gradiente-que-explota</i> gana la sección «Cómo se ve en la práctica: NaN con ReLU» y un link a <i>inicialización</i>. Versión +1, estado <code>actualizada</code>.</li><li>El mensaje lleva la marca «desde el fichero · 3 fichas · la más vieja hace 2 días».</li></ol></div>
+          </div>
+          <div class="col">
+            <div class="row"><span class="k">UI</span><span>Sello «desde el fichero» en el mensaje (hoy el copy dice «ya en el fichero», ver §8); la ficha en la franja pasa a <code>actualizada</code>; rayos X muestran las fuentes.</span></div>
+            <div class="row"><span class="k">Endpoints</span><span>Los mismos de UC4. Lo que distingue el caso es el contrato de salida del agente: <code>composedFrom</code>, <code>pagesRead[]</code>, <code>delta.kind = "enrich"</code>.</span></div>
+            <div class="row"><span class="k">Fichero</span><div class="files">modulos/03-backprop/gradiente-que-explota.md
+  version: 2 → 3
+  + ## Cómo se ve en la práctica: NaN con ReLU
+  + ver también [[inicializacion]]
+preguntas/nan-con-relu.md  ← índice del ángulo, apunta a la ficha</div></div>
+            <div class="row"><span class="k">Lo que prueba</span><span>Que la segunda pregunta encontró comprensión ya compilada sobre la cual componer, y que el fichero quedó mejor que antes. No que «ya estaba respondida».</span></div>
+          </div>
+        </article>
+
+        <article class="uc" id="uc6" style="--tab:var(--tab-decision)">
+          <div class="tab"></div>
+          <div class="head"><span class="id">UC6</span><h3>Una decisión reemplaza a otra</h3><span class="pill sol">P1 · criterio 7.7</span><span class="pill own">nuestro</span></div>
+          <div class="col">
+            <div class="row"><span class="k">Actor</span><span>Martín escribe en <code>#general</code>: «Muevo el parcial al 15/09, la mitad no llegó a backprop» y menciona a Ada (o Ada ingiere <code>#general</code> cada N mensajes).</span></div>
+            <div class="row"><span class="k">Flujo</span><ol><li>El agente detecta una decisión del profesor que contradice la ficha <i>decisiones/2026-08-10-fecha-parcial.md</i>.</li><li>Delta <code>supersede</code>: ficha nueva con <code>supersedes:</code> y el rationale citando el mensaje; la vieja <b>no se edita</b>.</li><li>El servidor marca la vieja como <code>reemplazada</code>, publica la nueva como tarjeta tipo decisión, commit.</li></ol></div>
+            <div class="row"><span class="k">UI</span><span>Tarjeta de decisión en el canal; ficha abierta en el panel con «reemplaza a: fecha-parcial-original»; la vieja con estado <code>reemplazada</code>.</span></div>
+          </div>
+          <div class="col">
+            <div class="row"><span class="k">Endpoints</span><span>Pipeline <code>answer</code> con <code>delta.kind = "supersede"</code>. También disponible a mano: <code>POST /pages/:id/supersede</code> (lo usa una persona que corrige una ficha).</span></div>
+            <div class="row"><span class="k">Fichero</span><div class="files">decisiones/2026-08-22-parcial-al-15-09.md
+  supersedes: decisiones/2026-08-10-fecha-parcial.md
+  sources: [msg:m-77]
+decisiones/2026-08-10-fecha-parcial.md   (intacta; index la marca reemplazada)</div></div>
+            <div class="row"><span class="k">Regla</span><span>Enriquecer ≠ contradecir. Agregar un ángulo es <code>enrich</code>; cambiar un hecho es <code>supersede</code>. El agente decide cuál; el servidor no adivina.</span></div>
+          </div>
+        </article>
+
+        <article class="uc" id="uc7" style="--tab:var(--panel-3)">
+          <div class="tab"></div>
+          <div class="head"><span class="id">UC7</span><h3>Agente personal en un canal privado</h3><span class="pill sol">P1 · criterio 7.4</span><span class="pill buzz">DM: Buzz</span><span class="pill own">people/: nuestro</span></div>
+          <div class="col">
+            <div class="row"><span class="k">Actor</span><span>Sofía crea «Tutor de Sofía» para ella sola y le pide un plan para el parcial.</span></div>
+            <div class="row"><span class="k">Flujo</span><ol><li><code>POST /agents</code> con <code>scope: "personal"</code>: se crea el canal privado con ambos como únicos miembros y la carpeta <code>people/sofia/</code>.</li><li>El agente personal <b>lee</b> la wiki del curso (montada solo lectura) y <b>escribe</b> en <code>people/sofia/wiki/</code>.</li><li>Mismo pipeline <code>answer</code>; el delta cae en la wiki personal.</li></ol></div>
+            <div class="row"><span class="k">UI</span><span>Cajón «Privados»; el agente se ve distinto de los de comunidad (scope visible); las fichas del canal privado llevan visibilidad «solo yo».</span></div>
+          </div>
+          <div class="col">
+            <div class="row"><span class="k">Endpoints</span><span><code>POST /agents</code> · <code>POST /channels/:id/messages</code> · <code>GET /agents/:id/wiki/tree</code></span></div>
+            <div class="row"><span class="k">Fichero</span><div class="files">people/sofia/wiki/
+  index.md
+  plan-parcial.md   → [[../../agents/ada/wiki/modulos/03-backprop/...]]</div></div>
+            <div class="row"><span class="k">Permisos (mínimos)</span><span>El profesor <b>no</b> ve <code>people/sofia/</code>. Sofía ve la wiki del curso, su <code>about/</code> y su wiki. «Subir al grupo» lo generalizable queda fuera del MVP; el link hacia la wiki del curso ya muestra que es el mismo fichero.</span></div>
+          </div>
+        </article>
+
+        <article class="uc" id="uc8" style="--tab:var(--panel-3)">
+          <div class="tab"></div>
+          <div class="head"><span class="id">UC8</span><h3>El docente ve qué no entiende el grupo</h3><span class="pill sol">P1 · criterio 7.5</span><span class="pill own">nuestro</span></div>
+          <div class="col">
+            <div class="row"><span class="k">Actor</span><span>Martín abre la ficha del agente Ada (o <code>#profesores</code>).</span></div>
+            <div class="row"><span class="k">Flujo</span><ol><li>Cada <code>answer</code> puede devolver <code>difficulty: {module, note}</code>: el agente anota qué confusión vio («confunden explotar con saturar»), sin nombre de alumno.</li><li>El servidor la agrega a <code>dificultades/&lt;modulo&gt;.md</code>; commit.</li><li>Martín la lee como una ficha más, solo él (creador del agente) y el canal de profesores.</li></ol></div>
+          </div>
+          <div class="col">
+            <div class="row"><span class="k">Endpoints</span><span><code>GET /agents/:id/wiki/file?path=dificultades/03-backprop.md</code> (filtrado por rol) · opcional: publicar en <code>#profesores</code> como página.</span></div>
+            <div class="row"><span class="k">Fichero</span><div class="files">dificultades/03-backprop.md
+  - 22/08 · confunden «explotar» con «saturar» (2 preguntas)
+  - 22/08 · no asocian NaN con el learning rate</div></div>
+            <div class="row"><span class="k">Regla</span><span>Agregado, no vigilancia: sin ids de alumno, sin leer el canal privado. Es lo que le devuelve al docente la visibilidad que perdió cuando el grupo se fue a ChatGPT.</span></div>
+          </div>
+        </article>
+
+        <article class="uc" id="uc9" style="--tab:var(--panel-3)">
+          <div class="tab"></div>
+          <div class="head"><span class="id">UC9</span><h3>Ver el fichero como archivos</h3><span class="pill sol">P1 · criterio 7.3</span><span class="pill own">nuestro · git local</span></div>
+          <div class="col">
+            <div class="row"><span class="k">Actor</span><span>Cualquier miembro (filtrado por rol); en la demo, una terminal.</span></div>
+            <div class="row"><span class="k">Flujo</span><ol><li><code>ls data/rn-2c-2026/agents/ada/wiki</code>: se ve todo lo que sabe el curso, en markdown.</li><li><code>git log --oneline</code>: un commit por ingest y por delta: «qué aprendió el agente esta semana».</li><li>La UI usa los mismos datos para el historial de una ficha.</li></ol></div>
+          </div>
+          <div class="col">
+            <div class="row"><span class="k">Endpoints</span><span><code>GET /agents/:id/wiki/tree</code> · <code>GET /agents/:id/wiki/file?path=</code> · <code>GET /agents/:id/wiki/log</code> · <code>GET /pages/:id/history</code></span></div>
+            <div class="row"><span class="k">Lo que prueba</span><span>Que el conocimiento no está en la base de datos de un tercero. Si mañana no existe Ada, el curso se lleva la carpeta.</span></div>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- 3 -->
+    <section id="modelo">
+      <div class="sec-head"><div class="label">3</div><h2>Qué vive dónde</h2></div>
+      <div class="two">
+        <div class="panel">
+          <h3>Base de datos (índice y conversación)</h3>
+          <p class="meta" style="margin-top:4px">Postgres o SQLite. Se puede regenerar desde el fichero salvo la conversación.</p>
+          <div class="tablewrap" style="margin-top:10px"><table>
+            <thead><tr><th>Tabla</th><th>Campos que importan</th></tr></thead>
+            <tbody>
+              <tr><td><code>members</code></td><td>id, kind (person/agent), name, role, tone/figureSeed, presence</td></tr>
+              <tr><td><code>agents</code></td><td>id → members, scope, createdBy, instructions, provider, folder</td></tr>
+              <tr><td><code>channels</code></td><td>id, name, group (curso/trabajo/privados), work.status, due</td></tr>
+              <tr><td><code>channel_members</code></td><td>channelId, memberId</td></tr>
+              <tr><td><code>messages</code></td><td>id, channelId, threadId, authorId, at, paragraphs (JSON de bloques), fromFichero (JSON), publishes</td></tr>
+              <tr><td><code>threads</code></td><td>id, rootMessageId, publishedPageId</td></tr>
+              <tr><td><code>pages</code> (índice)</td><td>id, <b>path</b>, agentId, channelId, title, type, authorId, version, state, visibility, replaces, base, publishedAt</td></tr>
+              <tr><td><code>runs</code></td><td>id, agentId, kind (ingest/answer), trigger, status, composedFrom, pagesRead, delta, startedAt</td></tr>
+            </tbody>
+          </table></div>
+        </div>
+        <div class="panel">
+          <h3>Filesystem (el fichero)</h3>
+          <p class="meta" style="margin-top:4px">Repo git, un commit por ingest o delta. Es lo que el grupo posee.</p>
+          <pre style="margin-top:10px"><code>data/rn-2c-2026/
+  raw/&lt;persona&gt;/modulos/&lt;nn&gt;-&lt;slug&gt;/…   ← subidas; solo humanos escriben
+  agents/&lt;agente&gt;/
+    CLAUDE.md                           ← reglas §6
+    wiki/
+      index.md         ← qué ficha cubre qué; el agente lo lee primero
+      log.md           ← qué aprendió, con fecha
+      modulos/&lt;nn&gt;-&lt;slug&gt;/&lt;concepto&gt;.md
+      decisiones/&lt;fecha&gt;-&lt;slug&gt;.md
+      preguntas/&lt;slug&gt;.md        ← índice de ángulos → fichas
+      dificultades/&lt;modulo&gt;.md   ← agregado, ve el profesor
+    about/&lt;alumno&gt;.md
+  people/&lt;alumno&gt;/
+    wiki/…                        ← escribe su agente personal
+    pages/&lt;slug&gt;.md               ← fichas publicadas por la persona (propuesta)</code></pre>
+          <p class="meta" style="margin-top:10px">Frontmatter de cada ficha: <code>type</code>, <code>title</code>, <code>version</code>, <code>valid_from</code>, <code>supersedes</code>, <code>sources</code>, <code>updated</code>. El id de la fila de índice es el path.</p>
+        </div>
+      </div>
+      <div class="panel quiet">
+        <h4>Tipos de ficha: wiki ↔ UI</h4>
+        <p class="meta" style="margin:4px 0 10px">El frontmatter tiene siete tipos; la UI muestra cinco. La tabla es el mapeo que el índice aplica al publicar.</p>
+        <div class="tablewrap"><table>
+          <thead><tr><th>Frontmatter (wiki)</th><th>UI (<code>PageType</code>)</th><th>Se publica en el canal</th></tr></thead>
+          <tbody>
+            <tr><td><code>tema</code></td><td><span class="dot-type" style="--d:var(--tab-apunte-ink)"></span>apunte</td><td>Sí (canal del módulo)</td></tr>
+            <tr><td><code>consigna</code></td><td><span class="dot-type" style="--d:var(--tab-consigna-ink)"></span>consigna</td><td>Sí (canal de trabajo)</td></tr>
+            <tr><td><code>decision</code></td><td><span class="dot-type" style="--d:var(--tab-decision-ink)"></span>decisión</td><td>Sí (<code>#general</code>)</td></tr>
+            <tr><td><code>pregunta</code></td><td><span class="dot-type" style="--d:var(--tab-respuesta-ink)"></span>respuesta</td><td>Sí (cierra el thread)</td></tr>
+            <tr><td><code>entrega</code></td><td><span class="dot-type" style="--d:var(--tab-entrega-ink)"></span>entrega</td><td>Sí, visibilidad restringida</td></tr>
+            <tr><td><code>dificultad</code></td><td>—</td><td>No. Se lee desde la ficha del agente / <code>#profesores</code></td></tr>
+            <tr><td><code>persona</code> (<code>about/</code>)</td><td>—</td><td>No. Solo creador del agente y el propio alumno</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <!-- 4 -->
+    <section id="crud">
+      <div class="sec-head"><div class="label">4</div><h2>API: recursos (CRUD)</h2><p class="meta">Lo aburrido y necesario. Todo devuelve JSON con la forma de <code>src/lib/types.ts</code> para que la UI no traduzca.</p></div>
+      <div class="panel tablewrap">
+        <table>
+          <thead><tr><th>Recurso</th><th>Operación</th><th>Notas</th></tr></thead>
+          <tbody>
+            <tr><td><code>community</code></td><td><span class="method get">GET</span> <code>/community</code></td><td>Todo lo que hoy devuelve <code>demo.ts</code>: miembros, canales, páginas (índice), últimos mensajes. Un solo curso por instancia en el MVP.</td></tr>
+            <tr><td><code>me</code></td><td><span class="method post">POST</span> <code>/invites/:token/join</code> · <span class="method get">GET</span> <code>/me</code></td><td>Identidad local; el token trae el rol. Sesión por bearer.</td></tr>
+            <tr><td><code>members</code></td><td><span class="method get">GET</span> <code>/members</code></td><td>Personas y agentes mezclados, con presencia.</td></tr>
+            <tr><td><code>agents</code></td><td><span class="method post">POST</span> <code>/agents</code> · <span class="method get">GET</span> <code>/agents/:id</code> · <span class="method patch">PATCH</span> <code>/agents/:id</code></td><td><code>POST</code> crea la carpeta (UC2/UC7). <code>PATCH</code> cambia instrucciones/canales/seed. Sin borrado en el MVP.</td></tr>
+            <tr><td><code>channels</code></td><td><span class="method get">GET</span> <code>/channels</code> · <span class="method post">POST</span> <code>/channels</code> · <span class="method patch">PATCH</span> <code>/channels/:id</code> · <span class="method post">POST</span> <code>/channels/:id/members</code></td><td><code>PATCH</code> cubre nombre, descripción y <code>work.status</code>. Canales de trabajo solo a nivel de estado.</td></tr>
+            <tr><td><code>messages</code></td><td><span class="method get">GET</span> <code>/channels/:id/messages?before=&amp;limit=</code> · <span class="method post">POST</span> <code>/channels/:id/messages</code></td><td>El body son <code>paragraphs: MessageBlock[][]</code>. El servidor detecta menciones <code>@agente</code> y dispara <code>answer</code> (§5).</td></tr>
+            <tr><td><code>threads</code></td><td><span class="method get">GET</span> <code>/threads/:id</code> · <span class="method post">POST</span> <code>/threads/:id/replies</code></td><td>Un thread nace con la primera respuesta a un mensaje raíz.</td></tr>
+            <tr><td><code>pages</code></td><td><span class="method get">GET</span> <code>/channels/:id/pages</code> · <span class="method get">GET</span> <code>/pages/:id</code> · <span class="method post">POST</span> <code>/pages</code> · <span class="method patch">PATCH</span> <code>/pages/:id</code> · <span class="method get">GET</span> <code>/pages/:id/history</code></td><td><code>GET /pages/:id</code> une índice + body leído del archivo. <code>POST</code> = una persona publica (apunte, entrega): escribe <code>people/&lt;persona&gt;/pages/</code>. <code>PATCH</code> solo si sos autor: versión +1, estado <code>actualizada</code>. Historial = <code>git log</code> del path.</td></tr>
+            <tr><td><code>base</code></td><td><span class="method post">POST</span> <code>/channels/:id/base</code> (multipart)</td><td>Sube a <code>raw/</code>, crea la página base, y <b>no</b> dispara ingest solo: lo dispara la UI al guardar settings (§5).</td></tr>
+            <tr><td><code>events</code></td><td><span class="method sse">SSE</span> <code>/events?since=</code></td><td>Un solo stream por sesión (§6).</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 5 -->
+    <section id="logica">
+      <div class="sec-head"><div class="label">5</div><h2>API: lógica de negocio</h2><p class="meta">Cinco operaciones. Las dos primeras son el producto; las otras tres son variantes de «aplicar un delta al fichero» que conviene exponer también a mano.</p></div>
+
+      <div class="ep">
+        <div class="ticket">
+          <div class="line"><span class="method post">POST</span><span class="path">/channels/:id/ingest</span><span class="pill alerta">P0</span><span class="meta">UC3 · «se compila una vez»</span></div>
+          <p class="why">Lee las fuentes crudas del canal y las convierte en fichas conectadas. Asíncrono: devuelve un <code>runId</code> y avisa por eventos. Lo corre el agente de comunidad del canal (o el indicado).</p>
+          <div class="two">
+            <div><span class="label">Request</span><pre><code>{ "agentId": "ada",
+  "sources": ["raw/martin/modulos/03-backprop/backprop.md"],   // opcional: por defecto, todo lo nuevo del canal
+  "mode": "full" | "incremental" }                             // incremental = solo raw sin procesar</code></pre></div>
+            <div><span class="label">Response · 202</span><pre><code>{ "runId": "run_41", "status": "running" }
+
+// luego, por SSE:
+ingest.progress { runId, step: "leyendo" | "escribiendo", pagePath? }
+page.created    { page }          // una por ficha, estado "compilando" → "nueva"
+run.finished    { runId, pagesCreated: 5, pagesEnriched: 0, commit: "a1f3c2" }</code></pre></div>
+          </div>
+          <div class="callout">Qué hace el servidor: monta el árbol virtual del agente (su carpeta + <code>raw/</code> de los canales donde es miembro, solo lectura) → invoca el CLI con el prompt de ingest del skill <code>ada-wiki</code> → espera el JSON de salida → escanea <code>wiki/</code> contra el índice → inserta/actualiza filas de <code>pages</code> → <code>git add -A && git commit -m "ada: ingest 03-backprop (run_41)"</code> → publica tarjetas. El agente nunca toca la DB; el servidor nunca escribe markdown.</div>
+        </div>
+
+        <div class="ticket">
+          <div class="line"><span class="method post">POST</span><span class="path">/agents/:id/answer</span><span class="pill alerta">P0</span><span class="meta">UC4 · UC5 · UC6 · UC8 · «se compone cada vez»</span></div>
+          <p class="why">Interno: lo dispara <code>message.created</code> con mención o respuesta en un thread donde el agente participa. Expuesto también para la demo y para tests. Es el único lugar donde nace conocimiento nuevo fuera del ingest.</p>
+          <div class="pipe">
+            <div class="step"><span class="label">1 · contexto</span><b>Servidor</b> junta canal, últimos 30 mensajes del thread o del canal, mensaje disparador, rol de quien pregunta.</div>
+            <div class="step"><span class="label">2 · presencia</span>Emite <code>agent.presence: pensando</code>.</div>
+            <div class="step"><span class="label">3 · agente</span><b>CLI</b> con <code>cwd</code> en su carpeta. Lee <code>index.md</code>, abre ≤5 fichas, compone, cita por path. Va a <code>raw/</code> solo si ninguna ficha cubre y lo declara.</div>
+            <div class="step"><span class="label">4 · contrato</span>Devuelve el JSON de abajo. Si no tiene fuente, responde que no sabe y <code>delta.kind = "none"</code>.</div>
+            <div class="step"><span class="label">5 · aplicar</span><b>Servidor</b> escribe el delta en archivos, bumpea versión/estado, commitea, indexa, inserta el mensaje con <code>fromFichero</code>, emite eventos, presencia <code>en-linea</code>.</div>
+          </div>
+          <div class="two">
+            <div><span class="label">Request</span><pre><code>{ "channelId": "dudas",
+  "threadId": "t-nan-relu",        // opcional
+  "messageId": "m-91" }            // el que menciona al agente</code></pre>
+            <span class="label" style="margin-top:6px">Response · 202</span><pre><code>{ "runId": "run_42" }</code></pre></div>
+            <div><span class="label">Salida del agente (contrato del skill ada-wiki)</span><pre><code>{
+  "paragraphs": [[
+    { "kind": "text", "text": "Sí, es el gradiente que explota: con ReLU no satura, así que…" },
+    { "kind": "cite", "text": "gradiente que explota › por qué",
+      "cite": { "path": "modulos/03-backprop/gradiente-que-explota.md", "section": "por-que" } }
+  ]],
+  "composedFrom": "fichero",                       // "fichero" | "fichero+raw" | "raw" | "ninguna"
+  "pagesRead": [
+    "modulos/03-backprop/gradiente-que-explota.md",
+    "modulos/03-backprop/inicializacion.md",
+    "modulos/03-backprop/learning-rate.md"
+  ],
+  "delta": {
+    "kind": "enrich",                               // "none" | "create" | "enrich" | "supersede"
+    "path": "modulos/03-backprop/gradiente-que-explota.md",
+    "section": "Cómo se ve en la práctica: NaN con ReLU",
+    "markdown": "…",
+    "links": ["modulos/03-backprop/inicializacion.md"]
+  },
+  "difficulty": { "module": "03-backprop", "note": "no asocian NaN con el learning rate" }
+}</code></pre></div>
+          </div>
+          <div class="two">
+            <div><span class="label">Deltas posibles</span><div class="tablewrap"><table>
+              <thead><tr><th>kind</th><th>Escribe</th><th>Índice</th></tr></thead>
+              <tbody>
+                <tr><td><code>none</code></td><td>nada</td><td>—</td></tr>
+                <tr><td><code>create</code></td><td>archivo nuevo con frontmatter; <code>index.md</code> +1; <code>log.md</code> +1</td><td>fila nueva, estado <code>nueva</code>; tarjeta en el canal; si hay thread, <code>publishedPageId</code></td></tr>
+                <tr><td><code>enrich</code></td><td>sección nueva o links en una ficha existente; <code>updated</code>; <code>version</code>+1</td><td>estado <code>actualizada</code>; tarjeta existente se actualiza</td></tr>
+                <tr><td><code>supersede</code></td><td>archivo nuevo con <code>supersedes</code>; el viejo intacto</td><td>vieja → <code>reemplazada</code>; nueva → <code>nueva</code> con <code>replaces</code></td></tr>
+              </tbody>
+            </table></div></div>
+            <div><span class="label">Lo que el servidor guarda en el mensaje</span><pre><code>{
+  "id": "m-92", "authorId": "ada", "threadId": "t-nan-relu",
+  "paragraphs": […],
+  "fromFichero": {                 // solo si composedFrom === "fichero"
+    "pageIds": ["modulos/03-backprop/gradiente-que-explota.md", "…"],
+    "oldestAgo": "hace 2 días"
+  },
+  "publishes": null,               // o el pageId si delta.kind === "create"
+  "runId": "run_42"
+}</code></pre>
+            <div class="callout warn">Hoy el tipo de la UI es <code>fromPage: { pageId, ago }</code> (singular). Con composición, es una lista. Ver §8.</div></div>
+          </div>
+        </div>
+
+        <div class="ticket">
+          <div class="line"><span class="method post">POST</span><span class="path">/pages/:id/enrich</span><span class="pill">P2</span><span class="meta">UC5 a mano</span></div>
+          <p class="why">La misma operación que el delta <code>enrich</code>, invocada por una persona (el autor o el profesor) desde el panel de ficha: agrega una sección o un link sin tocar lo que ya estaba. Versión +1, estado <code>actualizada</code>, commit con autor humano.</p>
+          <pre><code>{ "section": "Ejemplo numérico", "markdown": "…", "links": ["modulos/03-backprop/learning-rate.md"] }</code></pre>
+        </div>
+
+        <div class="ticket">
+          <div class="line"><span class="method post">POST</span><span class="path">/pages/:id/supersede</span><span class="pill sol">P1</span><span class="meta">UC6 a mano</span></div>
+          <p class="why">Crea la ficha que reemplaza a <code>:id</code>. La vieja queda intacta y marcada <code>reemplazada</code>; la nueva lleva <code>supersedes</code> y <code>sources</code>. Lo usa el agente vía delta y una persona desde la UI («corregir esta ficha»).</p>
+          <pre><code>{ "title": "Parcial: 15 de septiembre", "type": "decision", "markdown": "…",
+  "sources": [{ "kind": "mensaje", "ref": "m-77" }], "channelId": "general" }
+→ 201 { "page": { "id": "decisiones/2026-08-22-parcial-al-15-09.md", "replaces": "decisiones/2026-08-10-fecha-parcial.md", "state": "nueva", … } }</code></pre>
+        </div>
+
+        <div class="ticket">
+          <div class="line"><span class="method get">GET</span><span class="path">/agents/:id/wiki/tree</span> <span class="method get">GET</span><span class="path">/agents/:id/wiki/file?path=</span> <span class="method get">GET</span><span class="path">/agents/:id/wiki/log</span><span class="pill sol">P1</span><span class="meta">UC8 · UC9</span></div>
+          <p class="why">Lectura directa del fichero, filtrada por rol: el creador del agente ve todo; un miembro del curso ve <code>modulos/</code>, <code>decisiones/</code>, <code>preguntas/</code> y su propio <code>about/</code>; nadie ve <code>people/&lt;otro&gt;/</code>. <code>log</code> es <code>git log</code> con un commit por run: es el «qué aprendió esta semana».</p>
+          <pre><code>GET /agents/ada/wiki/log?since=7d
+→ [ { "sha": "a1f3c2", "at": "2026-08-22T15:10-03:00", "message": "ada: enrich gradiente-que-explota (run_42)", "files": 2 }, … ]</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6 -->
+    <section id="eventos">
+      <div class="sec-head"><div class="label">6</div><h2>Eventos en vivo</h2><p class="meta">Un stream SSE por sesión. Todo lo que la UI muestra como estado cambia por acá; nada por polling.</p></div>
+      <div class="panel tablewrap">
+        <table>
+          <thead><tr><th>Evento</th><th>Payload</th><th>Qué mueve en la UI</th></tr></thead>
+          <tbody>
+            <tr><td><code>message.created</code></td><td><code>{ message }</code></td><td>Conversación, thread; sello «desde el fichero» si trae <code>fromFichero</code></td></tr>
+            <tr><td><code>thread.updated</code></td><td><code>{ threadId, publishedPageId? }</code></td><td>Tarjeta «publicado como respuesta» al pie</td></tr>
+            <tr><td><code>page.compiling</code></td><td><code>{ channelId, count }</code></td><td>Franja con estado compilando</td></tr>
+            <tr><td><code>page.created</code></td><td><code>{ page }</code></td><td>Ficha nueva resaltada (animación sellar)</td></tr>
+            <tr><td><code>page.updated</code></td><td><code>{ page }</code></td><td>Estado actualizada, versión</td></tr>
+            <tr><td><code>page.replaced</code></td><td><code>{ oldId, page }</code></td><td>Vieja a reemplazada (animación archivar), nueva con «reemplaza a»</td></tr>
+            <tr><td><code>agent.presence</code></td><td><code>{ agentId, presence }</code></td><td>en-linea · pensando · publicando</td></tr>
+            <tr><td><code>ingest.progress</code> · <code>run.finished</code></td><td><code>{ runId, … }</code></td><td>Settings del canal; ficha del agente</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 7 -->
+    <section id="orden">
+      <div class="sec-head"><div class="label">7</div><h2>Orden de implementación</h2><p class="meta">Mismo orden que <code>DECISIONS.md</code> §10, con el pipeline de respuesta al centro. Estimaciones para una persona con Claude Code al lado.</p></div>
+      <div class="panel tablewrap">
+        <table>
+          <thead><tr><th>#</th><th>Qué</th><th>Cubre</th><th>Listo cuando</th><th>Est.</th></tr></thead>
+          <tbody>
+            <tr><td class="num">1</td><td>Esqueleto: DB, <code>GET /community</code>, mensajes, threads, SSE, miembros sembrados</td><td>UC1 (fake)</td><td>La UI actual corre contra la API en vez de <code>demo.ts</code></td><td class="num">2 h</td></tr>
+            <tr><td class="num">2</td><td>Carpeta del agente + <code>CLAUDE.md</code> + skill <code>ada-wiki</code> con los dos prompts (ingest, answer) y el contrato JSON</td><td>UC2</td><td><code>claude -p</code> en la carpeta devuelve JSON válido</td><td class="num">1,5 h</td></tr>
+            <tr><td class="num">3</td><td><code>POST /channels/:id/ingest</code> + escaneo de <code>wiki/</code> + commit + tarjetas</td><td>UC3</td><td><code>backprop.md</code> → 5 fichas enlazadas en la franja</td><td class="num">2 h</td></tr>
+            <tr><td class="num">4</td><td><code>answer</code> con citas, <code>composedFrom</code>, delta <code>create</code> y <code>enrich</code>, <code>fromFichero</code></td><td>UC4 · UC5</td><td>La segunda pregunta muestra el sello y la ficha pasa a actualizada</td><td class="num">3 h</td></tr>
+            <tr><td class="num">5</td><td>Delta <code>supersede</code> + <code>POST /pages/:id/supersede</code></td><td>UC6</td><td>Decisión reemplaza a la vieja con rastro</td><td class="num">1 h</td></tr>
+            <tr><td class="num">6</td><td>Agente personal: scope, canal privado, <code>people/</code>, mount de solo lectura</td><td>UC7</td><td>Plan de Sofía en su wiki, invisible para Martín</td><td class="num">1,5 h</td></tr>
+            <tr><td class="num">7</td><td><code>wiki/tree|file|log</code> con filtro por rol; <code>difficulty</code> en el delta</td><td>UC8 · UC9</td><td>Terminal y UI muestran lo mismo</td><td class="num">1 h</td></tr>
+            <tr><td class="num">8</td><td>Invitación real, presencia fina, <code>enrich</code> a mano</td><td>UC1 · P2</td><td>Solo si sobra</td><td class="num">—</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout">Si a las 00:00 no están 1–4, se recorta 6 y 7 y la demo se hace con 1–5. UC5 sin UC6 sigue siendo demo; UC6 sin UC5 no.</div>
+    </section>
+
+    <!-- 8 -->
+    <section id="decisiones">
+      <div class="sec-head"><div class="label">8</div><h2>Decisiones que esta API fuerza</h2><p class="meta">Para resolver antes de escribir el cuarto endpoint. Ninguna la tomé; están marcadas como abiertas en <code>AGENTS.md</code>.</p></div>
+      <div class="panel">
+        <ol class="list-tight">
+          <li><b><code>fromPage</code> pasa a plural.</b> Componer implica varias fichas. Propuesta: <code>fromFichero: { pageIds: string[]; oldestAgo: string }</code> en <code>types.ts</code>, y el sello dice «desde el fichero · 3 fichas · hace 2 días». Cambia <code>demo.ts</code>, <code>message</code> y <code>ficha</code>.</li>
+          <li><b>El id de una ficha es su path.</b> Evita una tabla de traducción y hace que <code>cite.path</code> del agente sea directamente <code>pageId</code> en la UI. Costo: renombrar un archivo es reemplazar (coherente con la regla 6).</li>
+          <li><b>Siete tipos en el frontmatter, cinco en la UI.</b> <code>dificultad</code> y <code>persona</code> no se publican en canales; se leen desde la ficha del agente. Alternativa: agregar un sexto <code>PageType</code> «dificultad» visible solo en <code>#profesores</code>.</li>
+          <li><b>Ingest automático cada N mensajes</b> (<code>DECISIONS.md</code> dice N=20). El MVP lo deja explícito (<code>@Ada ingest</code> o guardar settings del canal). Si se activa, conviene que sea por canal y que el delta resultante sea siempre <code>enrich</code>/<code>create</code>, nunca <code>supersede</code> sin mención.</li>
+          <li><b>Fichas publicadas por personas:</b> dónde viven (<code>people/&lt;persona&gt;/pages/</code> es propuesta) y si el agente de comunidad las ingiere como raw. Para la demo, no hace falta.</li>
+          <li><b>Transporte.</b> Si Buzz levanta, <code>answer</code> se dispara por <code>buzz-acp</code> y el servidor de esta API queda reducido al índice de fichas + aplicar deltas + eventos. Conviene escribir el pipeline como función pura <code>applyDelta(agentDir, delta)</code> desde el principio.</li>
+        </ol>
+      </div>
+    </section>
+  </main>
+</div>
+</body>
+</html>

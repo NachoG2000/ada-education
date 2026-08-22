@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cómo funciona Ada</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,600&family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ground:#f1f1ef; --panel:#fff; --panel-2:#f7f6f3; --panel-3:#efede8; --line:#ebe9e4; --line-strong:#dedbd4;
+    --ink:#1b1b20; --ink-2:#5a5a63; --ink-3:#8b8b95; --ink-4:#b9b9c2;
+    --sol:#ffd43b; --sol-soft:#fff3c4; --sol-ink:#6f5200; --sello:#2f55d4; --sello-soft:#e9eefc; --alerta:#e0493f; --alerta-soft:#fde9e7;
+    --ok:#d9f4e6; --ok-ink:#1f7a4a; --tab-apunte:#d9e8ff; --tab-apunte-ink:#1f55a8; --tab-consigna:#ffe4c7; --tab-consigna-ink:#9a4f0a; --tab-decision:#d7f3de; --tab-decision-ink:#1f6b3c;
+    --sans:"Inter",system-ui,-apple-system,sans-serif; --serif:"Literata",Georgia,serif; --mono:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+    --r-panel:12px; --r-card:16px; --shadow-card:0 1px 2px rgba(24,24,36,.04),0 8px 20px -12px rgba(24,24,36,.18);
+  }
+  * { box-sizing:border-box }
+  html { background:var(--ground); color:var(--ink) }
+  body { margin:0; font-family:var(--sans); font-size:16px; line-height:1.55 }
+  main { max-width:960px; margin:0 auto; padding:48px 24px 96px }
+  h1,h2,h3 { font-family:var(--serif); font-weight:600; letter-spacing:-.01em; line-height:1.2 }
+  h1 { font-size:40px; margin:0 0 8px }
+  h2 { font-size:26px; margin:64px 0 16px; padding-top:24px; border-top:1px solid var(--line-strong) }
+  h3 { font-size:18px; margin:24px 0 8px }
+  p { margin:0 0 14px; max-width:72ch }
+  .lead { font-family:var(--serif); font-size:20px; color:var(--ink-2); max-width:64ch }
+  .meta { font-family:var(--mono); font-size:12px; color:var(--ink-3); letter-spacing:.02em }
+  code, kbd { font-family:var(--mono); font-size:.9em; background:var(--panel-3); padding:1px 6px; border-radius:6px }
+  pre { font-family:var(--mono); font-size:13px; background:var(--panel); border:1px solid var(--line); border-radius:var(--r-panel); padding:16px 18px; overflow-x:auto; line-height:1.5 }
+  .panel { background:var(--panel); border-radius:var(--r-card); box-shadow:var(--shadow-card); padding:20px 22px }
+  .grid { display:grid; gap:16px }
+  .grid.two { grid-template-columns:repeat(auto-fit,minmax(300px,1fr)) }
+  .grid.four { grid-template-columns:repeat(auto-fit,minmax(210px,1fr)) }
+  .card h3 { margin-top:0 }
+  .card dl { margin:0; display:grid; grid-template-columns:auto 1fr; gap:4px 12px; font-size:14px }
+  .card dt { color:var(--ink-3); font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; padding-top:3px }
+  .card dd { margin:0 }
+  .tag { display:inline-block; font-family:var(--mono); font-size:11px; letter-spacing:.04em; padding:2px 8px; border-radius:999px; background:var(--panel-3); color:var(--ink-2) }
+  .tag.sol { background:var(--sol); color:var(--sol-ink) }
+  .tag.sello { background:var(--sello-soft); color:var(--sello) }
+  .tag.ok { background:var(--ok); color:var(--ok-ink) }
+  .tag.alerta { background:var(--alerta-soft); color:var(--alerta) }
+  .tag.apunte { background:var(--tab-apunte); color:var(--tab-apunte-ink) }
+  .tag.consigna { background:var(--tab-consigna); color:var(--tab-consigna-ink) }
+  .tag.decision { background:var(--tab-decision); color:var(--tab-decision-ink) }
+  table { border-collapse:collapse; width:100%; font-size:14px; background:var(--panel); border-radius:var(--r-panel); overflow:hidden; box-shadow:var(--shadow-card) }
+  th,td { text-align:left; padding:10px 12px; border-bottom:1px solid var(--line); vertical-align:top }
+  th { font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-3); background:var(--panel-2); font-weight:500 }
+  tr:last-child td { border-bottom:0 }
+  .wrap { overflow-x:auto }
+  svg { display:block; max-width:100%; height:auto }
+  svg text { font-family:var(--sans); font-size:13px; fill:var(--ink) }
+  svg .mono { font-family:var(--mono); font-size:11.5px; fill:var(--ink-2) }
+  svg .h { font-family:var(--serif); font-size:15px; font-weight:600 }
+  svg .dim { fill:var(--ink-3) }
+  svg .box { fill:var(--panel); stroke:var(--line-strong) }
+  svg .box.ground { fill:var(--panel-2) }
+  svg .box.sol { fill:var(--sol-soft); stroke:var(--sol) }
+  svg .box.sello { fill:var(--sello-soft); stroke:var(--sello) }
+  svg .box.alerta { fill:var(--alerta-soft); stroke:var(--alerta) }
+  svg .arrow { stroke:var(--ink-2); stroke-width:1.5; fill:none; marker-end:url(#m) }
+  svg .arrow.soft { stroke:var(--ink-4) }
+  svg .num { fill:var(--ink); font-family:var(--mono); font-size:11px; font-weight:600 }
+  svg .numbg { fill:var(--sol) }
+  ol.steps { counter-reset:s; list-style:none; padding:0; margin:0; max-width:72ch }
+  ol.steps li { counter-increment:s; position:relative; padding:10px 0 10px 44px; border-bottom:1px solid var(--line) }
+  ol.steps li::before { content:counter(s); position:absolute; left:0; top:10px; width:28px; height:28px; border-radius:999px; background:var(--sol); color:var(--sol-ink); font-family:var(--mono); font-size:12px; font-weight:600; display:grid; place-items:center }
+  ol.steps li b { font-weight:600 }
+  .faq details { background:var(--panel); border-radius:var(--r-panel); box-shadow:var(--shadow-card); padding:14px 18px; margin-bottom:10px }
+  .faq summary { cursor:pointer; font-weight:600; font-family:var(--serif); font-size:17px }
+  .faq details p { margin-top:10px }
+  .nota { border-left:3px solid var(--sol); background:var(--sol-soft); padding:12px 16px; border-radius:0 var(--r-panel) var(--r-panel) 0; max-width:72ch }
+  .nota.roja { border-color:var(--alerta); background:var(--alerta-soft) }
+  dl.glos { display:grid; grid-template-columns:max-content 1fr; gap:8px 18px; font-size:15px; max-width:80ch }
+  dl.glos dt { font-family:var(--serif); font-weight:600 }
+  dl.glos dd { margin:0; color:var(--ink-2) }
+  footer { margin-top:64px; padding-top:24px; border-top:1px solid var(--line-strong); color:var(--ink-3); font-size:13px }
+  a { color:var(--sello) }
+  @media (prefers-reduced-motion:no-preference) { details[open] summary ~ * { animation:fade .2s ease } }
+  @keyframes fade { from { opacity:0; transform:translateY(-2px) } to { opacity:1; transform:none } }
+</style>
+</head>
+<body>
+<main>
+  <p class="meta">docs/como-funciona.html · escrito el 22/08/2026 · fuentes: DECISIONS.md §6 y §14</p>
+  <h1>Cómo funciona Ada</h1>
+  <div class="nota" style="margin:12px 0 20px"><b>Inspiración a futuro.</b> Esta página describe la arquitectura completa hacia donde crece Ada, no el código de hoy. Lo que se construye este finde es la fila «laptop» de la sección 6: una instalación local para un profesor puntual (<code>DECISIONS.md</code> §15, spec en <code>openspec/</code>). Si esta página contradice al código o al spec, mandan ellos.</div>
+  <p class="lead">Una página para entenderlo una vez y no tener que volver a armarlo en la cabeza. No es un SaaS clásico, y ahí está la mitad de la confusión: el modelo de IA no corre en nuestro servidor, corre en un «enchufe» que cada persona conecta desde su máquina.</p>
+
+  <h2 id="saas">1. Por qué no es «frontend + API + DB + agente»</h2>
+  <div class="wrap">
+  <svg viewBox="0 0 920 300" role="img" aria-label="Comparación entre un SaaS clásico y Ada">
+    <defs><marker id="m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5a5a63"/></marker></defs>
+    <!-- SaaS clásico -->
+    <text x="20" y="28" class="h">SaaS clásico</text>
+    <rect x="20" y="50" width="400" height="220" rx="14" class="box ground"/>
+    <rect x="40" y="80" width="100" height="44" rx="10" class="box"/><text x="90" y="107" text-anchor="middle">Frontend</text>
+    <rect x="180" y="80" width="100" height="44" rx="10" class="box"/><text x="230" y="107" text-anchor="middle">API</text>
+    <rect x="320" y="80" width="80" height="44" rx="10" class="box"/><text x="360" y="107" text-anchor="middle">DB</text>
+    <path d="M140,102 L178,102" class="arrow"/><path d="M280,102 L318,102" class="arrow"/>
+    <rect x="180" y="180" width="100" height="44" rx="10" class="box alerta"/><text x="230" y="207" text-anchor="middle">LLM</text>
+    <path d="M230,124 L230,178" class="arrow"/>
+    <text x="300" y="200" class="mono">con la API key</text>
+    <text x="300" y="215" class="mono">de la empresa</text>
+    <text x="40" y="255" class="mono dim">la empresa paga y controla la inferencia</text>
+    <!-- Ada -->
+    <text x="480" y="28" class="h">Ada</text>
+    <rect x="480" y="50" width="420" height="120" rx="14" class="box ground"/>
+    <text x="496" y="70" class="mono dim">nuestro server (o el de un profe en Railway)</text>
+    <rect x="500" y="84" width="100" height="44" rx="10" class="box"/><text x="550" y="111" text-anchor="middle">Cliente web</text>
+    <rect x="640" y="84" width="120" height="44" rx="10" class="box"/><text x="700" y="105" text-anchor="middle">Server</text><text x="700" y="121" text-anchor="middle" class="mono">bus + archivo</text>
+    <rect x="800" y="84" width="80" height="44" rx="10" class="box"/><text x="840" y="111" text-anchor="middle">SQLite</text>
+    <path d="M600,106 L638,106" class="arrow"/><path d="M760,106 L798,106" class="arrow"/>
+    <rect x="480" y="190" width="420" height="90" rx="14" class="box sol"/>
+    <text x="620" y="210" class="mono dim">la máquina de quien creó el agente</text>
+    <rect x="496" y="222" width="100" height="44" rx="10" class="box"/><text x="546" y="243" text-anchor="middle">Runner</text><text x="546" y="259" text-anchor="middle" class="mono">ada-runner</text>
+    <rect x="622" y="222" width="150" height="44" rx="10" class="box alerta"/><text x="697" y="243" text-anchor="middle">Runtime</text><text x="697" y="259" text-anchor="middle" class="mono">claude · codex · pi</text>
+    <rect x="798" y="222" width="90" height="44" rx="10" class="box"/><text x="843" y="243" text-anchor="middle">Carpeta</text><text x="843" y="259" text-anchor="middle" class="mono">wiki/ en md</text>
+    <path d="M596,244 L620,244" class="arrow"/><path d="M772,244 L796,244" class="arrow"/>
+    <path d="M520,222 L520,160 L700,160 L700,130" class="arrow"/>
+    <text x="530" y="185" class="mono dim">WebSocket saliente, con el token del agente</text>
+  </svg>
+  </div>
+  <p>En un SaaS clásico la API llama al modelo con la API key de la empresa: la empresa paga, controla y es responsable. En Ada el server <b>nunca llama a un modelo</b>. Es un chat con archivo: guarda mensajes, miembros, canales y fichas publicadas, y avisa por WebSocket cuando algo pasa. La inteligencia entra por el <b>runner</b>: un proceso chico que corre donde viven las credenciales de quien creó el agente, y que usa el programa de IA que esa persona ya tiene (<code>claude</code>, <code>codex</code>, <code>pi</code> con un modelo abierto).</p>
+  <p>La analogía más útil: <b>runners de GitHub Actions</b>. GitHub guarda el repo y la cola de trabajos; el runner puede ser el de GitHub (pago, siempre prendido) o uno tuyo en tu máquina (gratis, se apaga cuando la apagás). Mismo resultado, distinto quién paga y quién lo mantiene vivo.</p>
+
+  <h2 id="piezas">2. Las cuatro piezas</h2>
+  <div class="grid four">
+    <div class="panel card"><h3>Server</h3>
+      <dl><dt>sabe</dt><dd>miembros, canales, mensajes, threads, fichas publicadas, qué agente está en línea</dd>
+      <dt>no sabe</dt><dd>qué modelo usa cada agente, ninguna credencial, qué hay en la wiki salvo lo publicado</dd>
+      <dt>corre en</dt><dd>Railway, nuestro hosting, o una laptop</dd>
+      <dt>lo paga</dt><dd>quien hostea; es barato: no hay inferencia</dd></dl></div>
+    <div class="panel card"><h3>Runner</h3>
+      <dl><dt>sabe</dt><dd>el token de <i>un</i> agente, la ruta de su carpeta, qué runtime usar</dd>
+      <dt>no sabe</dt><dd>credenciales de IA (las maneja el runtime), nada de otros agentes</dd>
+      <dt>corre en</dt><dd>la máquina de quien creó el agente, o en hosting</dd>
+      <dt>lo paga</dt><dd>nadie: es un proceso chico</dd></dl></div>
+    <div class="panel card"><h3>Runtime</h3>
+      <dl><dt>es</dt><dd>el binario de Claude Code, Codex o pi, <b>sin modificar</b></dd>
+      <dt>hace</dt><dd>lee la wiki, piensa, escribe fichas, devuelve texto</dd>
+      <dt>credencial</dt><dd>la de su dueño: suscripción (claude, codex) o API key (pi, modelos abiertos)</dd>
+      <dt>lo paga</dt><dd>el dueño de la credencial</dd></dl></div>
+    <div class="panel card"><h3>Carpeta del agente</h3>
+      <dl><dt>es</dt><dd><code>CLAUDE.md</code> + <code>wiki/</code> en markdown + git</dd>
+      <dt>vive en</dt><dd>donde vive el runner</dd>
+      <dt>la ve</dt><dd>quien creó el agente (y el server, solo lo publicado)</dd>
+      <dt>es</dt><dd>la memoria: lo único que persiste entre preguntas</dd></dl></div>
+  </div>
+  <p style="margin-top:16px">Un agente <b>es</b> la suma de las tres últimas más una identidad en el server. Si el runner no está conectado, el agente existe como miembro pero está «desconectado»: se lo puede mencionar, no contesta. Eso no es un bug: es lo que pasa cuando un alumno apaga la compu donde corre su agente personal.</p>
+
+  <h2 id="mencion">3. Qué pasa cuando Sofía escribe <code>@ada</code></h2>
+  <div class="wrap">
+  <svg viewBox="0 0 920 330" role="img" aria-label="Secuencia de una mención">
+    <!-- columnas -->
+    <text x="70" y="24" text-anchor="middle" class="h">Sofía</text>
+    <text x="290" y="24" text-anchor="middle" class="h">Server</text>
+    <text x="530" y="24" text-anchor="middle" class="h">Runner de Ada</text>
+    <text x="790" y="24" text-anchor="middle" class="h">claude en agents/ada/</text>
+    <line x1="70" y1="36" x2="70" y2="320" stroke="#dedbd4" stroke-dasharray="3 4"/>
+    <line x1="290" y1="36" x2="290" y2="320" stroke="#dedbd4" stroke-dasharray="3 4"/>
+    <line x1="530" y1="36" x2="530" y2="320" stroke="#dedbd4" stroke-dasharray="3 4"/>
+    <line x1="790" y1="36" x2="790" y2="320" stroke="#dedbd4" stroke-dasharray="3 4"/>
+    <!-- 1 -->
+    <path d="M70,60 L288,60" class="arrow"/><circle cx="84" cy="60" r="9" class="numbg"/><text x="84" y="64" text-anchor="middle" class="num">1</text>
+    <text x="180" y="54" text-anchor="middle" class="mono">POST mensaje «@ada ¿por qué explota?»</text>
+    <!-- 2 -->
+    <rect x="300" y="76" width="150" height="30" rx="8" class="box ground"/><text x="375" y="95" text-anchor="middle" class="mono">guarda · detecta @ada</text>
+    <circle cx="290" cy="91" r="9" class="numbg"/><text x="290" y="95" text-anchor="middle" class="num">2</text>
+    <!-- 3 -->
+    <path d="M290,124 L528,124" class="arrow"/><circle cx="304" cy="124" r="9" class="numbg"/><text x="304" y="128" text-anchor="middle" class="num">3</text>
+    <text x="410" y="118" text-anchor="middle" class="mono">agent.mention + últimos 20 mensajes</text>
+    <!-- 4 -->
+    <path d="M530,158 L788,158" class="arrow"/><circle cx="544" cy="158" r="9" class="numbg"/><text x="544" y="162" text-anchor="middle" class="num">4</text>
+    <text x="660" y="152" text-anchor="middle" class="mono">spawn: claude -p «…» (cwd = carpeta)</text>
+    <path d="M530,140 L292,140" class="arrow soft"/><text x="410" y="136" text-anchor="middle" class="mono dim">presencia: pensando</text>
+    <!-- 5 -->
+    <rect x="700" y="176" width="190" height="58" rx="8" class="box sol"/>
+    <text x="795" y="194" text-anchor="middle" class="mono">lee index.md y ≤5 fichas</text>
+    <text x="795" y="209" text-anchor="middle" class="mono">escribe preguntas/explota.md</text>
+    <text x="795" y="224" text-anchor="middle" class="mono">responde con [[path]]</text>
+    <circle cx="790" cy="176" r="9" class="numbg"/><text x="790" y="180" text-anchor="middle" class="num">5</text>
+    <!-- 6 -->
+    <path d="M790,252 L532,252" class="arrow"/><circle cx="776" cy="252" r="9" class="numbg"/><text x="776" y="256" text-anchor="middle" class="num">6</text>
+    <text x="660" y="246" text-anchor="middle" class="mono">texto final · diff de wiki/ · git commit</text>
+    <!-- 7 -->
+    <path d="M530,284 L292,284" class="arrow"/><circle cx="516" cy="284" r="9" class="numbg"/><text x="516" y="288" text-anchor="middle" class="num">7</text>
+    <text x="410" y="278" text-anchor="middle" class="mono">page.publish + message.create (con cite)</text>
+    <!-- 8 -->
+    <path d="M290,310 L72,310" class="arrow"/><circle cx="276" cy="310" r="9" class="numbg"/><text x="276" y="314" text-anchor="middle" class="num">8</text>
+    <text x="180" y="304" text-anchor="middle" class="mono">WS: ficha nueva + respuesta</text>
+  </svg>
+  </div>
+  <ol class="steps">
+    <li><b>Sofía escribe</b> en el thread. El cliente hace un POST; no sabe que Ada es un agente.</li>
+    <li><b>El server guarda</b> el mensaje y ve <code>@ada</code> en el texto. Si el runner de Ada no está conectado, acá termina: el mensaje queda, Ada figura desconectada.</li>
+    <li><b>Le manda la mención</b> al runner, con los últimos 20 mensajes del thread (la «capa inmediata» de DECISIONS §6).</li>
+    <li><b>El runner arma un prompt</b> (quién pregunta, contexto, pregunta) y <b>ejecuta</b> <code>claude -p</code> con <code>cwd</code> en la carpeta de Ada. No le pasa la wiki: eso lo lee el runtime.</li>
+    <li><b>Claude lee</b> <code>CLAUDE.md</code> (las reglas), <code>wiki/index.md</code>, abre hasta 5 fichas, y si la pregunta es reutilizable <b>escribe una ficha</b> nueva. Responde citando con <code>[[preguntas/explota.md]]</code>.</li>
+    <li><b>El runner compara</b> <code>wiki/</code> antes y después: lo que cambió se publica. Si no cambió nada y hay una cita, la respuesta se marca «desde la ficha». Hace un commit.</li>
+    <li><b>Publica</b> la ficha y el mensaje (las citas ya convertidas a pills).</li>
+    <li><b>Todos lo ven</b> en vivo: la ficha en la franja del canal, la respuesta en el thread, Ada vuelve a «en línea».</li>
+  </ol>
+
+  <h2 id="data">4. «¿Por qué <code>data/</code> está en el repo al lado de <code>apps/</code>?»</h2>
+  <p>Porque este finde todo corre en una laptop y necesitamos un curso de ejemplo que se clone con el código. Pero son dos cosas distintas, y conviene tenerlo claro desde ahora:</p>
+  <div class="grid two">
+    <div class="panel"><h3>El repo = código + un curso de ejemplo</h3>
+      <pre>apps/web          cliente
+apps/server       server
+packages/runner   ada-runner
+packages/protocol tipos y eventos
+data/redes-…/     <b>curso de ejemplo</b> (seed)</pre>
+      <p>Se publica en GitHub. Cualquiera lo clona y tiene la demo andando.</p></div>
+    <div class="panel"><h3>En uso real, la carpeta vive donde vive el runner</h3>
+      <pre>~/ada/cursos/redes-2c/agents/tutor/   ← laptop de Sofía
+/srv/ada/cursos/redes-2c/agents/ada/  ← Railway del profe
+/vol/ada/&lt;tenant&gt;/agents/…/           ← nuestro hosting</pre>
+      <p>El runner recibe <code>--cwd</code> y apunta a cualquier lado. El server nunca ve esa carpeta: solo recibe lo que el runner publica.</p></div>
+  </div>
+
+  <h2 id="aislamiento">5. «Claude ve todo el filesystem, ¿no?» El aislamiento, en tres capas</h2>
+  <p>Sí, técnicamente Claude Code puede ver lo que el sistema operativo le deje ver. La pregunta correcta es <b>cuánto aislamiento necesita cada tier</b>, porque no es el mismo problema en la laptop de Sofía que en un servidor nuestro con cien agentes de cien personas.</p>
+  <table>
+    <thead><tr><th>Capa</th><th>Cómo</th><th>Qué garantiza</th><th>Cuándo</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag sol">1 · política</span></td>
+        <td><code>cwd</code> en la carpeta del agente; <code>--add-dir</code> solo para <code>raw/</code>; <code>--allowedTools</code> acotado; reglas <code>deny</code> por path en <code>.claude/settings.json</code> de la carpeta; sin <code>Bash</code> salvo <code>git add/commit</code>.</td>
+        <td>Claude Code se niega a leer/escribir fuera. Es una regla que el runtime cumple, <b>no un muro</b>.</td>
+        <td>Este finde, y el tier local para siempre: en tu laptop, todo ya es tuyo. Si corrés tu agente en tu máquina, no hay a quién aislar.</td></tr>
+      <tr><td><span class="tag sello">2 · muro</span></td>
+        <td>Un contenedor (o micro-VM) por agente. Se montan solo dos cosas: <code>raw/</code> del curso en solo lectura y la carpeta del agente en lectura/escritura. Nada más existe adentro.</td>
+        <td>Aislamiento del sistema operativo. Aunque el modelo quiera, no hay otra carpeta que leer.</td>
+        <td>Tier hosted v1 (nosotros) y, opcionalmente, el Railway del profe. Es Docker común; no hace falta hostear nada nuevo.</td></tr>
+      <tr><td><span class="tag ok">3 · composición</span></td>
+        <td>Cada agente ve un <b>árbol virtual</b> armado con las carpetas de los canales donde es miembro + la suya (DECISIONS §6, «permisos = composición de carpetas»). Con bind mounts hoy; con <b>Archil</b> cuando sea multi-máquina.</td>
+        <td>Lo mismo que la capa 2, pero la vista del agente cambia cuando lo agregan o sacan de un canal, sin reconfigurar nada.</td>
+        <td>Cuando haya varios agentes compartiendo conocimiento entre canales. No hace falta ni este finde ni para el tier local.</td></tr>
+    </tbody>
+  </table>
+  <div class="nota" style="margin-top:16px"><b>Sobre Archil.</b> Sí: Archil es un servicio hosteado (discos montables respaldados en S3), así que usarlo implica el tier hosted. Pero Archil no es lo que da aislamiento, es lo que da la <i>vista compuesta</i> de la capa 3. El aislamiento lo da la capa 2 con un contenedor por agente, que podemos hacer hoy sin ningún servicio externo. Orden sensato: capa 1 ahora → capa 2 cuando hosteemos → capa 3 cuando haga falta compartir carpetas entre agentes.</div>
+
+  <h2 id="tiers">6. Las tres formas de correrlo</h2>
+  <table>
+    <thead><tr><th>Dónde corre el runner</th><th>Runtime y credencial</th><th>Aislamiento</th><th>Está en línea…</th><th>Cuesta</th></tr></thead>
+    <tbody>
+      <tr><td><b>Laptop</b> de quien creó el agente</td><td><code>claude</code>/<code>codex</code> con su suscripción, o <code>pi</code> + Ollama (modelo abierto, local)</td><td>capa 1 (es su máquina)</td><td>…mientras la laptop esté prendida</td><td>$0 para nosotros; la persona ya paga su suscripción o nada</td></tr>
+      <tr><td><b>Railway del profesor</b></td><td><code>claude</code> sin modificar con <code>claude setup-token</code> que él mismo genera y pega en <i>sus</i> variables de entorno</td><td>capa 1, capa 2 si quiere</td><td>…siempre</td><td>Railway + su plan. Permitido por Anthropic mientras sea su binario y su login</td></tr>
+      <tr><td><b>Hosted por nosotros</b></td><td><code>pi</code> con modelo abierto (default barato) o Claude/GPT con API key: la del profe (BYO) o la nuestra con margen</td><td>capa 2, después capa 3</td><td>…siempre</td><td>Acá se cobra. Nunca con suscripciones ajenas: está prohibido y bloqueado</td></tr>
+    </tbody>
+  </table>
+  <p style="margin-top:14px">Los agentes <b>de comunidad</b> (los del profesor) tienden al segundo o tercer caso porque tienen que contestar siempre. Los agentes <b>personales</b> de alumnos tienden al primero: gratis, privados, y si se apagan no pasa nada grave.</p>
+
+  <h2 id="faq">7. Preguntas que ya nos hicimos</h2>
+  <div class="faq">
+    <details><summary>¿Un profesor puede usar su suscripción de Claude en Railway?</summary><p>Sí, si lo que corre es el binario <code>claude</code> sin modificar y él se loguea con el flujo de Anthropic (<code>claude setup-token</code>). La página legal de Claude Code lo dice textual: «<i>Nor does it prevent an end user from signing in to the unmodified Claude Code binary with their own Claude subscription, including where a platform hosts Claude Code</i>». Lo que nosotros no podemos hacer es pedir, guardar o rutear ese token. Fuente y detalle: <code>research/2026-08-22-suscripciones-runners-buzz-pi.md</code>.</p></details>
+    <details><summary>¿Y pi.dev? Quería no depender de un solo proveedor.</summary><p>pi es el harness correcto para eso: 15+ proveedores, modelos abiertos vía Ollama/OpenRouter, modo headless, lee <code>CLAUDE.md</code>. Lo que <b>no</b> da es suscripciones: su login OAuth con Claude es justo lo que Anthropic prohibió (desde abril 2026 responde «Third-party apps now draw from your extra usage»). Entonces: pi = runtime con API keys y modelos abiertos; claude/codex = runtime con suscripción. El runner los trata igual.</p></details>
+    <details><summary>¿Por qué el server no llama al modelo «aunque sea para la demo»?</summary><p>Porque es la decisión que no se puede deshacer después. En cuanto el server tiene una API key, hay que guardarla, rotarla, cobrarla, y el tier local deja de ser gratis y privado. Separar server y runner cuesta una tarde hoy y nada mañana.</p></details>
+    <details><summary>¿Qué pasa si el alumno apaga la compu?</summary><p>Su agente personal queda «desconectado» en la UI. Las menciones no se encolan: se pierden, con un aviso al escribir. Es exactamente lo que hace Buzz. Si quiere que esté siempre, lo pasa al tier hosted.</p></details>
+    <details><summary>¿Modelos open source?</summary><p>Entran por pi (Ollama local, vLLM propio, OpenRouter). En hosted son el default barato. No hay problema de términos con nadie.</p></details>
+    <details><summary>¿Por qué no forkeamos Buzz al final?</summary><p>No levantó antes del checkpoint de las 14:00 y ya teníamos un cliente propio. Copiamos su topología (relay que no corre agentes + harness aparte + runtimes del proveedor), no su código. DECISIONS §7 quedó reemplazada por §14.</p></details>
+    <details><summary>¿Cómo se cobra?</summary><p>Solo en hosted: hosting + runner siempre prendido + tokens (por uso o por asiento; no decidido) + backups y analíticas para la institución. Local y self-host son gratis, Apache-2.0.</p></details>
+  </div>
+
+  <h2 id="glosario">8. Glosario</h2>
+  <dl class="glos">
+    <dt>Comunidad</dt><dd>Un curso. Un server = una comunidad este finde.</dd>
+    <dt>Canal</dt><dd>Estable (<code>#dudas</code>, <code>#03-backprop</code>) o de trabajo (un TP; solo diseño este finde).</dd>
+    <dt>Ficha</dt><dd>Una página markdown con tipo, versión, fuentes y «reemplaza a». Es la copia publicada de un archivo de la wiki de un agente.</dd>
+    <dt>Agente</dt><dd>Identidad en la comunidad + carpeta + runner. De comunidad (lo crea el profesor) o personal (lo crea un alumno).</dd>
+    <dt>Runner</dt><dd><code>ada-runner</code>: el proceso que conecta un agente al server y ejecuta su runtime.</dd>
+    <dt>Runtime</dt><dd>El programa de IA que piensa: <code>claude</code>, <code>codex</code>, <code>pi</code>. Sin modificar, con las credenciales de su dueño.</dd>
+    <dt>Wiki</dt><dd><code>wiki/</code> dentro de la carpeta del agente: <code>index.md</code>, <code>log.md</code>, <code>modulos/</code>, <code>preguntas/</code>, <code>decisiones/</code>, <code>dificultades/</code>.</dd>
+    <dt>Ingest</dt><dd><code>@agente ingest</code>: leer lo nuevo en <code>raw/</code> y compilarlo en fichas. No es por mensaje.</dd>
+    <dt>Desde la ficha</dt><dd>Respuesta que cita una ficha existente sin escribir nada nuevo. El sello «ya en el fichero · hace N días».</dd>
+    <dt>supersedes</dt><dd>Una ficha nueva que reemplaza a otra. La vieja no se edita: pasa a «reemplazada».</dd>
+    <dt>Capa inmediata</dt><dd>Los últimos 20 mensajes del canal o thread, que el server manda con cada mención.</dd>
+  </dl>
+
+  <footer>
+    Esta página es dirección, no estado: lo que manda es el código, <code>openspec/</code> y <code>DECISIONS.md</code> §14-§15. Spec de implementación: <code>openspec/changes/demo-local-backend/</code>. Investigación con fuentes: <code>research/2026-08-22-suscripciones-runners-buzz-pi.md</code>. Si algo de esta página contradice esos archivos, esta página está vieja.
+  </footer>
+</main>
+</body>
+</html>
