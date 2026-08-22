@@ -8,7 +8,7 @@ Reglas del repo para cualquier agente que trabaje acá (Claude Code, Codex, Curs
 
 **Alcance vigente (pivot del 22/08, `DECISIONS.md` §15):** este finde Ada se construye como un desarrollo a medida para **un profesor puntual, todo local en su computadora**. La arquitectura completa (runners remotos, hosted, tiers) es dirección a futuro, no código.
 
-**Estado real del código hoy:** una SPA Vite + React 19 (`src/`) que corre contra una comunidad sintética (`src/lib/demo.ts`), más el spec aprobado del backend local en `openspec/changes/demo-local-backend/` (server `apps/server`, runner `packages/runner`, tipos `packages/protocol`, curso `data/<curso>/` — se crean al implementar ese change). El plan de forkear Buzz quedó descartado (`DECISIONS.md` §7 → §14). Leé `DECISIONS.md` §14-§15 antes de tocar arquitectura, memoria de agentes o alcance.
+**Estado real del código hoy:** una SPA Vite + React 19 (`src/`) que corre contra una comunidad sintética (`src/lib/demo.ts`), más el monorepo armado (la SPA en `apps/web`, tipos en `packages/protocol`) con `apps/server`, `packages/runner` y `data/<curso>/` como esqueletos documentados, a implementar según `openspec/changes/demo-local-backend/`. El plan de forkear Buzz quedó descartado (`DECISIONS.md` §7 → §14). Leé `DECISIONS.md` §14-§15 antes de tocar arquitectura, memoria de agentes o alcance.
 
 **Cada área del repo tiene su `AGENTS.md`** corto con qué es hoy y cómo crece mañana (`src/`, `docs/`, y cada workspace nuevo debe traer el suyo). Si tocás un área, mantené su archivo al día.
 
@@ -44,18 +44,22 @@ Cómo lo aplica un agente:
 
 ## Comandos
 
+Monorepo con **npm workspaces** (sin Turborepo): `apps/web` (SPA), `apps/server` y `packages/runner` (esqueletos, sin código todavía), `packages/protocol` (tipos compartidos), `data/<curso>/` (cursos). Cada área tiene su `AGENTS.md`.
+
 ```bash
-npm run dev        # Vite dev server con HMR
-npm run build      # tsc -b && vite build  → dist/
-npm run lint       # oxlint (plugins react/typescript/oxc); los warnings only-export-components en ficha.tsx y ui/sidebar.tsx son conocidos
-npm run preview    # sirve dist/
-npx tsc -b         # solo typecheck (noUnusedLocals/Parameters activos: una variable sin usar rompe el build)
-npx shadcn add <componente>   # agrega primitivas a src/components/ui (estilo base-nova, Base UI, ícono lucide)
+npm install            # una sola vez, en la raíz (instala todos los workspaces)
+npm run dev            # la SPA con HMR (alias de dev:web) → http://localhost:5173
+npm run build          # tsc -b && vite build de apps/web → apps/web/dist/
+npm run lint           # oxlint sobre apps y packages; warnings only-export-components en ficha.tsx y ui/sidebar.tsx son conocidos
+npm run typecheck      # tsc -b apps/web (noUnusedLocals/Parameters activos: una variable sin usar rompe el build)
+cd apps/web && npx shadcn add <componente>   # primitivas a src/components/ui (estilo base-nova, Base UI, ícono lucide)
 ```
 
 No hay tests. Pantalla de desarrollo del generador de personajes: abrir `http://localhost:5173/#figuras`.
 
 ## Arquitectura
+
+> Paths de esta sección relativos a `apps/web/` (la SPA vivía en la raíz hasta el 22/08). Los tipos (`types.ts`) ahora viven en `packages/protocol` y `apps/web/src/lib/types.ts` los re-exporta.
 
 **Sin router.** `src/App.tsx` elige pantalla por `location.hash` (`#figuras` → `FigureSheet`; si no, `ChannelScreen`) y fija el `NOW` de la demo (`2026-08-22T12:00-03:00`): los mensajes con `at > now` se filtran y las etiquetas "hoy/ayer" se calculan contra esa fecha, no contra el reloj real.
 

@@ -1,6 +1,10 @@
-/* Modelo de dominio de Ada (ver PRODUCT.md → Operating Context). */
+/* Modelo de dominio de Ada (ver PRODUCT.md → Operating Context).
+   Vive en @ada/protocol porque lo comparten web, server y runner. */
 
-import type { FigureColorName } from "./figure"
+/** paleta del personaje procedural; la fuente visual (fills/inks) vive en apps/web/src/lib/figure.ts y debe mantener estos nombres */
+export type FigureColorName =
+  | "coral" | "verde" | "amarillo" | "azul" | "lila"
+  | "rosa" | "teal" | "naranja" | "rojo" | "lima"
 
 export type PageType = "apunte" | "consigna" | "decision" | "respuesta" | "entrega"
 

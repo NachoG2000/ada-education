@@ -12,9 +12,9 @@ Lo que hay hoy y el alcance del fin de semana: un desarrollo **local para un pro
 
 | Pieza | Estado |
 |---|---|
-| `src/` — cliente web (SPA React 19 + Vite, sistema de diseño «El fichero») | ✅ funcionando contra una comunidad sintética |
-| `apps/server` — servidor de comunidad (mensajes, canales, fichas; nunca corre modelos) | 📋 spec aprobada, en construcción |
-| `packages/runner` — `ada-runner`: conecta un agente y ejecuta su runtime (`claude`) en su carpeta | 📋 spec aprobada, en construcción |
+| `apps/web` — cliente web (SPA React 19 + Vite, sistema de diseño «El fichero») | ✅ funcionando contra una comunidad sintética |
+| `apps/server` — servidor de comunidad (mensajes, canales, fichas; nunca corre modelos) | 🧩 esqueleto + spec aprobada |
+| `packages/runner` — `ada-runner`: conecta un agente y ejecuta su runtime (`claude`) en su carpeta | 🧩 esqueleto + spec aprobada |
 | `data/<curso>/` — la wiki del agente en markdown + git | 📋 spec aprobada |
 
 ```bash

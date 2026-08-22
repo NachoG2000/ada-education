@@ -33,7 +33,12 @@ export const FIGURE_COLORS = [
   { name: "lima", fill: "#8fcf4a", ink: "#4c7f16" },
 ] as const
 
-export type FigureColorName = (typeof FIGURE_COLORS)[number]["name"]
+import type { FigureColorName } from "@ada/protocol"
+export type { FigureColorName }
+// chequeo estático: los nombres de FIGURE_COLORS tienen que coincidir con el protocolo
+type _Check = (typeof FIGURE_COLORS)[number]["name"] extends FigureColorName ? true : never
+const _check: _Check = true
+void _check
 
 function hash(str: string) {
   let h = 2166136261

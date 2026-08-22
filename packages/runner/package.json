@@ -1,0 +1,13 @@
+{
+  "name": "@ada/runner",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "bin": { "ada-runner": "./src/cli.ts" },
+  "scripts": {
+    "dev": "echo 'todavía no implementado: ver openspec/changes/demo-local-backend (grupo 4)' && exit 1"
+  },
+  "dependencies": {
+    "@ada/protocol": "*"
+  }
+}

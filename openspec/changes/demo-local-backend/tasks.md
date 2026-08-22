@@ -1,10 +1,11 @@
 ## 1. Repo y workspace (≈30 min)
 
-- [ ] 1.1 `git init` en la raíz; `.gitignore` para `node_modules`, `dist`, `apps/server/data/*.db`, `data/**/agents/**/.git` no (se versiona la wiki, no el `.git` interno: agregar `data/**/agents/*/.git/` al ignore).
-- [ ] 1.2 Mover `src/`, `index.html`, `public/`, `vite.config.ts`, `tsconfig.app.json`, `components.json`, `.oxlintrc.json` a `apps/web/`; `package.json` de `apps/web` con los scripts actuales. Verificar `npm run build` y `#figuras`.
-- [ ] 1.3 `package.json` raíz como workspace (`apps/*`, `packages/*`) con scripts `dev` (server + web en paralelo), `dev:web`, `dev:server`, `runner`, `seed`, `build`, `lint`, `typecheck`.
-- [ ] 1.4 `packages/protocol`: mover `src/lib/types.ts` ahí, agregar eventos con `zod`; `apps/web/src/lib/types.ts` pasa a re-exportar.
-- [ ] 1.5 `README.md` nuevo: qué es Ada, diagrama server/runner/runtime, "correr la demo en 4 comandos", licencia Apache-2.0 con `LICENSE`.
+- [x] 1.1 `git init` en la raíz; `.gitignore` para `node_modules`, `dist`, `apps/server/data/*.db`, `data/**/agents/**/.git` no (se versiona la wiki, no el `.git` interno: agregar `data/**/agents/*/.git/` al ignore).
+- [x] 1.2 Mover `src/`, `index.html`, `public/`, `vite.config.ts`, `tsconfig.app.json`, `components.json`, `.oxlintrc.json` a `apps/web/`; `package.json` de `apps/web` con los scripts actuales. Verificar `npm run build` y `#figuras`.
+- [x] 1.3 `package.json` raíz como workspace (`apps/*`, `packages/*`) con scripts `dev` (server + web en paralelo), `dev:web`, `dev:server`, `runner`, `seed`, `build`, `lint`, `typecheck`.
+- [x] 1.4a `packages/protocol`: `types.ts` movido; `apps/web/src/lib/types.ts` re-exporta.
+- [ ] 1.4b Eventos de la API con `zod` en `@ada/protocol` (se hace junto con el grupo 2).
+- [x] 1.5 `README.md` nuevo + `LICENSE` Apache-2.0: qué es Ada, diagrama server/runner/runtime, "correr la demo en 4 comandos", licencia Apache-2.0 con `LICENSE`.
 
 ## 2. Servidor de la comunidad (≈2 h)
 

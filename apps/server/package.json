@@ -1,0 +1,12 @@
+{
+  "name": "@ada/server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "echo 'todavía no implementado: ver openspec/changes/demo-local-backend (grupo 2)' && exit 1"
+  },
+  "dependencies": {
+    "@ada/protocol": "*"
+  }
+}
