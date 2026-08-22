@@ -1,155 +1,154 @@
-# PROBLEM.md — El problema, antes que la solución
+# PROBLEM.md — The problem, before the solution
 
-> Documento de contexto e ideas: describe el problema y sus fuentes, no el código. El estado real del código vive en `AGENTS.md` y `openspec/`.
+> Context and ideas document: it describes the problem and its sources, not the code. The actual state of the code lives in `AGENTS.md` and `openspec/`.
 
-Escrito el 22 de agosto de 2026. Este archivo define **qué problema ataca Ada, a quién le duele, por qué existe y qué cambió para que valga la pena resolverlo ahora**. La solución vive en `DECISIONS.md`; las cifras y fuentes, en `research/2026-08-22-impacto-del-problema-en-2026.md` (las citas tipo `[A2]` apuntan ahí). El antecedente es el TFG de 2024, resumido en `research/2024-11-tfg-siglo21.md`: misma intuición, problema mal planteado, solución descartada.
+Written August 22, 2026. This file defines **what problem Ada attacks, who it hurts, why it exists, and what changed to make it worth solving now**. The solution lives in `DECISIONS.md`; the figures and sources in `research/2026-08-22-problem-impact.md` (citations like `[A2]` point there).
 
-Regla de uso: **si una feature no ataca algo de la sección 2 o no cumple algo de la sección 7, no va.**
+Usage rule: **if a feature doesn't attack something in section 2 or doesn't satisfy something in section 7, it doesn't ship.**
 
 ---
 
-## 1. El problema en una frase
+## 1. The problem in one sentence
 
-Un curso es un grupo de gente que aprende junta, y casi todo lo que entiende junta se pierde: la explicación que por fin hizo que algo cerrara, la razón de una decisión, la pregunta que tres personas hicieron por separado. Queda enterrado en chats, se vuelve a preguntar, no pasa a la cohorte siguiente, y desde 2025 además se desvía a chatbots privados que no conocen el curso y de los que nada vuelve al grupo ni al docente.
+A course is a group of people learning together, and almost everything it understands together gets lost: the explanation that finally made something click, the reason behind a decision, the question three people asked separately. It stays buried in chats, gets asked again, doesn't pass to the next cohort, and since 2025 it's also being diverted to private chatbots that don't know the course and from which nothing comes back to the group or the teacher.
 
-El TFG de 2024 decía «los alumnos se distraen y los docentes no dan abasto». Eso es cierto y no sirve: vale para cualquier aula de cualquier década. El problema concreto es **la memoria del grupo**, y tiene cuatro fugas medibles.
+"Students get distracted and teachers can't keep up" is true and useless: it applies to any classroom in any decade. The concrete problem is **the group's memory**, and it has four measurable leaks.
 
-## 2. Las cuatro fugas
+## 2. The four leaks
 
-### 2.1 Se pregunta de nuevo lo que ya se respondió
+### 2.1 What was already answered gets asked again
 
-- En un curso introductorio de programación, dos ediciones consecutivas con el mismo contenido generaron **4.404 preguntas en 2020 y 3.218 en 2021** en el foro oficial. El curso arrancó de cero. `[B1]`
-- Cuando una herramienta le muestra al alumno las preguntas parecidas ya respondidas mientras escribe, los posts duplicados **bajan 40%**: cuatro de cada diez preguntas ya tenían respuesta en el mismo foro. `[B2]`
-- En Stack Overflow, antes de la IA, **~53%** de las preguntas cerradas se cerraban por duplicadas. `[B4]`
-- El staff docente genera ~20% de la actividad de un foro de curso pero cubre ~75% de las respuestas: el costo de la repetición lo paga el docente y el ayudante. `[B3]`
+- In an intro programming course, two consecutive editions with the same content generated **4,404 questions in 2020 and 3,218 in 2021** in the official forum. The course started from zero. `[B1]`
+- When a tool shows the student similar already-answered questions while they type, duplicate posts **drop 40%**: four out of ten questions already had an answer in the same forum. `[B2]`
+- On Stack Overflow, before AI, **~53%** of closed questions were closed as duplicates. `[B4]`
+- Teaching staff generate ~20% of a course forum's activity but cover ~75% of the answers: the cost of repetition is paid by the teacher and the TA. `[B3]`
 
-### 2.2 Se pregunta en lugares que no guardan nada
+### 2.2 Questions go to places that keep nothing
 
-- Preguntados dónde prefieren consultar una duda conceptual, solo **~25%** de los alumnos elige el foro oficial en público; el resto va a un **chat grupal no oficial**, a un grupo chico de amigos, a un post privado o a «otro». Las razones: miedo a «no saber» y a las repercusiones de ser visibles ante la comunidad. `[B1]`
-- El chat oficial de la universidad (Teams, 100M estudiantes) es corporativo y está hecho para el flujo, no para la memoria: 153 mensajes de Teams y 275 interrupciones por persona por día en el mundo laboral. `[F4]` `[C4]`
-- WhatsApp es la infraestructura real de la cursada en Latinoamérica: avisos, apuntes, entregas; sin búsqueda, sin continuidad, con ruido documentado. `[E11]` `[E12]`
-- Discord no es indexable; hacen falta herramientas aparte para «rescatar» lo que se dijo ahí. `[C6]`
-- El LMS se usa sobre todo como **repositorio de archivos**, y sus foros están «llenos de respuestas rutinarias, ahora a menudo generadas por IA» mientras los alumnos están en Reddit, Discord o TikTok. `[F2]` `[F3]`
-- Los equipos pierden **25%** de su tiempo buscando respuestas; **42%** del conocimiento de una organización vive solo en la cabeza de una persona; 5,3 horas por semana se van en recrear información que ya existía. Son datos del trabajo (2012–2025), no de la universidad, y es exactamente lo que le pasa a una cátedra cuando rota el ayudante. `[C1]` `[C2]` `[C3]`
+- Asked where they prefer to raise a conceptual doubt, only **~25%** of students choose the official forum in public; the rest go to an **unofficial group chat**, a small circle of friends, a private post, or "other". The reasons: fear of "not knowing" and of the repercussions of being visible to the community. `[B1]`
+- The university's official chat (Teams, 100M students) is corporate and built for flow, not memory: 153 Teams messages and 275 interruptions per person per day in the working world. `[F4]` `[C4]`
+- WhatsApp is the real infrastructure of coursework in Latin America: announcements, notes, submissions; no search, no continuity, documented noise. `[E11]` `[E12]`
+- Discord isn't indexable; separate tools are needed to "rescue" what was said there. `[C6]`
+- The LMS is used mostly as a **file repository**, and its forums are "full of routine answers, now often AI-generated" while students are on Reddit, Discord or TikTok. `[F2]` `[F3]`
+- Teams lose **25%** of their time searching for answers; **42%** of an organization's knowledge lives only in one person's head; 5.3 hours per week go into recreating information that already existed. These are workplace figures (2012–2025), not university ones, and they're exactly what happens to a teaching team when the TA rotates. `[C1]` `[C2]` `[C3]`
 
-### 2.3 Desde 2025, se pregunta en privado a una IA que no conoce el curso
+### 2.3 Since 2025, questions go privately to an AI that doesn't know the course
 
-Esta es la fuga nueva, la que no existía cuando se escribió el TFG, y la que convierte un problema viejo en uno urgente.
+This is the new leak, the one that turns an old problem into an urgent one.
 
-- **88%** de los estudiantes del mundo usa IA para aprender (92% en Latinoamérica), pero **solo 15%** dice que la IA está integrada en muchas de sus materias y **43% en ninguna**. Solo **29%** cree que sus docentes pueden guiarlos. `[A2]` `[A3]`
-- Cuando se traban, **29%** recurre **primero a la IA**, más que a los compañeros (15%) o al **material del curso (14%)**. `[A4]`
-- Lo que el alumno le pregunta a Claude o ChatGPT se responde sin el apunte del profesor, sin la consigna, sin saber que el parcial se movió; y la respuesta **no vuelve** ni al grupo ni al docente. Todos los tutores de IA disponibles en 2026 (Khanmigo, ChatGPT Edu, Claude for Education, Gemini, Coursera Coach, Canvas, Moodle, Copilot) guardan memoria **por usuario** y, salvo dashboards de supervisión individual, ninguno le muestra al docente **qué no entiende el grupo**. `[D]`
-- La evidencia causal es consistente: **la misma IA ayuda cuando está diseñada dentro del curso y perjudica cuando se usa suelta.** Con un GPT genérico, ~1.000 alumnos resolvieron 48% más ejercicios de práctica y rindieron **17% peor** en el examen sin IA; con un tutor anclado en pistas diseñadas por docentes, el daño desaparece. `[A6]` Un tutor a medida del curso en Harvard duplicó el aprendizaje. `[A7]` En Nigeria, tutoría con IA supervisada por docentes equivalió a 1,5–2 años de escolaridad. `[A8]`
-- Y darle una IA genérica al docente tampoco alcanza: en un RCT con 193 docentes, los alumnos calificaron esas clases como menos interesantes y menos importantes. `[B8]`
-- Solo **45%** de las instituciones de educación superior de la región tiene lineamientos de IA; solo **30%** de los estudiantes latinoamericanos dice que el uso institucional de IA cumple sus expectativas. La institución no ve nada y no decidió nada; mientras tanto, el alumno ya decidió. `[A13]` `[A3]`
+- **88%** of students worldwide use AI to learn (92% in Latin America), but **only 15%** say AI is integrated into many of their subjects and **43% into none**. Only **29%** believe their teachers can guide them. `[A2]` `[A3]`
+- When they get stuck, **29%** go **first to AI**, more than to classmates (15%) or to the **course material (14%)**. `[A4]`
+- What the student asks Claude or ChatGPT gets answered without the teacher's notes, without the assignment, without knowing the midterm moved; and the answer **never comes back** to the group or the teacher. Every AI tutor available in 2026 (Khanmigo, ChatGPT Edu, Claude for Education, Gemini, Coursera Coach, Canvas, Moodle, Copilot) keeps **per-user** memory and, aside from individual supervision dashboards, none shows the teacher **what the group doesn't understand**. `[D]`
+- The causal evidence is consistent: **the same AI helps when it's designed inside the course and hurts when used loose.** With a generic GPT, ~1,000 students solved 48% more practice exercises and scored **17% worse** on the AI-free exam; with a tutor anchored in teacher-designed hints, the damage disappears. `[A6]` A course-tailored tutor at Harvard doubled learning. `[A7]` In Nigeria, teacher-supervised AI tutoring was equivalent to 1.5–2 years of schooling. `[A8]`
+- And handing the teacher a generic AI isn't enough either: in an RCT with 193 teachers, students rated those classes as less interesting and less important. `[B8]`
+- Only **45%** of the region's higher-education institutions have AI guidelines; only **30%** of Latin American students say institutional AI use meets their expectations. The institution sees nothing and has decided nothing; meanwhile, the student already decided. `[A13]` `[A3]`
 
-### 2.4 Cuando termina el cuatrimestre, no queda nada
+### 2.4 When the semester ends, nothing is left
 
-- Ningún artefacto sobrevive al cierre del curso: el grupo de WhatsApp se archiva, el foro se clona vacío, el tutor de IA no recuerda a la cohorte anterior porque nunca supo que existía un curso. No encontramos literatura que mida la pérdida entre cohortes; `[B1]` es el proxy más directo, y la ausencia de medición es parte del problema. `[G5]`
-- Lo que sí se acumula entre cohortes son los apuntes de fotocopiadora, los Drive heredados y plataformas como Studocu (1,5M usuarios, 14.000 universidades): conocimiento del curso sin autor, sin versión, sin fuente y sin que el docente lo vea. `[C11]` La demanda de memoria compartida existe; la oferta es pirata.
+- No artifact survives the course's close: the WhatsApp group gets archived, the forum is cloned empty, the AI tutor doesn't remember the previous cohort because it never knew a course existed. We found no literature measuring the loss between cohorts; `[B1]` is the most direct proxy, and the absence of measurement is part of the problem. `[G5]`
+- What does accumulate across cohorts: photocopied notes, inherited Drives, and platforms like Studocu (1.5M users, 14,000 universities): course knowledge with no author, no version, no source, and invisible to the teacher. `[C11]` The demand for shared memory exists; the supply is pirate.
 
-## 3. A quién le duele
+## 3. Who it hurts
 
-**Al alumno.** Pregunta a las 23:00 y nadie responde; pregunta en público y se expone; pregunta en privado a la IA y recibe una respuesta sin contexto que puede contradecir al docente. Lo que entiende no se lo puede llevar ni compartir. `[B1]` `[A4]` `[A6]`
+**The student.** They ask at 11 pm and nobody answers; they ask in public and expose themselves; they ask an AI in private and get a context-free answer that may contradict the teacher. What they understand, they can't take with them or share. `[B1]` `[A4]` `[A6]`
 
-**Al docente y al ayudante.** En Argentina: **13,4 alumnos por docente** a nivel nacional, cátedras del CBC de **~1.500** alumnos, **70%** de los cargos con dedicación simple (pocas horas pagas fuera del aula), una capa de **ayudantes ad honorem** del orden del 20% de los cargos, presupuesto **−33%** real y salario **−34%** real desde 2023, paro nacional en marzo de 2026. `[E3]` `[E4]` `[E2]` `[E5]` `[E7]` `[E8]` Nunca tuvieron menos tiempo para responder lo mismo cinco veces, y nunca tuvieron menos visibilidad de qué está pasando con el grupo, porque el grupo está en otro lado.
+**The teacher and the TA.** In Argentina: **13.4 students per teacher** nationally, first-year mega-courses of **~1,500** students, **70%** of positions with minimal paid hours outside class, a layer of **unpaid TAs** around 20% of positions, budget **−33%** real and salary **−34%** real since 2023, national strike in March 2026. `[E3]` `[E4]` `[E2]` `[E5]` `[E7]` `[E8]` They've never had less time to answer the same thing five times, and never had less visibility into what's happening with the group, because the group is somewhere else.
 
-**Al grupo y a la cohorte siguiente.** La explicación que funcionó en el thread del martes no existe el jueves. El «por qué se movió el parcial» se pierde. La cohorte 2027 hace las mismas 3.000 preguntas. `[B1]`
+**The group and the next cohort.** The explanation that worked in Tuesday's thread doesn't exist on Thursday. The "why did the midterm move" gets lost. The 2027 cohort asks the same 3,000 questions. `[B1]`
 
-**A la institución.** Paga el costo (deserción de ~40% en primer año, 28 de cada 100 ingresantes graduados) sin tener ni política ni datos sobre el cambio más grande en cómo estudian sus alumnos. `[E6]` `[A13]`
+**The institution.** It pays the cost (~40% first-year dropout, 28 of every 100 entrants graduating) without having either a policy or data on the biggest change in how its students study. `[E6]` `[A13]`
 
-## 4. Qué cambió entre el TFG (noviembre 2024) y agosto 2026
+## 4. Why this is a 2026 problem
 
-| | Noviembre 2024 | Agosto 2026 |
+The window opened in the last twenty months: **the problem got worse** (leak 2.3 barely existed before 2025) **and the pieces to solve it appeared**. Nobody has put them together for a course.
+
+| | Late 2024 | August 2026 |
 |---|---|---|
-| Uso de IA por estudiantes | 66% (HEPI 2024); emergente | 88–92%; universal `[A1]` `[A2]` `[A3]` |
-| Uso de IA en evaluaciones | 53% | 88% `[A1]` |
-| Integración en las materias | sin dato | 15% «en muchas», 43% «en ninguna» `[A2]` |
-| Evidencia causal | casi nada | RCTs en Turquía, Harvard, Nigeria: diseño dentro del curso = ayuda; suelto = daña `[A6]` `[A7]` `[A8]` |
-| Memoria de agentes | chats sin memoria; RAG | LLM wiki de Karpathy (abr 2026), memoria en filesystem como corriente, AGENTS.md en 60.000+ repos, ChatGPT/Claude con memoria **por usuario** `[C7]` `[D1]` `[D6]` `[D7]` |
-| Agentes como miembros | no existía | Slack + Agentforce (2025), **Buzz de Block (21/07/2026)**, 29.700 estrellas en un mes `[F6]` `[C8]` |
-| Agente = CLI sobre una carpeta | no existía | Claude Code / Codex pueden correr sobre una wiki y publicar vía `buzz-acp` `[C8]` |
-| Universidad argentina | crisis incipiente | −33% presupuesto, −34% salario, ad honorem como base de la masividad `[E7]` `[E5]` |
-| Solución del TFG | LMS + chatbot individual + puntos | descartada: memoria en DB por usuario, el chatbot como pestaña, la conversación sin rastro |
+| Student AI use | 66% (HEPI 2024); emerging | 88–92%; universal `[A1]` `[A2]` `[A3]` |
+| AI use in assessments | 53% | 88% `[A1]` |
+| Integration into subjects | no data | 15% "in many", 43% "in none" `[A2]` |
+| Causal evidence | almost none | RCTs in Turkey, Harvard, Nigeria: designed inside the course = helps; loose = hurts `[A6]` `[A7]` `[A8]` |
+| Agent memory | memoryless chats; RAG | Karpathy's LLM wiki (Apr 2026), filesystem memory as the mainstream, AGENTS.md in 60,000+ repos, ChatGPT/Claude with **per-user** memory `[C7]` `[D1]` `[D6]` `[D7]` |
+| Agents as members | didn't exist | Slack + Agentforce (2025), **Buzz by Block (07/21/2026)**, 29,700 stars in a month `[F6]` `[C8]` |
+| Agent = a CLI over a folder | didn't exist | Claude Code / Codex can run over a wiki and publish via `buzz-acp` `[C8]` |
+| Argentine university | early crisis | −33% budget, −34% salary, unpaid TAs as the backbone of mass courses `[E7]` `[E5]` |
 
-En veinte meses pasaron dos cosas a la vez: **el problema se agravó** (la fuga 2.3 no existía) y **aparecieron las piezas para resolverlo** (agentes con identidad en canales, memoria legible en archivos, un CLI que puede ser el agente). Nadie las juntó para un curso.
+## 5. Why what exists doesn't solve it
 
-## 5. Por qué lo que existe no lo resuelve
-
-| Herramienta | Qué hace bien | Por qué no cierra la fuga |
+| Tool | What it does well | Why it doesn't close the leak |
 |---|---|---|
-| LMS (Moodle, Canvas, Classroom) | Guarda archivos y notas | Es un repositorio; nadie conversa ahí; los foros están muertos `[F2]` `[F3]` |
-| Foros de curso (Piazza, Ed) | Q&A con respuesta rápida | Hilos, no páginas: lo respondido no se compila ni se reemplaza; se migra de un foro a otro igual `[B3]` `[F3]` |
-| Chat (WhatsApp, Discord, Teams) | Donde la gente está | Optimiza el ahora; sin búsqueda, sin versión, sin continuidad `[C4]` `[C6]` `[E11]` |
-| Tutores IA (Khanmigo, ChatGPT Edu, Claude for Ed, Gemini, Coach) | Explican bien, a cualquier hora | Memoria por usuario, sin material del curso salvo carga manual, el docente no ve el agregado, nada exportable `[D]` |
-| AI TAs de investigación (Jill Watson, CS50.ai, Cogniti) | **RAG con citas y abstención funciona**: 76,7% de respuestas aprobadas vs 31,3% de un asistente genérico `[B5]` `[B6]` | Un solo bot propietario, sin memoria entre cohortes, sin páginas que el grupo posea `[B5]` `[B7]` |
-| Workspaces con agentes (Buzz, Slack + Agentforce) | Agentes como miembros con identidad y canales | La memoria es un log de eventos, no conocimiento compilado con fuentes y «reemplaza a» `[C8]` `[F6]` |
-| LLM wiki, Stash, Obsidian + agentes | Conocimiento compilado en markdown con fuentes | Personal o para equipos de código; sin canales, sin humanos y agentes como pares `[C7]` `[D2]` |
+| LMS (Moodle, Canvas, Classroom) | Stores files and grades | It's a repository; nobody converses there; the forums are dead `[F2]` `[F3]` |
+| Course forums (Piazza, Ed) | Q&A with fast answers | Threads, not pages: what's answered never compiles or gets superseded; people migrate from forum to forum all the same `[B3]` `[F3]` |
+| Chat (WhatsApp, Discord, Teams) | Where people already are | Optimizes the now; no search, no versioning, no continuity `[C4]` `[C6]` `[E11]` |
+| AI tutors (Khanmigo, ChatGPT Edu, Claude for Ed, Gemini, Coach) | Explain well, at any hour | Per-user memory, no course material unless loaded by hand, the teacher never sees the aggregate, nothing exportable `[D]` |
+| Research AI TAs (Jill Watson, CS50.ai, Cogniti) | **RAG with citations and abstention works**: 76.7% approved answers vs 31.3% for a generic assistant `[B5]` `[B6]` | A single proprietary bot, no memory across cohorts, no pages the group owns `[B5]` `[B7]` |
+| Agent workspaces (Buzz, Slack + Agentforce) | Agents as members with identity and channels | The memory is an event log, not knowledge compiled with sources and "replaces" `[C8]` `[F6]` |
+| LLM wiki, Stash, Obsidian + agents | Knowledge compiled in markdown with sources | Personal or for code teams; no channels, no humans and agents as peers `[C7]` `[D2]` |
 
-Ninguno cumple a la vez las cuatro condiciones: **agentes como miembros del canal · memoria del grupo, no del usuario · expresada como páginas citables, versionadas y corregibles · en archivos que el grupo posee.** `[D]` `[F]`
+None satisfies all four conditions at once: **agents as channel members · group memory, not user memory · expressed as citable, versioned, correctable pages · in files the group owns.** `[D]` `[F]`
 
-## 6. Causas raíz
+## 6. Root causes
 
-1. **El chat optimiza el ahora.** El mensaje más nuevo gana; volver a preguntar cuesta lo mismo que buscar en un historial sin estructura, así que se vuelve a preguntar. `[C4]` `[B2]`
-2. **Nadie tiene el rol de compilar.** El docente no tiene horas; el ayudante rota y muchas veces no cobra; el alumno no tiene incentivo para documentar para otros. Wikipedia, los wikis de equipo y el LLM wiki funcionan porque *alguien* (persona o agente) convierte la conversación cruda en un artefacto aparte, con fuentes y versión. `[E2]` `[E5]` `[C7]`
-3. **La memoria de la IA es privada por diseño de negocio.** La memoria por usuario retiene al usuario; una memoria del grupo en archivos la puede leer cualquiera, incluido un competidor. Por eso ningún proveedor la construyó. `[D7]` `[D]`
-4. **El conocimiento del curso no tiene dueño ni formato.** No es un archivo que alguien pueda listar, versionar o llevarse; es filas en la base de datos de un tercero o mensajes en el teléfono de alguien. `[F2]` `[C6]`
-5. **Preguntar en público cuesta.** Miedo a quedar expuesto → gana lo privado → lo privado no vuelve. Cualquier solución que exija preguntar en público para «contar» reproduce la fuga. `[B1]`
-6. **Buscar en vivo no acumula.** RAG sobre el material redescubre desde cero en cada pregunta; no hay cómputo que se haga una sola vez. `[C7]`
+1. **Chat optimizes the now.** The newest message wins; re-asking costs the same as searching an unstructured history, so people re-ask. `[C4]` `[B2]`
+2. **Nobody has the compiling role.** The teacher has no hours; the TA rotates and often isn't paid; the student has no incentive to document for others. Wikipedia, team wikis and the LLM wiki work because *someone* (person or agent) turns the raw conversation into a separate artifact, with sources and a version. `[E2]` `[E5]` `[C7]`
+3. **AI memory is private by business design.** Per-user memory retains the user; a group memory in files can be read by anyone, including a competitor. That's why no provider built it. `[D7]` `[D]`
+4. **Course knowledge has no owner and no format.** It isn't a file someone can list, version or take with them; it's rows in a third party's database or messages on someone's phone. `[F2]` `[C6]`
+5. **Asking in public costs.** Fear of exposure → private wins → what's private never comes back. Any solution that requires asking in public to "count" reproduces the leak. `[B1]`
+6. **Live search doesn't accumulate.** RAG over the material rediscovers from scratch on every question; there's no computation done once. `[C7]`
 
-## 7. Qué tiene que ser verdad para que el problema desaparezca
+## 7. What has to be true for the problem to disappear
 
-Criterios, no features. Cada uno tiene su contraparte en `DECISIONS.md` §6 (memoria) y en los estados de `PRODUCT.md`.
+Criteria, not features. Each has its counterpart in `DECISIONS.md` §6 (memory) and in the states of `PRODUCT.md`.
 
-| # | Criterio | Ataca | Cómo se ve en Ada |
+| # | Criterion | Attacks | How it shows up in Ada |
 |---|---|---|---|
-| 7.1 | Lo que se entendió al responder (el concepto, la conexión entre dos cosas, la dificultad) queda como **ficha legible con fuente**, conectada a las demás, fuera del flujo. La ficha es la comprensión, no la conversación. | 2.1, 6.1, 6.2 | Reglas 3 y 4 del agente; `modulos/…/<tema>.md` + `preguntas/<slug>.md` como índice de ángulos; tarjeta «publicado como respuesta» |
-| 7.2 | La segunda vez que alguien pregunta «lo mismo» (otras palabras, otro hueco), el agente **compone una respuesta nueva desde las fichas**, sin volver a las fuentes crudas, y la ficha se enriquece con el ángulo nuevo. Se ve que salió del fichero. **No es un caché de respuestas.** | 2.1, 6.6 | `fromPage`, sello «desde el fichero»: el momento clave de la demo |
-| 7.3 | El conocimiento lo **posee el grupo** en un formato que sobrevive a la plataforma y al cuatrimestre. | 2.4, 6.4 | `data/<curso>/…/wiki/*.md` en git; `ls` + `git log` en la demo |
-| 7.4 | Preguntar en privado **no implica perder**: el agente personal escribe en la wiki del alumno, y lo generalizable puede subir al grupo. | 2.2, 2.3, 6.5 | Agentes `comunidad` vs `personal`; `people/<alumno>/wiki`; visibilidad |
-| 7.5 | El docente ve el **agregado** («qué no entiende el grupo en backprop»), no la vigilancia individual. | 2.3, §3 docente | `dificultades/<modulo>.md`; «quien crea el agente ve lo que el agente escribe» |
-| 7.6 | Las respuestas del agente están **ancladas en el material del curso, citan y se abstienen** si no hay fuente. Es lo único que demostró funcionar. `[B5]` `[A6]` | 2.3 | Reglas 1 y 2 del agente; bloques `cite`; documentos base del canal |
-| 7.7 | Cuando algo cambia, la página vieja **no se edita: se reemplaza** y queda el rastro. | 2.4, 6.4 | `supersedes`; estado `reemplazada`; páginas tipo `decisión` |
-| 7.8 | El agente es **un miembro más**, creado por la comunidad, con nombre y canales; no «el bot» de la plataforma. | 6.3 | Compromiso 1 de `DECISIONS.md`; topología identidad + carpeta + runner (§14) |
+| 7.1 | What was understood while answering (the concept, the connection between two things, the difficulty) remains as a **readable card with a source**, connected to the others, outside the flow. The card is the understanding, not the conversation. | 2.1, 6.1, 6.2 | Agent rules 3 and 4; `modules/…/<topic>.md` + `questions/<slug>.md` as an index of angles; "published as an answer" card |
+| 7.2 | The second time someone asks "the same thing" (other words, another gap), the agent **composes a new answer from the cards**, without going back to the raw sources, and the card is enriched with the new angle. It's visible that it came from the card file. **It is not an answer cache.** | 2.1, 6.6 | `fromCard`, the "on file" seal: the demo's key moment |
+| 7.3 | The knowledge is **owned by the group** in a format that outlives the platform and the semester. | 2.4, 6.4 | `data/<course>/…/wiki/*.md` in git; `ls` + `git log` in the demo |
+| 7.4 | Asking in private **doesn't mean losing**: the personal agent writes into the student's wiki, and what generalizes can move up to the group. | 2.2, 2.3, 6.5 | `community` vs `personal` agents; `people/<student>/wiki`; visibility |
+| 7.5 | The teacher sees the **aggregate** ("what the group doesn't get about backprop"), not individual surveillance. | 2.3, §3 teacher | `difficulties/<module>.md`; "whoever creates the agent sees what the agent writes" |
+| 7.6 | The agent's answers are **anchored in the course material, cite, and abstain** when there's no source. It's the only thing proven to work. `[B5]` `[A6]` | 2.3 | Agent rules 1 and 2; `cite` blocks; channel base documents |
+| 7.7 | When something changes, the old page **isn't edited: it's replaced** and the trail remains. | 2.4, 6.4 | `supersedes`; `superseded` state; `decision`-type cards |
+| 7.8 | The agent is **one more member**, created by the community, with a name and channels; not "the platform's bot". | 6.3 | Commitment 1 in `DECISIONS.md`; identity + folder + runner topology (§14) |
 
-Cómo medirlo después, en un curso real (no es el cierre del pitch; es cómo saber si el fichero está vivo): **qué porción de las preguntas de `#dudas` se responde componiendo solo desde fichas, sin volver a `raw/`**; **cuántas fichas se conectan o enriquecen por semana frente a cuántas nacen duplicadas**; y **cuántas sobreviven al cambio de cuatrimestre**. Reusar no es el objetivo; lo es que cada pregunta nueva encuentre comprensión ya compilada sobre la cual componer.
+How to measure it later, in a real course (it's not the pitch's closer; it's how to know the card file is alive): **what share of `#questions` gets answered composing only from cards, without going back to `raw/`**; **how many cards get connected or enriched per week versus how many are born duplicated**; and **how many survive the semester change**. Reuse isn't the goal; the goal is that every new question finds already-compiled understanding to compose on.
 
-## 8. Visión
+## 8. Vision
 
 > Every group of people who learn together builds up knowledge that mostly disappears. We believe that knowledge should belong to the group, grow on its own, and outlive any single conversation. So we're building a place where humans and AI agents are members of the same community, where what gets understood once becomes something everyone can read, and where the agents remember alongside the people instead of starting over every time.
 >
 > **Humans and agents learn together, and what they learn stays with them.** (`DECISIONS.md` §1)
 
-Por qué educación: un curso es el caso más puro del problema. Tiene fecha de inicio y de fin, cambia de gente cada cuatro meses, concentra preguntas repetidas por diseño (todos estudian lo mismo a la vez) y hoy es el lugar donde la IA privada ya ganó sin que nadie lo decidiera. Si la memoria compartida entre humanos y agentes funciona acá, funciona en cualquier grupo que aprende.
+Why education: a course is the purest case of the problem. It has a start and an end date, changes people every four months, concentrates repeated questions by design (everyone studies the same thing at the same time), and today it's the place where private AI already won without anyone deciding it. If shared memory between humans and agents works here, it works for any group that learns.
 
-Por qué ahora: la ventana de veinte meses de la sección 4, que se sostiene en cuatro patas verificables (fuentes y niveles de verificación en `research/2026-08-22-por-que-ahora.md` §1):
+Why now: the twenty-month window of section 4, standing on four verifiable legs (sources and verification levels in `research/2026-08-22-why-now.md` §1):
 
-1. **El agente-sobre-archivos ya es un producto masivo, no un experimento.** Claude Code pasó de lanzarse (feb 2025) a $1B anualizado en 6 meses; Codex CLI multiplicó descargas ~500x en un año. Un agente que lee y escribe una wiki en una carpeta es hoy tecnología aburrida — y el costo por token cayó más de 10x desde 2023.
-2. **Los estándares para "agentes como miembros" tienen meses.** MCP (nov 2024), ACP (2025), y Buzz de Block (21/07/2026): agentes con identidad propia conviviendo con personas en canales. La forma de producto que Ada necesita se volvió legible para el mercado hace semanas.
-3. **Los incumbentes eligieron memoria privada, y quedó escrito.** Canvas + OpenAI (jul 2025) declara textual que lo del alumno "remains private to the Canvas user"; Claude/ChatGPT memory es por usuario; el RCT de dos años de Khanmigo (ago 2026) da 0,06–0,08 SD/año con ~15% de uso. La ventana de "memoria del grupo" está vacía no por descuido sino por diseño de negocio (causa raíz 6.3) — un incumbente no la puede copiar sin canibalizar su retención.
-4. **Las instituciones pasaron de prohibir a exigir.** UNESCO: 61% de instituciones con lineamientos hechos o en curso (sep 2025); Argentina aprobó contenidos de IA obligatorios (2025) y CABA alfabetización en IA obligatoria (ago 2026). El docente que adopte Ada ya no rema contra la política institucional; la política le pide exactamente esto.
+1. **The agent-over-files is already a mass product, not an experiment.** Claude Code went from launch (Feb 2025) to $1B annualized in 6 months; Codex CLI multiplied downloads ~500x in a year. An agent that reads and writes a wiki in a folder is boring technology today — and cost per token fell more than 10x since 2023.
+2. **The standards for "agents as members" are months old.** MCP (Nov 2024), ACP (2025), and Buzz by Block (07/21/2026): agents with their own identity living alongside people in channels. The product shape Ada needs became legible to the market weeks ago.
+3. **The incumbents chose private memory, and it's in writing.** Canvas + OpenAI (Jul 2025) states verbatim that the student's data "remains private to the Canvas user"; Claude/ChatGPT memory is per user; Khanmigo's two-year RCT (Aug 2026) shows 0.06–0.08 SD/year at ~15% usage. The "group memory" window is empty not by neglect but by business design (root cause 6.3) — an incumbent can't copy it without cannibalizing its retention.
+4. **Institutions moved from banning to demanding.** UNESCO: 61% of institutions with guidelines done or underway (Sep 2025); Argentina approved mandatory AI curriculum content (2025) and Buenos Aires made AI literacy mandatory (Aug 2026). A teacher adopting Ada is no longer rowing against institutional policy; the policy asks for exactly this.
 
-## 9. Qué NO es el problema (y por qué dejamos atrás la solución del TFG)
+## 9. What the problem is NOT
 
-- **No es (principalmente) atención.** El TFG partía de "los alumnos se distraen"; la evidencia 2024-2026 muestra un cambio real de conducta (cambio de pantalla cada ~47 s, lectura NAEP en baja) pero una narrativa de "crisis de atención" contestada por los propios investigadores (parte es pánico moral; el "goldfish de 8 segundos" no existe; prohibir celulares da efectos mixtos/nulos), y **ninguna encuesta grande a docentes o instituciones la nombra como problema #1** (RAND 2025: conducta y sueldo; EDUCAUSE: confianza; HEPI: misconduct). La atención entra en Ada solo como consecuencia: menos re-preguntar, menos ruido, fichas en vez de scroll. Detalle y fuentes: `research/2026-08-22-por-que-ahora.md` §2.
-- **No es motivación.** El TFG proponía puntos y tablero de líderes. El alumno de 2026 no está desmotivado: está resolviendo, en privado, con una IA. El riesgo no es que no participe; es que participe donde nada queda. `[A2]` `[A4]`
-- **No es personalización algorítmica por alumno.** Más IA individual sin contexto del curso es exactamente lo que perjudica el aprendizaje. `[A6]` La personalización útil es la del agente personal que escribe en una wiki que el alumno posee (7.4), no un perfil con puntaje.
-- **No es corrección automática ni vigilancia.** Ver el agregado, sí; leer los chats privados, no. `[B1]` (el miedo a la visibilidad es causa, no accidente).
-- **No es reemplazar al docente.** Es devolverle las horas que gasta repitiendo y la visibilidad que perdió cuando el grupo se fue a WhatsApp y a ChatGPT.
-- **No es «mejor búsqueda».** RAG en vivo redescubre; no acumula. `[C7]`
-- **No es un caché de respuestas.** Ahorrar trabajo mostrando lo que ya se respondió no es la tesis. Lo que a Sofía le sirvió puede no servirle a Ignacio: él tiene otro hueco y otro lenguaje. La tesis es que la *comprensión* se compila una vez en fichas conectadas, y cada respuesta se compone fresca desde ahí. (`DECISIONS.md`, compromiso 3)
-- **No es un chatbot en el LMS.** Canvas + OpenAI, Classroom + Gemini y Moodle AI ya lo hacen: memoria privada por alumno dentro de un repositorio que nadie lee. `[D]` `[F2]`
+- **It's not (mainly) attention.** A tempting framing says "students are distracted"; the 2024-2026 evidence shows a real behavior change (screen switch every ~47 s, NAEP reading declining) but an "attention crisis" narrative contested by the researchers themselves (part is moral panic; the "8-second goldfish" doesn't exist; phone bans show mixed/null effects), and **no large survey of teachers or institutions names it as problem #1** (RAND 2025: behavior and pay; EDUCAUSE: trust; HEPI: misconduct). Attention enters Ada only as a consequence: less re-asking, less noise, cards instead of scroll. Details and sources: `research/2026-08-22-why-now.md` §2.
+- **It's not motivation.** Points and leaderboards assume a disengaged student. The 2026 student isn't demotivated: they're solving, in private, with an AI. The risk isn't that they don't participate; it's that they participate where nothing remains. `[A2]` `[A4]`
+- **It's not per-student algorithmic personalization.** More individual AI without course context is exactly what hurts learning. `[A6]` The useful personalization is a personal agent writing into a wiki the student owns (7.4), not a profile with a score.
+- **It's not automated grading or surveillance.** Seeing the aggregate, yes; reading private chats, no. `[B1]` (fear of visibility is a cause, not an accident).
+- **It's not replacing the teacher.** It's giving back the hours spent repeating and the visibility lost when the group moved to WhatsApp and ChatGPT.
+- **It's not "better search".** Live RAG rediscovers; it doesn't accumulate. `[C7]`
+- **It's not an answer cache.** Saving work by showing what was already answered is not the thesis. What helped Sofia may not help Ignacio: he has another gap and another language. The thesis is that *understanding* compiles once into connected cards, and every answer is composed fresh from there. (`DECISIONS.md`, commitment 3)
+- **It's not a chatbot in the LMS.** Canvas + OpenAI, Classroom + Gemini and Moodle AI already do that: private per-student memory inside a repository nobody reads. `[D]` `[F2]`
 
-## 10. Límites de este diagnóstico
+## 10. Limits of this diagnosis
 
-Para no sobrevender (detalle en `research/…§G`):
+To avoid overselling (details in `research/…§G`):
 
-1. Nadie midió directamente que «lo que se aprende en privado con la IA nunca vuelve al grupo». Se infiere de `[A2]` `[A4]` `[B1]`.
-2. Los RCTs son de secundaria o de cursos puntuales en otros países; no hay evidencia de universidad argentina.
-3. Las cifras de pérdida de conocimiento en organizaciones son de 2012–2018 o de proveedores con interés comercial.
-4. No hay dato argentino universitario grande sobre uso de IA; el dato regional (DEC LATAM) no lista países.
-5. No hay literatura que mida la pérdida entre cohortes; `[B1]` es un proxy.
-6. La evidencia causal de tutoría con IA que citamos (`[A7]` Harvard, `[A8]` Nigeria) la leímos en cobertura secundaria (primarias paywalled/bloqueadas), y los meta-análisis con efectos 0,7–0,9 SD lucen inflados (pocos estudios >6 meses). El mecanismo "ritmo fijo pierde a las dos puntas" es plausible pero sin RCT de aula a escala; el 2-sigma de Bloom no replica (~0,37 SD real).
-7. Números que circulan y **no** deben usarse en ningún material: "goldfish de 8 segundos", "2 sigma" como vigente, "Khanmigo +22% (n=340.000)" (rastrea a un blog de marketing), "$8B run-rate de Claude Code".
+1. Nobody has directly measured that "what's learned privately with AI never returns to the group". It's inferred from `[A2]` `[A4]` `[B1]`.
+2. The RCTs are from secondary school or specific courses in other countries; there's no evidence from Argentine universities.
+3. The organizational knowledge-loss figures are from 2012–2018 or from vendors with a commercial interest.
+4. There's no large Argentine university dataset on AI use; the regional figure (DEC LATAM) doesn't list countries.
+5. No literature measures loss between cohorts; `[B1]` is a proxy.
+6. The causal evidence for AI tutoring we cite (`[A7]` Harvard, `[A8]` Nigeria) we read in secondary coverage (primaries paywalled/blocked), and the meta-analyses with 0.7–0.9 SD effects look inflated (few studies >6 months). The "fixed pace loses both tails" mechanism is plausible but has no at-scale classroom RCT; Bloom's 2-sigma doesn't replicate (~0.37 SD real).
+7. Numbers that circulate and must **not** be used in any material: the "8-second goldfish", "2 sigma" as current, "Khanmigo +22% (n=340,000)" (traces to a marketing blog), "$8B Claude Code run-rate".
 
-Lo que la demo del 23/08 puede probar: que 7.1, 7.2, 7.3, 7.6 y 7.7 son posibles hoy con Claude Code sobre una carpeta y nuestro server local como comunidad (`DECISIONS.md` §14-§15). Lo que no puede probar: el impacto en un curso real. Eso es lo primero después de la hackathon.
+What the 08/23 demo can prove: that 7.1, 7.2, 7.3, 7.6 and 7.7 are possible today with Claude Code over a folder and our local server as the community (`DECISIONS.md` §14-§15). What it can't prove: the impact on a real course. That's the first thing after the hackathon.

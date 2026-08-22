@@ -1,7 +1,7 @@
-# packages/protocol — el contrato compartido
+# packages/protocol — the shared contract
 
-**Hoy:** `src/types.ts` (el modelo de dominio que antes vivía en la SPA: `Community`, `Member`, `Page`, `Message`, `Thread`…) y `src/events.ts` (schemas Zod y tipos de eventos REST/WS), re-exportados por `src/index.ts`. `apps/web/src/lib/types.ts` re-exporta de acá para no romper los imports `@/lib/types`.
+**Today:** `src/types.ts` (the domain model that used to live in the SPA: `Community`, `Member`, `Card`, `Message`, `Thread`…) and `src/events.ts` (Zod schemas and REST/WS event types), re-exported by `src/index.ts`. `apps/web/src/lib/types.ts` re-exports from here so the `@/lib/types` imports don't break.
 
-**Próximo paso:** usar estos contratos desde `apps/server` y `packages/runner`; si cambia un evento, actualizar primero este paquete y luego compilar las tres piezas.
+**Next step:** consume these contracts from `apps/server` and `packages/runner`; if an event changes, update this package first and then build all three pieces.
 
-Reglas: paquete de **solo fuente TS** (sin build: la web lo transpila con Vite; server y runner lo correrán con `tsx`). Nada acá puede depender de React, de Node APIs ni de la UI: tipos, esquemas y constantes compartidas únicamente. Si un tipo cambia, compilá las tres piezas antes de cerrar.
+Rules: **TS-source-only** package (no build: the web app transpiles it with Vite; server and runner will run it with `tsx`). Nothing here can depend on React, Node APIs, or the UI: shared types, schemas, and constants only. If a type changes, build all three pieces before closing out the task.

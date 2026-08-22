@@ -1,14 +1,14 @@
 /*
-DIRECCIÓN · «El fichero» (seed ada01 · candidata 4/7 · gesto propio: rayos X de fuentes)
-THESIS: el chat existe para producir fichas. Refusa el three-column Slack con burbujas, chips y badge BOT.
-OWN-WORLD: suelo neutro con sidebar inset (shadcn), dos paneles blancos redimensionables (canal · contexto),
-  pestañas plegadas de color = tipo de ficha, amarillo pleno para lo nuevo, pills pastel de estado,
-  agentes como siluetas planas de color con dos ojos (Ada, la agente del curso, es azul). Inter / Literata / Geist Mono.
-STORY: Sofía pregunta; Ada responde citando fichas; la respuesta se archiva y entra a la fila.
-  Dos días después, otra alumna pregunta y la respuesta llega marcada «ya en el fichero».
-FIRST VIEWPORT: sidebar inset · canal con fila de fichas arriba (la nueva en amarillo), conversación, composer ·
-  panel contextual con el thread y la ficha ARCHIVADA al cierre. Los dos paneles se redimensionan con un handle.
-FORM: app operativa real (shadcn sidebar-08 + resizable); el color vive en pestañas, pills, el amarillo y los personajes.
+DIRECTION · "The card file" (seed ada01 · candidate 4/7 · signature gesture: source x-rays)
+THESIS: the chat exists to produce cards. It refuses the three-column Slack with bubbles, chips and a BOT badge.
+OWN-WORLD: neutral ground with an inset sidebar (shadcn), two resizable white panels (channel · context),
+  folded color tabs = card type, full yellow for what's new, pastel status pills,
+  agents as flat color silhouettes with two eyes (Ada, the course agent, is blue). Inter / Literata / Geist Mono.
+STORY: Sofia asks; Ada answers citing cards; the answer gets filed and joins the row.
+  Two days later, another student asks and the answer arrives marked "already on file".
+FIRST VIEWPORT: inset sidebar · channel with the card row on top (the new one in yellow), conversation, composer ·
+  contextual panel with the thread and the ARCHIVED card at its close. Both panels resize with a handle.
+FORM: a real working app (shadcn sidebar-08 + resizable); color lives in tabs, pills, the yellow and the figures.
 */
 
 import { useMemo } from "react"
@@ -16,48 +16,78 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/componen
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
 import { useCommunity } from "@/lib/community"
-import { ChannelActions, ChannelHeader, Composer, Conversation, FichaRow } from "@/components/ada/channel"
+import { CardRow, ChannelActions, ChannelHeader, Composer, Conversation } from "@/components/ada/channel"
 import { Folder, FolderTab } from "@/components/ada/folder"
 import { PanelStack } from "@/components/ada/panel"
 
 const LAYOUT_KEY = "ada:layout:channel"
+const PANEL_IDS = ["channel", "context"]
 
+/* What's stored is a react-resizable-panels `Layout`: one flex-grow per panel
+   (not pixels or percentages), so it stays valid at any window width — each
+   panel's px minimums are enforced by the library. The only thing to defend is
+   the shape: corrupt JSON or another version's gets discarded. */
 function readLayout(): Record<string, number> | undefined {
   try {
     const raw = localStorage.getItem(LAYOUT_KEY)
-    return raw ? (JSON.parse(raw) as Record<string, number>) : undefined
+    if (!raw) return undefined
+    const parsed: unknown = JSON.parse(raw)
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return discardLayout()
+    const entries = Object.entries(parsed as Record<string, unknown>)
+    const valid =
+      entries.length > 0 &&
+      entries.every(([id, v]) => PANEL_IDS.includes(id) && typeof v === "number" && Number.isFinite(v) && v > 0)
+    return valid ? (parsed as Record<string, number>) : discardLayout()
   } catch {
     return undefined
   }
 }
 
+function discardLayout() {
+  try {
+    localStorage.removeItem(LAYOUT_KEY)
+  } catch {
+    /* no storage: nothing to discard */
+  }
+  return undefined
+}
+
 export function ChannelScreen() {
   const { community, activeChannelId, now, panels } = useCommunity()
-  const defaultLayout = useMemo(readLayout, [])
+  const defaultLayout = useMemo(() => readLayout(), [])
   const hasContext = panels.length > 0
   const channel = community.channels.find((c) => c.id === activeChannelId) ?? community.channels[0]
-  const messages = community.messages.filter((m) => m.channelId === channel.id && new Date(m.at) <= now)
+  /* Stable reference: without this, opening a card or a thread (which only
+     changes `panels`) returned a new array and Conversation's auto-scroll threw
+     the conversation to the bottom even while the user was reading further up. */
+  const messages = useMemo(
+    () => community.messages.filter((m) => m.channelId === channel.id && new Date(m.at) <= now),
+    [community.messages, channel.id, now],
+  )
 
   return (
     <SidebarProvider style={{ "--sidebar-width": "17rem" } as React.CSSProperties}>
       <AppSidebar />
-      {/* Misma posición que SidebarInset: margen 8, sin margen izquierdo; adentro, dos paneles inset redimensionables. */}
+      {/* Same position as SidebarInset: margin 8, no left margin; inside, two resizable inset panels. */}
       <div className="relative flex h-svh min-w-0 flex-1 flex-col p-2 md:pl-0">
+        <h1 className="sr-only">
+          {community.name} · channel #{channel.name}
+        </h1>
         <ResizablePanelGroup
           orientation="horizontal"
           id="ada-channel"
           defaultLayout={defaultLayout}
           onLayoutChanged={(layout) => {
-            if (!("contexto" in layout)) return // con el panel cerrado no hay nada que recordar
+            if (!("context" in layout)) return // with the panel closed there's nothing to remember
             try {
               localStorage.setItem(LAYOUT_KEY, JSON.stringify(layout))
             } catch {
-              /* sin storage: el layout no persiste */
+              /* no storage: the layout doesn't persist */
             }
           }}
           className="h-full min-h-0"
         >
-          <ResizablePanel id="canal" defaultSize="62" minSize={520} className="min-w-0">
+          <ResizablePanel id="channel" defaultSize="62" minSize={520} className="min-w-0">
             <Folder
               tabs={
                 <FolderTab active>
@@ -68,16 +98,16 @@ export function ChannelScreen() {
               actions={<ChannelActions channel={channel} />}
             >
               <ChannelHeader channel={channel} />
-              <FichaRow channel={channel} />
+              <CardRow channel={channel} />
               <Conversation channel={channel} messages={messages} />
-              <Composer placeholder={`Escribí en #${channel.name}… @Ada para pedirle algo directo`} />
+              <Composer placeholder={`Write in #${channel.name}… @Ada to ask her something directly`} />
             </Folder>
           </ResizablePanel>
-          {/* Sin thread ni ficha abiertos, el canal ocupa todo el ancho. */}
+          {/* With no thread or card open, the channel takes the full width. */}
           {hasContext && (
             <>
               <ResizableHandle className="group/handle w-2 bg-transparent after:w-2 after:rounded-full after:transition-colors hover:after:bg-line-strong data-[resize-handle-active]:after:bg-ink-4" />
-              <ResizablePanel id="contexto" defaultSize="38" minSize={340} className="min-w-0">
+              <ResizablePanel id="context" defaultSize="38" minSize={340} className="min-w-0">
                 <PanelStack />
               </ResizablePanel>
             </>

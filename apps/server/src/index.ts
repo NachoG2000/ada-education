@@ -11,8 +11,8 @@ import {
   listChannels,
   listMembers,
   openDatabase,
-  publishPage,
-  type AuthoredPagePublishInput,
+  publishCard,
+  type AuthoredCardPublishInput,
 } from "./db.js"
 import { createApi } from "./api.js"
 import { createWebSocketHub, type AgentRecord, type WebSocketHub, type WsStore } from "./ws.js"
@@ -32,7 +32,7 @@ export function startServer(): RunningServer {
     presence,
     onMessageCreated: (message) => hub?.onMessageCreated(message),
     onThreadCreated: (thread) => hub?.onThreadCreated(thread),
-    onPagePublished: ({ page, message }) => hub?.onPagePublished(page, message),
+    onCardPublished: ({ card, message }) => hub?.onCardPublished(card, message),
   })
   const server = createServer(getRequestListener(app.fetch))
   const store: WsStore = {
@@ -58,8 +58,8 @@ export function startServer(): RunningServer {
     createMessage(input) {
       return createMessage(database, input)
     },
-    publishPage(input) {
-      return publishPage(database, input as AuthoredPagePublishInput)
+    publishCard(input) {
+      return publishCard(database, input as AuthoredCardPublishInput)
     },
   }
   hub = createWebSocketHub(server, store, (agentId, nextPresence) => {
@@ -68,7 +68,7 @@ export function startServer(): RunningServer {
 
   const port = Number(process.env.PORT ?? "8787")
   server.listen(port, () => {
-    console.log(`Ada server escuchando en http://localhost:${port}`)
+    console.log(`Ada server listening on http://localhost:${port}`)
   })
 
   let closing: Promise<void> | undefined
@@ -97,16 +97,16 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     shuttingDown = true
     process.off("SIGINT", onSigInt)
     process.off("SIGTERM", onSigTerm)
-    console.log(`Recibido ${signal}; cerrando Ada server...`)
+    console.log(`Received ${signal}; shutting down Ada server...`)
     void running.close().then(
       () => {
-        console.log("Ada server cerrado.")
-        // El cleanup terminó; cerramos este proceso hijo para que `tsx watch`
-        // no tenga que forzarlo después de propagar SIGINT/SIGTERM.
+        console.log("Ada server closed.")
+        // Cleanup finished; we exit this child process so `tsx watch`
+        // doesn't have to force it after SIGINT/SIGTERM propagates.
         process.exit(0)
       },
       (error: unknown) => {
-        console.error(`No se pudo cerrar Ada server: ${error instanceof Error ? error.message : String(error)}`)
+        console.error(`Could not close Ada server: ${error instanceof Error ? error.message : String(error)}`)
         process.exit(1)
       },
     )

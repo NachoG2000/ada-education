@@ -1,10 +1,10 @@
-# docs/ — páginas para personas, inspiración a futuro
+# docs/ — pages for people, future direction
 
-**Qué es:** HTML autocontenido (sin build, doble clic y listo) que explica Ada a humanos. **No describe el código actual**: describe el producto completo hacia donde crece. Cada página lleva un banner que lo dice. Si contradicen al código o a `openspec/`, mandan estos últimos.
+**What it is:** Self-contained HTML (no build, double-click and go) that explains Ada to humans. **It doesn't describe today's code**: it describes the full product, in the direction it's growing toward. Every page carries a banner that says so. If they contradict the code or `openspec/`, the code and spec win.
 
-- `como-funciona.html` — modelo mental: server / runner / runtime / carpeta, secuencia de una mención, dónde vive `data/`, aislamiento en tres capas, los tres tiers (local / self-host / hosted).
-- `usecases-api.html` — casos de uso y superficie de API del MVP ampliado.
+- `how-it-works.html` — mental model: server / runner / runtime / folder, the sequence of a mention, where `data/` lives, three-layer isolation, the three tiers (local / self-host / hosted).
+- `usecases-api.html` — use cases and API surface for the expanded MVP.
 
-**Hoy (alcance real, `DECISIONS.md` §15):** de todo lo que muestran estas páginas, este finde solo se construye la instalación local para un profesor puntual (server + runner + cliente en una máquina, curso definido por archivo de configuración).
+**Today (real scope, `DECISIONS.md` §15):** of everything these pages show, this weekend only the local install for one specific professor gets built (server + runner + client on one machine, course defined by a config file).
 
-Reglas: mismo lenguaje visual que `src/index.css` (los tokens están copiados en cada página); español rioplatense; si cambia `DECISIONS.md` §14-§15 o el spec, actualizá la página en la misma tarea; verificá el render (diagramas SVG) antes de cerrar.
+Rules: same visual language as `src/index.css` (the tokens are copied into each page); English; if `DECISIONS.md` §14-§15 or the spec changes, update the page in the same task; check the render (SVG diagrams) before closing out.

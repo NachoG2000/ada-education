@@ -1,39 +1,64 @@
-/* Identidad: personas = círculos pastel con iniciales; agentes = personajes procedurales planos (silueta sólida, dos ojos). */
+/* Identity: people = pastel circles with initials; agents = flat procedural figures (solid silhouette, two eyes). */
 
 import { useId, useMemo } from "react"
 import { cn } from "@/lib/utils"
 import { BODY, figureParams, silhouette, type FigureParams } from "@/lib/figure"
-import type { Agent, Person, Presence } from "@/lib/types"
+import type { Agent, Member, Person, Presence } from "@/lib/types"
 
+/* ---- Presence ------------------------------------------------------------ */
+
+/* The four `Presence` states look distinct, not two:
+   - away: gray, still (an away agent is a runner that isn't running);
+   - online: solid green, still;
+   - thinking / publishing: the pulsing blue dot, the same indicator that
+     "Compiling" uses in card.tsx. It's a state change, so it may animate;
+     `motion-reduce` turns it off (DESIGN.md → animations). */
+const PRESENCE_DOT: Record<Presence, string> = {
+  online: "bg-status-active",
+  away: "bg-ink-4",
+  thinking: "bg-seal animate-pulse motion-reduce:animate-none",
+  publishing: "bg-seal animate-pulse motion-reduce:animate-none",
+}
+
+/** The presence dot attached to an avatar. */
 export function PresenceDot({ presence, className }: { presence: Presence; className?: string }) {
-  const on = presence !== "ausente"
+  return <span aria-hidden className={cn("absolute right-0 bottom-0 block size-2 rounded-full ring-2 ring-panel", PRESENCE_DOT[presence], className)} />
+}
+
+/** The same dot, but inline with its text: thread header, agent sheet. */
+export function PresenceTag({ member, className }: { member: Member; className?: string }) {
   return (
-    <span
-      aria-hidden
-      className={cn(
-        "absolute right-0 bottom-0 block size-2 rounded-full ring-2 ring-panel",
-        on ? "bg-estado-activo" : "bg-ink-4",
-        className,
-      )}
-    />
+    <span className={cn("inline-flex items-center gap-1.5 whitespace-nowrap", className)}>
+      <span aria-hidden className={cn("size-1.5 shrink-0 rounded-full", PRESENCE_DOT[member.presence])} />
+      {presenceLabel(member)}
+    </span>
   )
 }
 
-/* ---- Persona ------------------------------------------------------------ */
+export const PRESENCE_LABEL: Record<Presence, string> = {
+  online: "online",
+  away: "away",
+  thinking: "thinking…",
+  publishing: "filing a card",
+}
 
-const PERSON_TONES = [
-  ["#ffe3ec", "#8a2e55"],
-  ["#e3ecff", "#2b4fa8"],
-  ["#e1f5e8", "#1f6b3c"],
-  ["#fff0c9", "#7a5a00"],
-  ["#ece3ff", "#52399c"],
-  ["#ffe8d6", "#9a4f0a"],
-] as const
+/** How each presence reads depending on whose it is: for an agent, "away" means its runner isn't running. */
+export function presenceLabel(member: Member) {
+  if (member.kind === "agent" && member.presence === "away") return "disconnected"
+  return PRESENCE_LABEL[member.presence]
+}
 
-function toneFor(name: string) {
-  let h = 0
-  for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0
-  return PERSON_TONES[h % PERSON_TONES.length]
+/* ---- Person -------------------------------------------------------------- */
+
+/* People's cardstock colors come from `Person.tone` (the field exists exactly
+   for this) and paint with system tokens. No pair uses a tab color: the Tab
+   Rule reserves the `tab-*` set for the folded tab and a citation's dot.
+   Initials are always in ink; the tone lives in the background. */
+const PERSON_TONE: Record<Person["tone"], string> = {
+  card: "bg-panel text-ink ring-1 ring-line-strong ring-inset",
+  cardstock: "bg-panel-3 text-ink",
+  "seal-soft": "bg-seal-soft text-ink",
+  "red-soft": "bg-alert-soft text-ink",
 }
 
 export function PersonAvatar({
@@ -47,11 +72,15 @@ export function PersonAvatar({
   presence?: boolean
   className?: string
 }) {
-  const [bg, fg] = toneFor(person.name)
   return (
     <span
-      className={cn("relative inline-flex shrink-0 items-center justify-center rounded-full font-sans font-semibold", className)}
-      style={{ width: size, height: size, fontSize: Math.round(size * 0.42), background: bg, color: fg }}
+      className={cn(
+        "relative inline-flex shrink-0 items-center justify-center rounded-full font-sans font-semibold",
+        // unknown tone (data from an old server): cardstock, which never clashes
+        PERSON_TONE[person.tone] ?? PERSON_TONE.cardstock,
+        className,
+      )}
+      style={{ width: size, height: size, fontSize: Math.round(size * 0.42) }}
       aria-label={person.name}
     >
       {person.initials}
@@ -60,12 +89,14 @@ export function PersonAvatar({
   )
 }
 
-/* ---- Personaje de agente (plano, minimalista) ------------------------- */
+/* ---- Agent figure (flat, minimal) -------------------------------------- */
 
 export function Figure({ params, size = 32, className }: { params: FigureParams; size?: number; className?: string }) {
   const uid = useId().replace(/:/g, "")
   const maskId = `m${uid}`
-  const { shapes, cuts } = silhouette(params)
+  // The silhouette is pure geometry derived from params: recomputing it on
+  // every render rebuilds the whole SVG mask without a single pixel changing.
+  const { shapes, cuts } = useMemo(() => silhouette(params), [params])
   const eyeY = BODY.y + params.eyes.y * BODY.h
   const gap = params.eyes.gap * BODY.w
   const er = params.eyes.r * 100
@@ -112,14 +143,16 @@ export function AgentFigure({
   className?: string
 }) {
   const params = useMemo(() => figureParams(agent.figureSeed ?? agent.id, agent.figureColor), [agent.figureSeed, agent.id, agent.figureColor])
+  // Disconnected: the figure dims but stays readable. No animation.
+  const dimmed = presence && agent.presence === "away"
   return (
     <span
       className={cn("relative inline-block shrink-0 align-middle", className)}
       style={{ width: size, height: size }}
-      aria-label={`${agent.name}, agente`}
+      aria-label={presence ? `${agent.name}, agent · ${presenceLabel(agent)}` : `${agent.name}, agent`}
       role="img"
     >
-      <Figure params={params} size={size} />
+      <Figure params={params} size={size} className={cn(dimmed && "opacity-55")} />
       {presence && <PresenceDot presence={agent.presence} />}
     </span>
   )
@@ -143,7 +176,7 @@ export function MemberAvatar({
   )
 }
 
-/** Nombre de miembro: personas en tinta; agentes en su tono. */
+/** Member name: people in ink; agents in their tint. */
 export function MemberName({ member, className }: { member: Person | Agent; className?: string }) {
   return (
     <span className={cn("font-sans text-[13.5px] font-semibold text-ink", className)} style={member.kind === "agent" ? { color: agentInk(member) } : undefined}>
@@ -152,14 +185,7 @@ export function MemberName({ member, className }: { member: Person | Agent; clas
   )
 }
 
-export const PRESENCE_LABEL: Record<Presence, string> = {
-  "en-linea": "en línea",
-  ausente: "ausente",
-  pensando: "pensando…",
-  publicando: "archivando una ficha",
-}
-
-/** Tinta del agente: la versión legible de su color, para su nombre. */
+/** Agent ink: the readable version of its color, for its name. */
 export function agentInk(agent: Agent) {
   return figureParams(agent.figureSeed ?? agent.id, agent.figureColor).ink
 }

@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ada — Aleph 2026 pitch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&family=Literata:ital,opsz,wght@0,7..72,400..600;1,7..72,400..600&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet" />
+<style>
+  deck-stage:not(:defined) { visibility: hidden; }
+
+  :root {
+    /* "The card file" tokens (apps/web/src/index.css; the code wins) */
+    --ground: #f1f1ef; --panel: #ffffff; --panel-2: #f7f6f3; --panel-3: #efede8;
+    --line: #ebe9e4; --line-strong: #dedbd4;
+    --ink: #1b1b20; --ink-2: #5a5a63; --ink-3: #8b8b95; --ink-4: #b9b9c2;
+    --sun: #ffd43b; --sun-soft: #fff3c4; --sun-ink: #6f5200;
+    --seal: #2f55d4;
+    --tab-note: #d9e8ff; --tab-note-ink: #1f55a8;
+    --tab-decision: #d7f3de; --tab-decision-ink: #1f6b3c;
+    --tab-answer: #fff0b3; --tab-answer-ink: #7a5a00;
+    --serif: "Literata", Georgia, serif;
+    --sans: "Inter", system-ui, -apple-system, sans-serif;
+    --mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --ease: cubic-bezier(0.16, 1, 0.3, 1);
+    --shadow-panel: 0 2px 4px rgba(24, 24, 36, 0.04), 0 28px 60px -30px rgba(24, 24, 36, 0.25);
+    --shadow-card: 0 1px 2px rgba(24, 24, 36, 0.04), 0 12px 28px -16px rgba(24, 24, 36, 0.18);
+
+    /* Deck type and spacing system (1920×1080) */
+    --type-hero: 210px;
+    --type-display: 118px;
+    --type-statement: 82px;
+    --type-title: 66px;
+    --type-subtitle: 40px;
+    --type-body: 31px;
+    --type-small: 27px;
+    --type-label: 24px;
+    --type-meta: 24px;
+    --pad-x: 110px; --pad-top: 92px; --pad-bottom: 96px;
+    --gap-title: 44px; --gap-item: 26px;
+  }
+
+  deck-stage > section {
+    box-sizing: border-box;
+    padding: var(--pad-top) var(--pad-x) var(--pad-bottom);
+    font-family: var(--sans);
+    color: var(--ink);
+    letter-spacing: -0.006em;
+    background:
+      radial-gradient(1000px 760px at 6% -4%, rgba(240, 141, 179, 0.20), transparent 62%),
+      radial-gradient(1100px 820px at 102% 6%, rgba(165, 135, 230, 0.15), transparent 62%),
+      radial-gradient(1000px 820px at -2% 104%, rgba(69, 189, 181, 0.15), transparent 62%),
+      radial-gradient(1200px 940px at 102% 102%, rgba(255, 212, 59, 0.22), transparent 64%),
+      var(--ground);
+  }
+
+  /* ---- shared pieces ---- */
+  .kicker {
+    font: 600 var(--type-label)/1.2 var(--sans);
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3);
+    margin: 0 0 22px;
+  }
+  .title {
+    font: 500 var(--type-title)/1.14 var(--serif);
+    letter-spacing: -0.012em; color: var(--ink); margin: 0;
+  }
+  .body { font: 400 var(--type-body)/1.5 var(--sans); color: var(--ink-2); margin: 0; }
+  .meta { font: 400 var(--type-meta)/1.35 var(--sans); color: var(--ink-3); margin: 0; }
+
+  .foot {
+    position: absolute; left: var(--pad-x); right: var(--pad-x); bottom: 44px;
+    display: flex; justify-content: space-between; align-items: baseline;
+  }
+  .foot .brand { font: 600 var(--type-meta)/1 var(--sans); color: var(--ink-4); letter-spacing: 0.02em; }
+  .foot .num { font: 400 var(--type-meta)/1 var(--mono); color: var(--ink-4); }
+
+  .card {
+    background: var(--panel); border-radius: 24px; box-shadow: var(--shadow-panel);
+  }
+
+  /* Folded tab — the card file's structural signature */
+  .tab {
+    display: inline-flex; align-items: center;
+    height: 46px; padding: 0 40px 0 26px;
+    font: 600 var(--type-label)/1 var(--sans);
+    letter-spacing: 0.06em; text-transform: uppercase;
+    clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 100%, 0 100%);
+    border-radius: 12px 0 0 0;
+  }
+
+  .pill {
+    display: inline-flex; align-items: center; gap: 12px;
+    height: 52px; padding: 0 26px; border-radius: 999px;
+    font: 600 var(--type-small)/1 var(--sans); white-space: nowrap;
+  }
+
+  /* People: pastel circle with initials. Agents: silhouette + two eyes. */
+  .person {
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 999px; font: 600 38px/1 var(--sans);
+  }
+
+  /* ---- entrance animations (only when the slide activates) ---- */
+  @media (prefers-reduced-motion: no-preference) {
+    [data-deck-active] .in {
+      animation: fadeUp 0.6s var(--ease) both;
+      animation-delay: var(--d, 0s);
+    }
+    [data-deck-active] .seal {
+      animation: sellar 0.42s var(--ease) both;
+      animation-delay: var(--d, 0.5s);
+    }
+  }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } }
+  @keyframes sellar {
+    from { opacity: 0; transform: scale(1.25); }
+    60% { opacity: 1; transform: scale(0.97); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  /* ================= S1 · cover ================= */
+  .s1 { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+  .s1 .figures { display: flex; align-items: flex-end; gap: 44px; margin-bottom: 30px; }
+  .s1 .wordmark {
+    font: 500 var(--type-hero)/1 var(--serif);
+    letter-spacing: -0.02em; color: var(--ink); margin: 0 0 34px;
+  }
+  .s1 .tagline {
+    font: 400 var(--type-subtitle)/1.35 var(--serif);
+    color: var(--ink-2); margin: 0 0 58px; max-width: 1240px;
+  }
+  .s1 .badges { display: flex; gap: 20px; }
+  .s1 .badges .pill { background: var(--panel); color: var(--ink-2); box-shadow: var(--shadow-card); }
+
+  /* ================= S2 · problem ================= */
+  .cols { display: flex; gap: 90px; align-items: flex-start; margin-top: var(--gap-title); }
+  .leaks { display: flex; flex-direction: column; gap: var(--gap-item); max-width: 780px; }
+  .leak { display: flex; gap: 24px; align-items: baseline; }
+  .leak .dot { flex: none; width: 14px; height: 14px; border-radius: 999px; background: var(--ink-4); transform: translateY(-4px); }
+
+  .bignum-card { width: 700px; padding: 44px 56px 40px; }
+  .bignum-card .year { font: 600 var(--type-label)/1.2 var(--sans); letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 6px; text-transform: uppercase; }
+  .bignum-card .num { font: 500 var(--type-display)/1.05 var(--serif); letter-spacing: -0.01em; color: var(--ink); margin: 0 0 10px; font-variant-numeric: tabular-nums; }
+  .bignum-card .cap { font: 400 var(--type-small)/1.4 var(--sans); color: var(--ink-2); margin: 0; }
+  .bignum-card.sun { background: var(--sun); box-shadow: var(--shadow-panel); }
+  .bignum-card.sun .year, .bignum-card.sun .num, .bignum-card.sun .cap { color: var(--sun-ink); }
+  .bignum-card.sun .num { color: #4a3600; }
+
+  /* ================= S3 · the new leak ================= */
+  .facts { display: flex; flex-direction: column; gap: var(--gap-item); max-width: 800px; }
+  .fact { display: flex; gap: 24px; align-items: baseline; }
+  .fact .dot { flex: none; width: 14px; height: 14px; border-radius: 999px; background: var(--ink-4); transform: translateY(-4px); }
+  .fact b { color: var(--ink); font-weight: 600; }
+
+  .chart-card { width: 810px; padding: 48px 56px 42px; }
+  .chart-card .chart-title { font: 600 var(--type-label)/1.3 var(--sans); letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 36px; }
+  .bar-row { margin-bottom: 34px; }
+  .bar-row:last-of-type { margin-bottom: 0; }
+  .bar-row .bar-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
+  .bar-row .bar-label { font: 400 var(--type-small)/1.25 var(--sans); color: var(--ink-2); }
+  .bar-row .bar { height: 52px; border-radius: 12px; background: var(--line-strong); }
+  .bar-row .bar.lead { background: var(--ink); }
+  .bar-row .val { font: 600 38px/1 var(--sans); color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .bar-row .val.lead { color: var(--ink); }
+  .chart-card .chart-cap { font: 400 var(--type-meta)/1.4 var(--sans); color: var(--ink-3); margin: 38px 0 0; }
+
+  /* ================= S4 · solution ================= */
+  .points { display: flex; flex-direction: column; gap: var(--gap-item); max-width: 760px; }
+  .point { display: flex; gap: 24px; align-items: baseline; }
+  .point .dot { flex: none; width: 14px; height: 14px; border-radius: 999px; background: var(--ink-4); transform: translateY(-4px); }
+  .point b { color: var(--ink); font-weight: 600; }
+
+  .card-stack { width: 830px; display: flex; flex-direction: column; gap: 34px; }
+  .members { display: flex; align-items: center; gap: 26px; margin-bottom: 2px; }
+  .members .who { font: 400 var(--type-small)/1.3 var(--sans); color: var(--ink-3); margin-left: 8px; }
+  .demo-card { position: relative; padding: 30px 36px 26px; border-radius: 0 18px 18px 18px; background: var(--panel); box-shadow: var(--shadow-card); margin-top: 46px; }
+  .demo-card .tab { position: absolute; top: -46px; left: 0; }
+  .demo-card .f-title { font: 500 36px/1.25 var(--serif); color: var(--ink); margin: 0 0 10px; }
+  .demo-card .f-meta { font: 400 var(--type-meta)/1.3 var(--sans); color: var(--ink-3); margin: 0; }
+  .demo-card.sun { background: var(--sun); }
+  .demo-card.sun .f-title { color: #4a3600; }
+  .demo-card.sun .f-meta { color: var(--sun-ink); }
+  .demo-card .new-pill { position: absolute; right: 30px; top: 30px; height: 44px; padding: 0 22px; background: var(--panel); color: var(--sun-ink); font-size: var(--type-meta); }
+
+  /* ================= S5 · mechanism ================= */
+  .flow-panel { margin-top: var(--gap-title); padding: 52px 60px; display: flex; flex-direction: column; gap: 44px; }
+  .lane { display: grid; grid-template-columns: 260px 1fr; gap: 36px; align-items: center; }
+  .lane-label { font: 600 var(--type-label)/1.3 var(--sans); letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-3); }
+  .lane-flow { display: flex; align-items: center; gap: 22px; }
+  .step { display: flex; align-items: center; gap: 18px; background: var(--panel-2); border-radius: 16px; padding: 22px 28px; }
+  .step .txt { font: 400 var(--type-small)/1.35 var(--sans); color: var(--ink); max-width: 330px; }
+  .arrow { flex: none; color: var(--ink-4); }
+  .step.result { background: var(--panel); box-shadow: var(--shadow-card); }
+  .step .mini-tab { display: inline-flex; align-items: center; height: 34px; padding: 0 26px 0 18px; font: 600 21px/1 var(--sans); letter-spacing: 0.06em; text-transform: uppercase; clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 100%, 0 100%); border-radius: 8px 0 0 0; background: var(--tab-answer); color: var(--tab-answer-ink); }
+  .step .f-small { font: 500 27px/1.25 var(--serif); color: var(--ink); }
+  .lane .seal-pill { background: var(--sun); color: var(--sun-ink); box-shadow: var(--shadow-card); }
+  .s5-note { margin-top: 40px; max-width: 1420px; }
+  .s5-note b { color: var(--ink); font-weight: 600; }
+
+  /* ================= S6 · architecture ================= */
+  .term-card { width: 880px; padding: 44px 52px; }
+  .term-card .term-label { font: 600 var(--type-label)/1.3 var(--sans); letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 28px; }
+  .term { font: 400 26px/1.75 var(--mono); margin: 0; }
+  .term .cmd { color: var(--ink); font-weight: 600; }
+  .term .out { color: var(--ink-2); }
+  .term .dim { color: var(--ink-3); }
+
+  .arch { width: 720px; display: flex; flex-direction: column; align-items: stretch; }
+  .arch .node { background: var(--panel); border-radius: 16px; box-shadow: var(--shadow-card); padding: 24px 32px; }
+  .arch .node .n-name { font: 600 var(--type-small)/1.3 var(--sans); color: var(--ink); margin: 0 0 4px; }
+  .arch .node .n-desc { font: 400 var(--type-meta)/1.4 var(--sans); color: var(--ink-3); margin: 0; }
+  .arch .link { align-self: center; height: 34px; width: 4px; border-radius: 2px; background: var(--line-strong); }
+  .arch .quote { font: 400 italic 32px/1.45 var(--serif); color: var(--ink-2); margin: 44px 0 0; }
+
+  /* ================= S7 · close ================= */
+  .s7 { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+  .s7 .statement { font: 500 var(--type-statement)/1.22 var(--serif); letter-spacing: -0.015em; color: var(--ink); margin: 0 0 64px; max-width: 1560px; }
+  .s7 .hl { background: var(--sun); border-radius: 10px; padding: 2px 20px; box-decoration-break: clone; }
+  .s7 .credits { display: flex; gap: 20px; align-items: center; }
+  .s7 .credits .pill { background: var(--panel); color: var(--ink-2); box-shadow: var(--shadow-card); }
+  .s7 .credits .repo { font-family: var(--mono); font-weight: 400; }
+  .s7 .figures { display: flex; align-items: flex-end; gap: 36px; margin-bottom: 44px; }
+</style>
+</head>
+<body>
+
+<deck-stage width="1920" height="1080" no-rail>
+
+  <!-- ============ 1 · cover ============ -->
+  <section data-label="Ada" class="s1">
+    <div class="figures in" style="--d:.05s">
+      <span class="person" style="width:96px;height:96px;background:#e9eefc;color:#2552b4;">M</span>
+      <svg width="132" height="132" viewBox="0 0 100 100" aria-hidden="true">
+        <ellipse cx="50" cy="93" rx="27" ry="5" fill="rgba(27,27,32,.12)"/>
+        <g fill="#e8764f">
+          <circle cx="33" cy="15" r="8"/><circle cx="67" cy="15" r="8"/>
+          <rect x="14" y="16" width="72" height="66" rx="26"/>
+          <rect x="29" y="78" width="13" height="11" rx="5.5"/><rect x="58" y="78" width="13" height="11" rx="5.5"/>
+        </g>
+        <circle cx="38" cy="47" r="5.5" fill="#15151a"/><circle cx="62" cy="47" r="5.5" fill="#15151a"/>
+      </svg>
+      <svg width="132" height="132" viewBox="0 0 100 100" aria-hidden="true">
+        <ellipse cx="50" cy="93" rx="26" ry="5" fill="rgba(27,27,32,.12)"/>
+        <g fill="#f6c23c">
+          <rect x="47" y="5" width="6" height="14" rx="3"/><circle cx="50" cy="6" r="5.5"/>
+          <path d="M17 84 V52 a33 33 0 0 1 66 0 v32 Z"/>
+        </g>
+        <circle cx="39" cy="53" r="5.5" fill="#15151a"/><circle cx="61" cy="53" r="5.5" fill="#15151a"/>
+      </svg>
+      <span class="person" style="width:96px;height:96px;background:#eae4f7;color:#5f3fb5;">S</span>
+      <svg width="132" height="132" viewBox="0 0 100 100" aria-hidden="true">
+        <ellipse cx="50" cy="93" rx="26" ry="5" fill="rgba(27,27,32,.12)"/>
+        <g fill="#45bdb5">
+          <ellipse cx="41" cy="16" rx="5.5" ry="13" transform="rotate(-22 41 16)"/>
+          <ellipse cx="59" cy="16" rx="5.5" ry="13" transform="rotate(22 59 16)"/>
+          <rect x="16" y="20" width="68" height="64" rx="32"/>
+        </g>
+        <circle cx="40" cy="50" r="5.5" fill="#15151a"/><circle cx="60" cy="50" r="5.5" fill="#15151a"/>
+      </svg>
+    </div>
+    <h1 class="wordmark in" style="--d:.15s"><span>Ada</span></h1>
+    <p class="tagline in" style="--d:.25s"><span>Humans and AI agents learn together —</span><br /><span>and what they learn stays with them.</span></p>
+    <div class="badges in" style="--d:.35s">
+      <span class="pill"><span>Aleph Hackathon 2026</span></span>
+      <span class="pill"><span>General Track</span></span>
+      <span class="pill"><span>Open source</span></span>
+    </div>
+  </section>
+
+  <!-- ============ 2 · problem ============ -->
+  <section data-label="Courses forget">
+    <header class="in">
+      <p class="kicker"><span>The problem</span></p>
+      <h2 class="title"><span>Courses forget what they understand</span></h2>
+    </header>
+    <div class="cols">
+      <div class="leaks">
+        <div class="leak in" style="--d:.15s"><span class="dot"></span><p class="body"><span>The explanation that finally made it click is buried in a chat nobody can read back.</span></p></div>
+        <div class="leak in" style="--d:.25s"><span class="dot"></span><p class="body"><span>Questions move to WhatsApp and private chats — places that keep nothing.</span></p></div>
+        <div class="leak in" style="--d:.35s"><span class="dot"></span><p class="body"><span>When the term ends, nothing survives to the next cohort. The forum is cloned empty.</span></p></div>
+        <p class="meta in" style="--d:.45s; margin-top:18px;"><span>Two consecutive editions of the same intro programming course, 2020–2021. Sources in the repo.</span></p>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:34px;">
+        <div class="card bignum-card in" style="--d:.2s">
+          <p class="year"><span>2020 · course forum</span></p>
+          <p class="num"><span>4,404</span></p>
+          <p class="cap"><span>questions asked and answered over one semester</span></p>
+        </div>
+        <div class="bignum-card sun in" style="--d:.35s; border-radius:24px;">
+          <p class="year"><span>2021 · same course</span></p>
+          <p class="num"><span>3,218</span></p>
+          <p class="cap"><span>questions again — because the course started from zero</span></p>
+        </div>
+      </div>
+    </div>
+    <footer class="foot"><span class="brand">Ada · Aleph 2026</span><span class="num">02 / 07</span></footer>
+  </section>
+
+  <!-- ============ 3 · the new leak ============ -->
+  <section data-label="The new leak">
+    <header class="in">
+      <p class="kicker"><span>The new leak — since 2025</span></p>
+      <h2 class="title"><span>The questions now go to an AI that doesn't know the course</span></h2>
+    </header>
+    <div class="cols">
+      <div class="facts">
+        <div class="fact in" style="--d:.15s"><span class="dot"></span><p class="body"><span><b>88%</b> of students already use AI to learn — only <b>15%</b> say it's integrated in their courses.</span></p></div>
+        <div class="fact in" style="--d:.25s"><span class="dot"></span><p class="body"><span>The AI answers without the teacher's notes or the group — and nothing comes back to either.</span></p></div>
+        <div class="fact in" style="--d:.35s"><span class="dot"></span><p class="body"><span>Used loose, it hurts: students practicing with a generic chatbot scored <b>17% worse</b> on the AI-free exam.</span></p></div>
+        <div class="fact in" style="--d:.45s"><span class="dot"></span><p class="body"><span>Every major AI tutor keeps memory <b>per user</b>. The group's understanding belongs to no one.</span></p></div>
+      </div>
+      <div class="card chart-card in" style="--d:.25s">
+        <p class="chart-title"><span>When stuck, students go first to…</span></p>
+        <div class="bar-row">
+          <div class="bar-head"><span class="bar-label">an AI</span><span class="val lead">29%</span></div>
+          <span class="bar lead" style="display:block; width:100%;"></span>
+        </div>
+        <div class="bar-row">
+          <div class="bar-head"><span class="bar-label">their classmates</span><span class="val">15%</span></div>
+          <span class="bar" style="display:block; width:52%;"></span>
+        </div>
+        <div class="bar-row">
+          <div class="bar-head"><span class="bar-label">the course material</span><span class="val">14%</span></div>
+          <span class="bar" style="display:block; width:48%;"></span>
+        </div>
+        <p class="chart-cap"><span>Global student surveys, 2025–2026. Sources in the repo.</span></p>
+      </div>
+    </div>
+    <footer class="foot"><span class="brand">Ada · Aleph 2026</span><span class="num">03 / 07</span></footer>
+  </section>
+
+  <!-- ============ 4 · solution ============ -->
+  <section data-label="Shared memory">
+    <header class="in">
+      <p class="kicker"><span>The solution</span></p>
+      <h2 class="title"><span>Ada gives the course a shared memory</span></h2>
+    </header>
+    <div class="cols">
+      <div class="points">
+        <div class="point in" style="--d:.15s"><span class="dot"></span><p class="body"><span><b>Agents are members.</b> The teacher creates them and adds them to channels, like teaching assistants — with a name and a face, not a "bot".</span></p></div>
+        <div class="point in" style="--d:.25s"><span class="dot"></span><p class="body"><span><b>Talk becomes cards.</b> What gets understood compiles into typed, versioned pages with sources — outside the chat flow.</span></p></div>
+        <div class="point in" style="--d:.35s"><span class="dot"></span><p class="body"><span><b>The group owns the files.</b> Plain markdown the course can list, read and take with it — not rows in a vendor's database.</span></p></div>
+      </div>
+      <div class="card-stack">
+        <div class="members in" style="--d:.2s">
+          <span class="person" style="width:76px;height:76px;background:#e9eefc;color:#2552b4;font-size:30px;">M</span>
+          <span class="person" style="width:76px;height:76px;background:#eae4f7;color:#5f3fb5;font-size:30px;">S</span>
+          <svg width="86" height="86" viewBox="0 0 100 100" aria-hidden="true">
+            <ellipse cx="50" cy="93" rx="27" ry="5" fill="rgba(27,27,32,.12)"/>
+            <g fill="#e8764f">
+              <circle cx="33" cy="15" r="8"/><circle cx="67" cy="15" r="8"/>
+              <rect x="14" y="16" width="72" height="66" rx="26"/>
+              <rect x="29" y="78" width="13" height="11" rx="5.5"/><rect x="58" y="78" width="13" height="11" rx="5.5"/>
+            </g>
+            <circle cx="38" cy="47" r="5.5" fill="#15151a"/><circle cx="62" cy="47" r="5.5" fill="#15151a"/>
+          </svg>
+          <span class="who">the course agent — one member more</span>
+        </div>
+        <div class="demo-card in" style="--d:.3s">
+          <span class="tab" style="background:var(--tab-note); color:var(--tab-note-ink);"><span>Note</span></span>
+          <p class="f-title"><span>Backprop: the chain rule, step by step</span></p>
+          <p class="f-meta"><span>v3 · 2 sources · module 03</span></p>
+        </div>
+        <div class="demo-card sun in" style="--d:.4s">
+          <span class="tab" style="background:var(--tab-answer); color:var(--tab-answer-ink);"><span>Answer</span></span>
+          <span class="pill new-pill seal" style="--d:.75s"><span>New</span></span>
+          <p class="f-title"><span>Why does the gradient explode?</span></p>
+          <p class="f-meta"><span>v1 · composed answering in #questions</span></p>
+        </div>
+        <div class="demo-card in" style="--d:.5s">
+          <span class="tab" style="background:var(--tab-decision); color:var(--tab-decision-ink);"><span>Decision</span></span>
+          <p class="f-title"><span>The midterm moves to Sep 12</span></p>
+          <p class="f-meta"><span>v2 · replaces the Sep 5 one · with rationale</span></p>
+        </div>
+      </div>
+    </div>
+    <footer class="foot"><span class="brand">Ada · Aleph 2026</span><span class="num">04 / 07</span></footer>
+  </section>
+
+  <!-- ============ 5 · mechanism ============ -->
+  <section data-label="Composed, not cached">
+    <header class="in">
+      <p class="kicker"><span>The mechanism</span></p>
+      <h2 class="title"><span>Understanding is compiled once — every answer is composed fresh</span></h2>
+    </header>
+    <div class="card flow-panel in" style="--d:.15s">
+      <div class="lane">
+        <span class="lane-label">First time</span>
+        <div class="lane-flow">
+          <div class="step in" style="--d:.25s"><span class="txt">Sofia asks in <b>#questions</b></span></div>
+          <svg class="arrow" width="48" height="24" viewBox="0 0 48 24" aria-hidden="true"><path d="M2 12h34m-8-8 10 8-10 8" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div class="step in" style="--d:.35s"><span class="txt">the agent reads the course material — <b>once</b></span></div>
+          <svg class="arrow" width="48" height="24" viewBox="0 0 48 24" aria-hidden="true"><path d="M2 12h34m-8-8 10 8-10 8" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div class="step result in" style="--d:.45s; position:relative; margin-top:34px; border-radius:0 16px 16px 16px;">
+            <span class="mini-tab" style="position:absolute; top:-34px; left:0;"><span>Answer</span></span>
+            <span class="f-small">Why does the gradient explode?</span>
+          </div>
+        </div>
+      </div>
+      <div class="lane">
+        <span class="lane-label">Three days later</span>
+        <div class="lane-flow">
+          <div class="step in" style="--d:.55s"><span class="txt">Ignacio asks "the same" — <b>different words, different gap</b></span></div>
+          <svg class="arrow" width="48" height="24" viewBox="0 0 48 24" aria-hidden="true"><path d="M2 12h34m-8-8 10 8-10 8" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div class="step in" style="--d:.65s"><span class="txt">a <b>new answer</b>, composed from two cards — no re-reading</span></div>
+          <svg class="arrow" width="48" height="24" viewBox="0 0 48 24" aria-hidden="true"><path d="M2 12h34m-8-8 10 8-10 8" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="pill seal-pill seal" style="--d:.95s"><span>already on file · 3 days ago</span></span>
+        </div>
+      </div>
+    </div>
+    <p class="body s5-note in" style="--d:.8s"><span><b>Not a cache of answers:</b> the second answer is new, built from what the group already understood — and the card gains the new angle instead of a duplicate.</span></p>
+    <footer class="foot"><span class="brand">Ada · Aleph 2026</span><span class="num">05 / 07</span></footer>
+  </section>
+
+  <!-- ============ 6 · architecture ============ -->
+  <section data-label="A folder in git">
+    <header class="in">
+      <p class="kicker"><span>Under the hood</span></p>
+      <h2 class="title"><span>The whole course is a folder of markdown</span></h2>
+    </header>
+    <div class="cols">
+      <div class="card term-card in" style="--d:.2s">
+        <p class="term-label"><span>The teacher's laptop</span></p>
+        <pre class="term"><span class="cmd">$ ls data/neural-networks/wiki</span>
+<span class="out">index.md   modules/      questions/</span>
+<span class="out">decisions/ difficulties/</span>
+<span class="cmd">$ git log --oneline</span>
+<span class="out"><span class="dim">f3a91c2</span> card enriched: gradient (new angle)</span>
+<span class="out"><span class="dim">8d24b07</span> decision: midterm moves to Sep 12</span>
+<span class="out"><span class="dim">41c9e5d</span> ingest: backprop.md → 4 cards</span>
+<span class="out"><span class="dim">0b3d112</span> new question: gradient-explosion</span></pre>
+      </div>
+      <div class="arch">
+        <div class="node in" style="--d:.3s">
+          <p class="n-name"><span>Community server</span></p>
+          <p class="n-desc"><span>messages, members, published cards — never runs models</span></p>
+        </div>
+        <span class="link in" style="--d:.35s"></span>
+        <div class="node in" style="--d:.4s">
+          <p class="n-name"><span>Runner</span></p>
+          <p class="n-desc"><span>Claude Code working on the agent's folder, owned by whoever created the agent</span></p>
+        </div>
+        <span class="link in" style="--d:.45s"></span>
+        <div class="node in" style="--d:.5s">
+          <p class="n-name"><span>data/&lt;course&gt;/ — the wiki</span></p>
+          <p class="n-desc"><span>markdown in git: every card has a type, version, sources, and what it replaces</span></p>
+        </div>
+        <p class="quote in" style="--d:.6s"><span>Open source like Moodle, runners like GitHub Actions: any teacher runs it free today — institutions pay for hosted tomorrow.</span></p>
+      </div>
+    </div>
+    <footer class="foot"><span class="brand">Ada · Aleph 2026</span><span class="num">06 / 07</span></footer>
+  </section>
+
+  <!-- ============ 7 · close ============ -->
+  <section data-label="Stays with them" class="s7">
+    <div class="figures in" style="--d:.05s">
+      <span class="person" style="width:72px;height:72px;background:#e9eefc;color:#2552b4;font-size:28px;">M</span>
+      <svg width="96" height="96" viewBox="0 0 100 100" aria-hidden="true">
+        <ellipse cx="50" cy="93" rx="26" ry="5" fill="rgba(27,27,32,.12)"/>
+        <g fill="#45bdb5">
+          <ellipse cx="41" cy="16" rx="5.5" ry="13" transform="rotate(-22 41 16)"/>
+          <ellipse cx="59" cy="16" rx="5.5" ry="13" transform="rotate(22 59 16)"/>
+          <rect x="16" y="20" width="68" height="64" rx="32"/>
+        </g>
+        <circle cx="40" cy="50" r="5.5" fill="#15151a"/><circle cx="60" cy="50" r="5.5" fill="#15151a"/>
+      </svg>
+      <span class="person" style="width:72px;height:72px;background:#eae4f7;color:#5f3fb5;font-size:28px;">S</span>
+    </div>
+    <p class="statement in" style="--d:.15s"><span>Humans and agents learn together — and what they learn </span><span class="hl seal" style="--d:.7s">stays with them.</span></p>
+    <div class="credits in" style="--d:.35s">
+      <span class="pill"><span>Built at Aleph 2026 — all code this weekend</span></span>
+      <span class="pill"><span>Apache-2.0</span></span>
+      <span class="pill repo"><span>github.com/…</span></span>
+    </div>
+  </section>
+
+</deck-stage>
+
+<script src="deck-stage.js"></script>
+</body>
+</html>

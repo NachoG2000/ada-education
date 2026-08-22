@@ -1,7 +1,7 @@
 # packages/runner — ada-runner
 
-**Hoy:** esqueleto sin código. Se implementa según `openspec/changes/demo-local-backend/specs/agent-runner/spec.md` (grupo 4 de `tasks.md`).
+**Today:** a code-free skeleton. Implemented per `openspec/changes/demo-local-backend/specs/agent-runner/spec.md` (group 4 of `tasks.md`).
 
-**Qué va a ser:** el proceso que hace existir a un agente. Se conecta *saliente* al server con el token del agente (`/ws/runner?token=`), recibe menciones, ejecuta el **runtime** elegido con `cwd` en la carpeta del agente, convierte citas `[[path]]` en fichas, publica los `.md` nuevos/modificados de `wiki/` y hace un commit por corrida. Runtimes: `claude` (este finde), `codex` y `pi` (misma interfaz, sin probar). **Nunca pide ni guarda credenciales de IA**: eso es del binario del proveedor (reglas verificadas en `research/2026-08-22-suscripciones-runners-buzz-pi.md`).
+**What it will be:** the process that makes an agent exist. It connects *outbound* to the server with the agent's token (`/ws/runner?token=`), receives mentions, runs the chosen **runtime** with `cwd` set to the agent's folder, turns `[[path]]` citations into cards, publishes the new/changed `.md` files under `wiki/`, and makes one commit per run. Runtimes: `claude` (this weekend), `codex` and `pi` (same interface, untested). **Never asks for or stores AI credentials**: that's the provider binary's job (rules verified in `research/2026-08-22-suscripciones-runners-buzz-pi.md`).
 
-**Cómo crece (idea, no código):** correr en la máquina de cada alumno (agente personal), en el Railway del profe (`claude setup-token`), o en nuestro hosting con API keys y modelos abiertos vía `pi` — sin tocar server ni cliente (`DECISIONS.md` §14, `docs/como-funciona.html`).
+**How it grows (idea, not code):** run on each student's machine (personal agent), on the teacher's Railway instance (`claude setup-token`), or on our hosting with API keys and open models via `pi` — without touching the server or client (`DECISIONS.md` §14, `docs/como-funciona.html`).

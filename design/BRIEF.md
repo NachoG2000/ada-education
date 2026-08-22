@@ -1,89 +1,89 @@
-# Brief de diseño — Ada (iteración inicial, a mejorar)
+# Design brief — Ada (initial iteration, to be improved)
 
-> Documento original del fundador, escrito para Claude Design. Se conserva como punto de partida:
-> la verdad de producto vive en `PRODUCT.md`; el mundo visual se decide en `DESIGN.md`.
-> Las imágenes de inspiración están en `design/inspiration/`.
+> Original founder document, written for Claude Design. Kept as a starting point:
+> product truth lives in `PRODUCT.md`; the visual world is decided in `DESIGN.md`.
+> Inspiration images are in `design/inspiration/`.
 
-Quiero diseñar la UI de una web app (que después se empaqueta como desktop con Tauri, igual que Buzz y Berd de Block, así que diseñá para web) para una comunidad de aprendizaje: un curso donde humanos y agentes de IA conviven en canales, y donde el conocimiento se compila solo en páginas que crecen mientras la gente habla. Es para una hackathon de 24 horas: priorizá una dirección visual fuerte y 6-7 pantallas bien resueltas por sobre cobertura completa.
+I want to design the UI for a web app (later packaged as desktop with Tauri, just like Buzz and Berd from Block, so design for web) for a learning community: a course where humans and AI agents coexist in channels, and where knowledge compiles itself into cards that grow as people talk. It's for a 24-hour hackathon: prioritize a strong visual direction and 6-7 well-resolved screens over full coverage.
 
-**La referencia principal es Buzz (buzz.xyz, github.com/block/buzz), no Slack.** Estudiá cómo Buzz trata a los agentes como miembros con identidad propia, cómo maneja comunidades e invitaciones, y cómo combina canales estables con rooms volátiles. Para la gestión de agentes, la referencia es Berd (github.com/block/berd).
+**The main reference is Buzz (buzz.xyz, github.com/block/buzz), not Slack.** Study how Buzz treats agents as members with their own identity, how it handles communities and invitations, and how it combines stable channels with volatile rooms. For agent management, the reference is Berd (github.com/block/berd).
 
-## Qué es el producto en una frase
+## What the product is, in one sentence
 
-Una comunidad de curso donde el profesor crea agentes y los agrega a canales como si fueran ayudantes, y donde las páginas del curso (apuntes, consignas, decisiones, respuestas) se publican en los canales y se mantienen solas.
+A course community where the professor creates agents and adds them to channels as if they were assistants, and where the course cards (notes, assignments, decisions, answers) get published in channels and maintain themselves.
 
-## Tesis que la UI tiene que hacer evidentes
+## Theses the UI has to make evident
 
-1. **Los agentes son miembros creados por la comunidad.** No hay "el bot". El profesor (o quien tenga permiso) crea los agentes que quiera, cada uno con nombre, identidad propia, instrucciones, proveedor de modelo, y los agrega a canales específicos. Un agente puede estar en `#dudas` y no en `#profesores`. Se distinguen sutilmente de las personas, no con un badge "BOT" enorme.
-2. **El conocimiento vive en páginas publicadas en canales.** Cada canal tiene páginas (como los canvases de Buzz, o los artifacts de Claude): las publica una persona o un agente, tienen versión, fuentes y un chip de visibilidad. Cuando un agente aprende algo, aparece o cambia una página, en vivo.
-3. **Las respuestas de los agentes citan páginas.** Y cuando una pregunta ya fue respondida, el agente responde "desde la página", y eso se ve.
-4. **Canales estables y canales de trabajo.** Igual que Buzz tiene canales permanentes y rooms volátiles por feature branch, acá hay canales permanentes del curso (`#general`, `#dudas`, uno por módulo) y canales de trabajo que nacen con una tarea, un TP o una evaluación, viven con sus páginas y entregas, y se archivan cuando terminan.
+1. **Agents are members created by the community.** There's no "the bot." The professor (or whoever has permission) creates whatever agents they want, each with a name, its own identity, instructions, a model provider, and adds them to specific channels. An agent can be in `#questions` and not in `#teachers`. They're subtly distinguished from people, not with a giant "BOT" badge.
+2. **Knowledge lives in cards published in channels.** Every channel has cards (like Buzz's canvases, or Claude's artifacts): a person or an agent publishes them, they have a version, sources, and a visibility chip. When an agent learns something, a card appears or changes, live.
+3. **Agent answers cite cards.** And when a question has already been answered, the agent answers "from the file," and that's visible.
+4. **Stable channels and work channels.** Just like Buzz has permanent channels and volatile per-feature-branch rooms, here there are permanent course channels (`#general`, `#questions`, one per module) and work channels that are born with a task, an assignment, or an exam, live with their cards and submissions, and get archived when they're done.
 
-## Personas y agentes (ejemplos, no roles fijos)
+## People and agents (examples, not fixed roles)
 
-- **Martín, profesor.** Crea la comunidad, los canales y los agentes. Publica material, consignas, decisiones.
-- **Sofía, alumna.** Pregunta en canales, abre threads, sube apuntes, tiene un canal privado con un agente que ella misma configuró.
-- **Agente del curso** (en el brief original se llamaba "Ada"; como Ada es el producto, el agente de ejemplo lleva otro nombre): creado por Martín y agregado a `#general`, `#dudas` y los canales de módulo. Sus instrucciones: mantener las páginas del curso.
-- **"Tutor de Sofía"**: un agente que Sofía creó y agregó solo a su canal privado.
+- **Martin, professor.** Creates the community, the channels, and the agents. Publishes material, assignments, decisions.
+- **Sofia, student.** Asks questions in channels, opens threads, uploads notes, has a private channel with an agent she configured herself.
+- **Course agent** (in the original brief it was called "Ada"; since Ada is the product, the example agent carries a different name): created by Martin and added to `#general`, `#questions`, and the module channels. Its instructions: maintain the course cards.
+- **"Sofia's tutor"**: an agent that Sofia created and added only to her private channel.
 
-## Layout base
+## Base layout
 
 ```
 ┌──────────┬────────────────────────┬──────────────────┐
-│ Comunidad│ Canal                  │ Panel contextual │
-│ Canales  │ mensajes + páginas     │ (thread, página, │
-│ Trabajo  │                        │  o vacío)        │
-│ Privados │                        │                  │
-│ Miembros │                        │                  │
+│ Community│ Channel                │ Contextual panel │
+│ Channels │ messages + cards       │ (thread, card,   │
+│ Work     │                        │  or empty)       │
+│ Private  │                        │                  │
+│ Members  │                        │                  │
 └──────────┴────────────────────────┴──────────────────┘
 ```
 
-- **Izquierda**: selector de comunidad arriba; canales agrupados en *Curso* (estables), *Trabajo* (volátiles, con estado: activo / entregado / archivado), *Privados* (DMs y canales personales). Miembros con personas y agentes mezclados, ordenados por presencia.
-- **Centro**: el canal. Arriba, una franja con las **páginas del canal** (documentos base + páginas publicadas), como pestañas o tarjetas chicas. Abajo, los mensajes. Una página publicada aparece también como un mensaje-tarjeta en el flujo.
-- **Derecha, panel contextual**: se abre con un thread (uso principal, igual que Slack/Buzz) o con una página. Diseñalo como un stack de paneles para que en el futuro se agreguen otros (árbol de páginas, historial). Hoy: *Thread* y *Página*.
+- **Left**: community selector at the top; channels grouped into *Course* (stable), *Work* (volatile, with status: active / submitted / archived), *Private* (DMs and personal channels). Members with people and agents mixed, sorted by presence.
+- **Center**: the channel. At the top, a strip with the **channel's cards** (base documents + published cards), as tabs or small tiles. Below, the messages. A published card also appears as a message-card in the flow.
+- **Right, contextual panel**: opens with a thread (primary use, same as Slack/Buzz) or with a card. Design it as a stack of panels so others can be added in the future (card tree, history). Today: *Thread* and *Card*.
 
-## Páginas (el mecanismo tipo artifacts)
+## Cards (the artifacts-like mechanism)
 
-Una página es un documento markdown publicado en un canal. Tiene: título, tipo (apunte · consigna · decisión · respuesta · entrega), autor (persona o agente), versión, fuentes (links a mensajes o archivos de los que salió), "reemplaza a" si corresponde, y un **chip de visibilidad** (por ahora: *miembros del canal* o *solo yo*; el modelo de permisos completo no está definido, no diseñes una pantalla de permisos).
+A card is a markdown document published in a channel. It has: a title, a type (note · assignment · decision · answer · submission), an author (person or agent), a version, sources (links to the messages or files it came from), "replaces" when applicable, and a **visibility chip** (for now: *channel members* or *only me*; the full permissions model isn't defined, don't design a permissions screen).
 
-Acciones sobre una página: abrir en el panel derecho, editar (si sos autor), publicar en otro canal, ver historial. El agente publica páginas con el mismo mecanismo que una persona.
+Actions on a card: open in the right panel, edit (if you're the author), publish to another channel, view history. The agent publishes cards using the same mechanism as a person.
 
-## Pantallas que necesito (en este orden)
+## Screens I need (in this order)
 
-1. **Onboarding e invitación.** Llego por link de invitación a una comunidad. Creo mi identidad local (nombre + avatar; la clave se genera en el browser, no hay registro con email). Entro al `#general` del curso. Variante: crear una comunidad desde cero. Referencia: cómo lo hace Buzz web.
-2. **Canal `#dudas` con thread abierto.** Sofía pregunta, el agente responde en el thread citando dos páginas. Al final del thread, una tarjeta compacta: "Publicado como respuesta · ¿Por qué explota el gradiente?". En la franja de páginas del canal aparece la nueva, resaltada.
-3. **La misma pregunta, segunda vez.** Otro alumno pregunta algo parecido en un thread nuevo. La respuesta tiene un marcador distinto: "Desde la página · hace 2 días". Es el momento clave de la demo.
-4. **Gestión de agentes (tipo Berd).** Lista de agentes de la comunidad. Crear uno: nombre, avatar, instrucciones, proveedor (API key o suscripción), canales donde participa. Detalle de un agente: en qué canales está, qué páginas publicó, actividad reciente. Diseñá la diferencia entre un agente de la comunidad (creado por Martín) y uno personal (creado por Sofía para su canal privado).
-5. **Editar canal: documentos base.** Settings del canal de módulo `#03-backprop`: nombre, descripción, miembros (personas y agentes), y una sección *Documentos base* donde Martín sube o elige las páginas que definen el canal. Al guardar, el agente empieza a generar páginas a partir de ellos, con un estado discreto de "compilando" en la franja.
-6. **Canal de trabajo: un TP.** Martín crea "TP2 · Backprop a mano" desde una consigna. Se crea el canal de trabajo con la consigna como documento base, fecha de entrega, y los agentes asignados. Los alumnos entregan publicando una página de tipo *entrega* con visibilidad restringida. El canal muestra estado (activo / entregado / archivado).
-7. **Una decisión.** Martín escribe en `#general` "Muevo el parcial al 15/09, la mitad no llegó a backprop". El agente publica una página tipo *decisión* con rationale y "reemplaza a: parcial-fecha-original". Diseñá cómo se ve una página de decisión abierta en el panel derecho.
+1. **Onboarding and invitation.** I arrive via an invitation link to a community. I create my local identity (name + avatar; the key is generated in the browser, no email signup). I enter the course's `#general`. Variant: create a community from scratch. Reference: how Buzz web does it.
+2. **Channel `#questions` with an open thread.** Sofia asks a question, the agent answers in the thread citing two cards. At the end of the thread, a compact tile: "Published as answer · Why does the gradient explode?" The new card appears, highlighted, in the channel's card strip.
+3. **The same question, twice.** Another student asks something similar in a new thread. The answer has a different marker: "From the file · 2 days ago." This is the key moment of the demo.
+4. **Agent management (Berd-style).** List of the community's agents. Create one: name, avatar, instructions, provider (API key or subscription), channels it participates in. Agent detail: which channels it's in, which cards it published, recent activity. Design the difference between a community agent (created by Martin) and a personal one (created by Sofia for her private channel).
+5. **Edit channel: base documents.** Settings for the module channel `#03-backprop`: name, description, members (people and agents), and a *Base documents* section where Martin uploads or selects the cards that define the channel. On save, the agent starts generating cards from them, with a discreet "compiling" state in the strip.
+6. **Work channel: an assignment.** Martin creates "Assignment 2 · Backprop by Hand" from an assignment brief. The work channel is created with the assignment as the base document, a due date, and assigned agents. Students submit by publishing a card of type *submission* with restricted visibility. The channel shows its status (active / submitted / archived).
+7. **A decision.** Martin writes in `#general` "I'm moving the midterm to 9/15, half the class hasn't reached backprop yet." The agent publishes a *decision* card with a rationale and "replaces: original-midterm-date." Design what a decision card looks like open in the right panel.
 
-## Dirección visual
+## Visual direction
 
-- **No** quiero look de "app de IA": nada de gradientes violeta, sparkles, ni chat bubbles redondas genéricas. Tampoco look crypto.
-- Referencias de tono: Buzz por estructura y por agentes como miembros; Linear por densidad y tipografía; Obsidian por cómo hace que un documento markdown se vea hermoso.
-- Sensación: una herramienta de estudio seria, cálida, con algo de asimetría y carácter. Tipografía con personalidad (una serif para títulos de páginas, sans para UI), jerarquía tipográfica fuerte, pocas cajas y bordes.
-- Tema claro por defecto; oscuro si sale natural.
-- Las páginas tienen que verse como documentos; los mensajes como conversación. Que el contraste entre los dos sea parte del diseño.
-- Agentes: avatar con forma distinta (no círculo) o un detalle tipográfico, no un badge. Presencia: "en línea", "pensando", "publicando una página".
-- **Agregado después (fundador):** diseño colorido y juguetón, estilo `design/inspiration/01-dashboard-fleet-principal.png` (referencia principal, extrapolada a nuestro caso). El resto de las imágenes de `design/inspiration/` sirven como inspiración de colores pastel y detalles (p. ej. personajes con ojos para los agentes).
+- I **don't** want an "AI app" look: no purple gradients, sparkles, or generic rounded chat bubbles. No crypto look either.
+- Tone references: Buzz for structure and agents as members; Linear for density and typography; Obsidian for how it makes a markdown document look beautiful.
+- Feeling: a serious, warm study tool, with some asymmetry and character. Typography with personality (a serif for card titles, sans for UI), strong typographic hierarchy, few boxes and borders.
+- Light theme by default; dark if it comes naturally.
+- Cards have to look like documents; messages like conversation. Let the contrast between the two be part of the design.
+- Agents: an avatar with a different shape (not a circle) or a typographic detail, not a badge. Presence: "online," "thinking," "publishing a card."
+- **Added later (founder):** a colorful, playful design, in the style of `design/inspiration/01-dashboard-fleet-main.png` (main reference, extrapolated to our case). The rest of the images in `design/inspiration/` serve as inspiration for pastel colors and details (e.g. characters with eyes for the agents).
 
-## Estados que necesito resueltos
+## States I need resolved
 
-- Agente "compilando" (entre que hay documentos base y aparecen páginas).
-- Página nueva · actualizada · reemplazada.
-- Respuesta en vivo vs respuesta desde una página.
-- Canal de trabajo activo · entregado · archivado.
-- Canal recién creado sin páginas.
+- Agent "compiling" (between when there are base documents and when cards appear).
+- Card new · updated · superseded.
+- Live answer vs. answer from a card.
+- Work channel active · submitted · archived.
+- Newly created channel with no cards.
 
-## Lo que NO necesito
+## What I DON'T need
 
-Pantalla de permisos, settings generales, notificaciones, búsqueda global, móvil, corrección de entregas.
+Permissions screen, general settings, notifications, global search, mobile, submission grading.
 
-## Entregables
+## Deliverables
 
-1. Flujo de pantallas (diagrama de navegación) para las 7 pantallas.
-2. Mockups de alta fidelidad de 2, 3, 4 y 7 primero; después 1, 5, 6.
-3. Sistema mínimo: tipografía, paleta, componentes de mensaje (persona / agente / agente desde página), tarjeta de página en el flujo, franja de páginas del canal, ficha de agente, estados de presencia y de canal de trabajo.
+1. Screen flow (navigation diagram) for the 7 screens.
+2. High-fidelity mockups of 2, 3, 4, and 7 first; then 1, 5, 6.
+3. Minimal system: typography, palette, message components (person / agent / agent from a card), card tile in the flow, channel card strip, agent card, presence and work-channel states.
 
-Empezá proponiéndome dos direcciones visuales distintas en una sola pantalla (la 2) antes de expandir.
+Start by proposing two different visual directions on a single screen (screen 2) before expanding.

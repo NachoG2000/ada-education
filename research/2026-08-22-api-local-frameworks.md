@@ -1,11 +1,11 @@
-# API local: frameworks y runtime
+# Local API: frameworks and runtime
 
-Fecha: 2026-08-22.
+Date: 2026-08-22.
 
-Esta nota registra las afirmaciones técnicas usadas para implementar la API local de Ada. Cada fuente se verificó en la fuente original el 22/08/2026.
+This note records the technical claims used to implement Ada's local API. Every source was verified against the original on 2026-08-22.
 
-- **Hono en Node:** la documentación actual de Hono para Node muestra el arranque con `@hono/node-server` y un `WebSocketServer({ noServer: true })` pasado a `serve` mediante la opción `websocket`; también marca `@hono/node-ws` como deprecado. Fuente primaria verificada: [Hono — Getting Started: Node.js](https://hono.dev/docs/getting-started/nodejs).
-- **WebSocket:** el README de `ws` documenta explícitamente `WebSocketServer({ noServer: true })`, la ruta manual con `server.on("upgrade")` y `handleUpgrade`, y la posibilidad de enrutar conexiones en múltiples paths. Fuente primaria verificada: [`ws` — README](https://github.com/websockets/ws/blob/master/README.md).
-- **SQLite integrado en Node:** Node 24 expone `node:sqlite` y `DatabaseSync`, una API síncrona para SQLite. La documentación indica que la API está disponible desde Node 22.5.0. Fuente primaria verificada: [Node.js v24 — `node:sqlite`](https://nodejs.org/download/release/latest-v24.x/docs/api/sqlite.html).
+- **Hono on Node:** Hono's current documentation for Node shows startup with `@hono/node-server` and a `WebSocketServer({ noServer: true })` passed to `serve` via the `websocket` option; it also flags `@hono/node-ws` as deprecated. Primary source verified: [Hono — Getting Started: Node.js](https://hono.dev/docs/getting-started/nodejs).
+- **WebSocket:** the `ws` README explicitly documents `WebSocketServer({ noServer: true })`, the manual route via `server.on("upgrade")` and `handleUpgrade`, and the ability to route connections across multiple paths. Primary source verified: [`ws` — README](https://github.com/websockets/ws/blob/master/README.md).
+- **Built-in SQLite in Node:** Node 24 exposes `node:sqlite` and `DatabaseSync`, a synchronous API for SQLite. The documentation states the API has been available since Node 22.5.0. Primary source verified: [Node.js v24 — `node:sqlite`](https://nodejs.org/download/release/latest-v24.x/docs/api/sqlite.html).
 
-Verificación local: `node --version` devolvió `v24.14.1`; `node:sqlite` está disponible en este entorno. El contrato vigente del proyecto usa `DatabaseSync` y tokens planos porque el desarrollo de este corte corre localmente en la computadora del profesor (`DECISIONS.md` §15).
+Local verification: `node --version` returned `v24.14.1`; `node:sqlite` is available in this environment. The project's current contract uses `DatabaseSync` and plain tokens because this cut's development runs locally on the professor's computer (`DECISIONS.md` §15).

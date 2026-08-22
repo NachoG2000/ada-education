@@ -1,50 +1,50 @@
-## 1. Repo y workspace (≈30 min)
+## 1. Repo and workspace (≈30 min)
 
-- [x] 1.1 `git init` en la raíz; `.gitignore` para `node_modules`, `dist`, `apps/server/data/*.db`, `data/**/agents/**/.git` no (se versiona la wiki, no el `.git` interno: agregar `data/**/agents/*/.git/` al ignore).
-- [x] 1.2 Mover `src/`, `index.html`, `public/`, `vite.config.ts`, `tsconfig.app.json`, `components.json`, `.oxlintrc.json` a `apps/web/`; `package.json` de `apps/web` con los scripts actuales. Verificar `npm run build` y `#figuras`.
-- [x] 1.3 `package.json` raíz como workspace (`apps/*`, `packages/*`) con scripts `dev` (server + web en paralelo), `dev:web`, `dev:server`, `runner`, `seed`, `build`, `lint`, `typecheck`.
-- [x] 1.4a `packages/protocol`: `types.ts` movido; `apps/web/src/lib/types.ts` re-exporta.
-- [x] 1.4b Eventos de la API con `zod` en `@ada/protocol` (se hace junto con el grupo 2).
-- [x] 1.5 `README.md` nuevo + `LICENSE` Apache-2.0: qué es Ada, diagrama server/runner/runtime, "correr la demo en 4 comandos", licencia Apache-2.0 con `LICENSE`.
+- [x] 1.1 `git init` at the root; `.gitignore` for `node_modules`, `dist`, `apps/server/data/*.db`, and `data/**/agents/*/.git/` (the wiki is versioned, not its inner `.git`).
+- [x] 1.2 Move `src/`, `index.html`, `public/`, `vite.config.ts`, `tsconfig.app.json`, `components.json`, `.oxlintrc.json` to `apps/web/`; `apps/web`'s `package.json` with the current scripts. Verify `npm run build` and `#figures`.
+- [x] 1.3 Root `package.json` as the workspace (`apps/*`, `packages/*`) with scripts `dev` (server + web in parallel), `dev:web`, `dev:server`, `runner`, `seed`, `build`, `lint`, `typecheck`.
+- [x] 1.4a `packages/protocol`: `types.ts` moved; `apps/web/src/lib/types.ts` re-exports.
+- [x] 1.4b API events with `zod` in `@ada/protocol` (done together with group 2).
+- [x] 1.5 New `README.md` + Apache-2.0 `LICENSE`: what Ada is, server/runner/runtime diagram, "run the demo in 4 commands".
 
-## 2. Servidor de la comunidad (≈2 h)
+## 2. Community server (≈2 h)
 
-- [x] 2.1 `apps/server` con Hono + `node:sqlite`; `schema.sql`; `db.ts` con funciones por tabla.
-- [x] 2.2 `GET /api/community` devolviendo `Community` (sin `meId`; lo pone el cliente).
-- [x] 2.3 `POST /api/channels/:id/messages`, `POST /api/threads`; emisión de `message.created` / `thread.created` por `/ws`.
-- [x] 2.4 Detección de menciones `@handle` → `agent.mention` al runner conectado, con los últimos 20 mensajes del contexto.
-- [x] 2.5 `/ws/runner?token=`: validación por token plano (sin hash, según el pivot de `DECISIONS.md` §15), presencia `en-linea`/`ausente`, eventos `presence`, `message.create`, `page.publish` con verificación de `authorId`.
-- [x] 2.6 `POST /api/pages` + `page.publish`: dedupe por `(authorId, path)`, versionado, `replaces`, mensaje con `publishes`, evento `page.published`.
-- [x] 2.7 Agentes desde `community.json` en el seed (token plano por agente); sin endpoint de creación (§15).
-- [x] 2.8 `npm run seed` desde `data/<curso>/community.json`; ficha base `backprop.md` con `base: true`.
+- [x] 2.1 `apps/server` with Hono + `node:sqlite`; `schema.sql`; `db.ts` with per-table functions.
+- [x] 2.2 `GET /api/community` returning `Community` (without `meId`; the client sets it).
+- [x] 2.3 `POST /api/channels/:id/messages`, `POST /api/threads`; `message.created` / `thread.created` emitted over `/ws`.
+- [x] 2.4 `@handle` mention detection → `agent.mention` to the connected runner, with the last 20 messages of context.
+- [x] 2.5 `/ws/runner?token=`: plain-token validation (no hashing, per the `DECISIONS.md` §15 pivot), `online`/`away` presence, `presence`, `message.create`, `card.publish` events with `authorId` verification.
+- [x] 2.6 `POST /api/cards` + `card.publish`: dedupe by `(authorId, path)`, versioning, `replaces`, message with `publishes`, `card.published` event.
+- [x] 2.7 Agents from `community.json` in the seed (plain token per agent); no creation endpoint (§15).
+- [x] 2.8 `npm run seed` from `data/<course>/community.json`; base card `backprop.md` with `base: true`.
 
-## 3. Curso semilla y agente Ada (≈40 min)
+## 3. Seed course and the Ada agent (≈40 min)
 
-- [x] 3.1 `data/redes-neuronales-2c-2026/community.json` (curso, canales, personas, agente `ada`, token de demo fijo para no copiarlo en vivo).
-- [ ] 3.2 `raw/martin/modulos/03-backprop/backprop.md`: documento base en español, ~3 páginas, ficticio.
-- [ ] 3.3 `packages/runner/templates/CLAUDE.md` con las seis reglas de `agent-wiki`, sintaxis `[[path]]`, ingest, formato de respuesta; `agents/ada/CLAUDE.md` = template + instrucciones de Ada; `wiki/index.md`, `wiki/log.md` vacíos.
-- [ ] 3.4 `git init` dentro de `agents/ada/` (lo hace el runner en 5.6; acá solo verificar).
+- [x] 3.1 `data/neural-networks-2026/community.json` (course, channels, people, `ada` agent, fixed demo token so it isn't copied live).
+- [ ] 3.2 `raw/martin/modules/03-backprop/backprop.md`: base document, ~3 pages, fictional.
+- [ ] 3.3 `packages/runner/templates/CLAUDE.md` with the six `agent-wiki` rules, `[[path]]` syntax, ingest, answer format; `agents/ada/CLAUDE.md` = template + Ada's instructions; empty `wiki/index.md`, `wiki/log.md`.
+- [ ] 3.4 `git init` inside `agents/ada/` (the runner does it in 5.6; here just verify).
 
 ## 4. Runner (≈2 h)
 
-- [ ] 4.1 `packages/runner` CLI (`commander`), flags + env vars, validación de `--cwd`, `detect()` del runtime, conexión WS con reconexión simple.
-- [ ] 4.2 Runtime `claude`: probar a mano `claude -p` con los flags de `design.md` §8 contra `agents/ada` (lee `index.md`, escribe una ficha, devuelve texto). Ajustar flags hasta que funcione sin prompts interactivos.
-- [ ] 4.3 Armado del prompt desde `agent.mention` (canal, quién, contexto cronológico, pregunta).
-- [ ] 4.4 Parser de respuesta: párrafos, `[[path]]` → `cite`, bloques de código → `code`.
-- [ ] 4.5 Snapshot de `wiki/` antes/después; lectura de frontmatter; mapeo `type`; `supersedes` → `replaces`; publicación por WS; `fromPage` cuando no hubo cambios y hay cita.
-- [ ] 4.6 `git init` si falta; commit por corrida; cola en serie; timeout y mensaje de error del agente; presencia `pensando`/`publicando`.
-- [ ] 4.7 Adaptadores `codex` y `pi` con la misma interfaz (escritos, no probados), y `README` del runner explicando dónde viven las credenciales.
+- [ ] 4.1 `packages/runner` CLI (`commander`), flags + env vars, `--cwd` validation, runtime `detect()`, WS connection with simple reconnection.
+- [ ] 4.2 `claude` runtime: try `claude -p` by hand with the `design.md` §8 flags against `agents/ada` (reads `index.md`, writes a card, returns text). Adjust flags until it works without interactive prompts.
+- [ ] 4.3 Prompt assembly from `agent.mention` (channel, who, chronological context, question).
+- [ ] 4.4 Answer parser: paragraphs, `[[path]]` → `cite`, code blocks → `code`.
+- [ ] 4.5 `wiki/` snapshot before/after; frontmatter reading; `type` mapping; `supersedes` → `replaces`; publishing over WS; `fromCard` when nothing changed and there's a citation.
+- [ ] 4.6 `git init` if missing; one commit per run; serial queue; timeout and agent error message; `thinking`/`publishing` presence.
+- [ ] 4.7 `codex` and `pi` adapters with the same interface (written, untested), and the runner's `README` explaining where credentials live.
 
-## 5. Cliente web conectado (≈1.5 h)
+## 5. Connected web client (≈1.5 h)
 
-- [ ] 5.1 `apps/web/src/lib/api.ts` (fetch + WS) y `CommunityProvider` con reducer para los eventos; selección de fuente por `VITE_ADA_SERVER`.
-- [ ] 5.2 Selector "¿quién sos?" → `localStorage["ada:me"]`.
-- [ ] 5.3 `Composer` que postea por REST, con autocompletar de `@` y aviso de agente desconectado.
-- [ ] 5.4 Presencia en vivo en lista de miembros, cabecera de thread y ficha del agente (`ausente` = "desconectado", runtime/modelo del runner).
-- [ ] 5.5 `page.published` → franja de fichas + tarjeta de publicación; `fromPage` → sello con animación existente.
+- [x] 5.1 `apps/web/src/lib/api.ts` (fetch + WS) and `CommunityProvider` with a reducer for the events; source selection via `VITE_ADA_SERVER`.
+- [x] 5.2 "Who are you?" picker → `localStorage["ada:me"]`.
+- [x] 5.3 `Composer` that posts over REST, with `@` autocomplete and a disconnected-agent notice.
+- [x] 5.4 Live presence in the member list, thread header and agent sheet (`away` = "disconnected", the runner's runtime/model).
+- [x] 5.5 `card.published` → card row + publication card; `fromCard` → seal with the existing animation.
 
-## 6. Demo de punta a punta y docs (≈40 min)
+## 6. End-to-end demo and docs (≈40 min)
 
-- [ ] 6.1 Ensayar el guion (`DECISIONS.md` §11 pasos 1-6 + terminal, según §15): seed → runner de `ada` → ingest → pregunta de `sofia` → pregunta parecida de `ignacio` (`fromPage`) → decisión con `supersedes` → `ls data/` + `git log`. Extensión solo si sobra: agente personal `tutor-sofia` pre-sembrado en `community.json` con su propio runner.
-- [ ] 6.2 Actualizar `AGENTS.md` raíz (sección Comandos y Arquitectura al layout nuevo) y crear el `AGENTS.md` de cada workspace nuevo (`apps/web`, `apps/server`, `packages/runner`, `packages/protocol`, `data/`): qué es hoy + cómo crece mañana.
-- [ ] 6.3 Anotar en `DECISIONS.md` qué quedó fuera al corte.
+- [ ] 6.1 Rehearse the script (`DECISIONS.md` §11 steps 1-6 + terminal, per §15): seed → `ada`'s runner → ingest → `sofia`'s question → `ignacio`'s similar question (`fromCard`) → decision with `supersedes` → `ls data/` + `git log`. Extension only if time remains: personal agent `tutor-sofia` pre-seeded in `community.json` with its own runner.
+- [ ] 6.2 Update the root `AGENTS.md` (Commands and Architecture sections to the new layout) and create each new workspace's `AGENTS.md` (`apps/web`, `apps/server`, `packages/runner`, `packages/protocol`, `data/`): what it is today + how it grows tomorrow.
+- [ ] 6.3 Note in `DECISIONS.md` what was left out at the cutoff.

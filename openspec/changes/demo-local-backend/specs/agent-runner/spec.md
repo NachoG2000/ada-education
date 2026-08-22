@@ -1,76 +1,76 @@
 ## Purpose
 
-`ada-runner`: el proceso que hace que un agente exista. Se conecta al server con el token del agente, ejecuta un runtime de IA con `cwd` en la carpeta del agente, y traduce lo que el runtime hace (texto, citas, archivos nuevos en la wiki) a mensajes y fichas de la comunidad. Corre donde viven las credenciales: hoy la laptop, mañana un Railway del profesor o nuestro hosting.
+`ada-runner`: the process that makes an agent exist. It connects to the server with the agent's token, executes an AI runtime with `cwd` in the agent's folder, and translates what the runtime does (text, citations, new files in the wiki) into community messages and cards. It runs where the credentials live: the laptop today, a teacher's Railway or our hosting tomorrow.
 
 ## ADDED Requirements
 
-### Requirement: Invocación por línea de comandos
-El runner SHALL ejecutarse como `ada-runner --server <url> --token <token> --cwd <carpeta-del-agente> [--runtime claude|codex|pi] [--model <id>]`. `--runtime` SHALL tener default `claude`. Todos los flags SHALL poder darse también por variables `ADA_SERVER`, `ADA_TOKEN`, `ADA_AGENT_DIR`, `ADA_RUNTIME`, `ADA_MODEL`. El runner MUST NOT pedir, leer ni guardar credenciales de proveedores de IA: el runtime las resuelve por su cuenta (login de `claude`, `codex`, o las variables de entorno que `pi` espera).
+### Requirement: Command-line invocation
+The runner SHALL run as `ada-runner --server <url> --token <token> --cwd <agent-folder> [--runtime claude|codex|pi] [--model <id>]`. `--runtime` SHALL default to `claude`. Every flag SHALL also be settable via variables `ADA_SERVER`, `ADA_TOKEN`, `ADA_AGENT_DIR`, `ADA_RUNTIME`, `ADA_MODEL`. The runner MUST NOT ask for, read or store AI-provider credentials: the runtime resolves them on its own (`claude` or `codex` login, or the env vars `pi` expects).
 
-#### Scenario: arranque normal
-- **WHEN** se corre `ada-runner --server ws://localhost:8787 --token X --cwd data/redes-neuronales-2c-2026/agents/ada`
-- **THEN** el runner verifica que `--cwd` exista y tenga `wiki/`, se conecta a `/ws/runner`, y loguea "ada · en línea · runtime claude"
+#### Scenario: normal startup
+- **WHEN** `ada-runner --server ws://localhost:8787 --token X --cwd data/neural-networks-2026/agents/ada` runs
+- **THEN** the runner verifies `--cwd` exists and has `wiki/`, connects to `/ws/runner`, and logs "ada · online · runtime claude"
 
-#### Scenario: runtime no instalado
-- **WHEN** el binario del runtime elegido no está en `PATH`
-- **THEN** el runner termina con un mensaje que dice qué binario falta y cómo instalarlo, sin conectarse al server
+#### Scenario: runtime not installed
+- **WHEN** the chosen runtime's binary isn't on `PATH`
+- **THEN** the runner exits with a message saying which binary is missing and how to install it, without connecting to the server
 
-### Requirement: Interfaz de runtimes
-El runner SHALL definir una interfaz `Runtime` con `detect(): Promise<boolean>` y `run({ prompt, cwd, model? }): Promise<{ text: string; usage?: unknown }>`. SHALL implementar `claude` (spawn de `claude -p <prompt> --output-format json` con permisos no interactivos restringidos a lectura/escritura dentro de `cwd` y `git`). `codex` y `pi` SHALL existir como adaptadores con la misma interfaz (`codex exec`, `pi -p`), aunque solo `claude` se pruebe en la demo. Agregar un runtime MUST NOT requerir tocar el server ni el cliente.
+### Requirement: Runtime interface
+The runner SHALL define a `Runtime` interface with `detect(): Promise<boolean>` and `run({ prompt, cwd, model? }): Promise<{ text: string; usage?: unknown }>`. It SHALL implement `claude` (spawn of `claude -p <prompt> --output-format json` with non-interactive permissions restricted to read/write inside `cwd` and `git`). `codex` and `pi` SHALL exist as adapters with the same interface (`codex exec`, `pi -p`), even though only `claude` is tested in the demo. Adding a runtime MUST NOT require touching the server or the client.
 
-#### Scenario: runtime claude
-- **WHEN** llega una mención y el runtime es `claude`
-- **THEN** el runner ejecuta el binario `claude` sin modificar, con `cwd` en la carpeta del agente, y toma el texto final de la salida JSON como respuesta
+#### Scenario: claude runtime
+- **WHEN** a mention arrives and the runtime is `claude`
+- **THEN** the runner executes the unmodified `claude` binary, with `cwd` in the agent's folder, and takes the final text of the JSON output as the answer
 
-### Requirement: Presencia
-Al conectar, el runner SHALL enviar `presence: "en-linea"` junto con `{ runtime, model }`. Mientras ejecuta una mención SHALL enviar `pensando`; mientras publica fichas, `publicando`; al terminar, `en-linea`.
+### Requirement: Presence
+On connect, the runner SHALL send `presence: "online"` along with `{ runtime, model }`. While executing a mention it SHALL send `thinking`; while publishing cards, `publishing`; when done, `online`.
 
-#### Scenario: ciclo de una mención
-- **WHEN** el runner procesa una mención
-- **THEN** el agente pasa por `pensando` → (`publicando` si hubo fichas) → `en-linea`, y la UI lo refleja
+#### Scenario: a mention's cycle
+- **WHEN** the runner processes a mention
+- **THEN** the agent goes through `thinking` → (`publishing` if there were cards) → `online`, and the UI reflects it
 
-### Requirement: Armado del prompt desde la capa inmediata
-Por cada `agent.mention` el runner SHALL construir un prompt con: canal, quién pregunta (nombre y rol), los últimos mensajes del contexto en orden cronológico con autor y hora, el mensaje que menciona, y el recordatorio de que las reglas están en `CLAUDE.md` de `cwd`. El runner MUST NOT inyectar contenido de la wiki en el prompt: leer `wiki/index.md` y las fichas es tarea del runtime dentro de `cwd` (regla 1 de `agent-wiki`).
+### Requirement: Prompt assembly from the immediate layer
+For each `agent.mention` the runner SHALL build a prompt with: the channel, who's asking (name and role), the last context messages in chronological order with author and time, the mentioning message, and the reminder that the rules live in `cwd`'s `CLAUDE.md`. The runner MUST NOT inject wiki content into the prompt: reading `wiki/index.md` and the cards is the runtime's job inside `cwd` (`agent-wiki` rule 1).
 
-#### Scenario: mención en thread
-- **WHEN** `sofia` menciona a `ada` en un thread con 4 respuestas previas
-- **THEN** el prompt contiene el mensaje raíz y las 4 respuestas, con autores, y termina con la pregunta de `sofia`
+#### Scenario: mention in a thread
+- **WHEN** `sofia` mentions `ada` in a thread with 4 prior replies
+- **THEN** the prompt contains the root message and the 4 replies, with authors, and ends with `sofia`'s question
 
-### Requirement: Respuesta con citas
-El runner SHALL convertir el texto del runtime en `paragraphs: MessageBlock[][]`. Toda referencia de la forma `[[<path-en-wiki>]]` o `[[<path-en-wiki>#<sección>]]` SHALL convertirse en un bloque `cite` apuntando a la ficha publicada con ese `path` (publicándola antes si todavía no estaba), con `text` igual al título de la ficha. Bloques de código con tres backticks SHALL convertirse en bloques `code`.
+### Requirement: Answers with citations
+The runner SHALL convert the runtime's text into `paragraphs: MessageBlock[][]`. Every reference of the form `[[<wiki-path>]]` or `[[<wiki-path>#<section>]]` SHALL become a `cite` block pointing at the published card with that `path` (publishing it first if it wasn't yet), with `text` equal to the card's title. Triple-backtick code blocks SHALL become `code` blocks.
 
-#### Scenario: respuesta que cita una ficha existente
-- **WHEN** el runtime responde "Mirá [[modulos/03-backprop/gradiente-que-explota.md]]: el problema es el learning rate"
-- **THEN** el mensaje publicado tiene un bloque `cite` con el `pageId` de esa ficha y el texto "Gradiente que explota"
+#### Scenario: answer citing an existing card
+- **WHEN** the runtime answers "See [[modules/03-backprop/exploding-gradient.md]]: the problem is the learning rate"
+- **THEN** the published message has a `cite` block with that card's `cardId` and the text "Exploding gradient"
 
-### Requirement: "Respondido desde la ficha"
-Si durante una corrida no cambió ningún archivo de `wiki/` y la respuesta cita al menos una ficha, el runner SHALL marcar el mensaje con `fromPage: { pageId: <primera cita>, ago: <tiempo desde publishedAt de esa ficha> }`. Si la corrida creó o modificó fichas, el mensaje MUST NOT llevar `fromPage`.
+### Requirement: "Answered from the card"
+If during a run no file under `wiki/` changed and the answer cites at least one card, the runner SHALL mark the message with `fromCard: { cardId: <first citation>, ago: <time since that card's publishedAt> }`. If the run created or modified cards, the message MUST NOT carry `fromCard`.
 
-#### Scenario: segunda pregunta parecida
-- **WHEN** `ignacio` pregunta algo que ya está en `preguntas/gradiente-que-explota.md` y el runtime responde citándola sin escribir en la wiki
-- **THEN** el mensaje sale con `fromPage` y la UI muestra el sello "ya en el fichero · hace N días"
+#### Scenario: second similar question
+- **WHEN** `ignacio` asks something already covered by `questions/exploding-gradient.md` and the runtime answers citing it without writing to the wiki
+- **THEN** the message goes out with `fromCard` and the UI shows the "already on file · N days ago" seal
 
-### Requirement: Publicación de fichas desde el filesystem
-Antes de ejecutar el runtime el runner SHALL tomar una foto de `wiki/` (path → hash). Al terminar SHALL publicar como `Page` cada archivo `.md` nuevo o modificado bajo `wiki/` (excepto `index.md` y `log.md`), leyendo su frontmatter según `agent-wiki` y resolviendo `supersedes` a `replaces` por `path`. La publicación SHALL ir al canal de la mención, salvo que el frontmatter tenga `channel:`.
+### Requirement: Publishing cards from the filesystem
+Before executing the runtime the runner SHALL take a snapshot of `wiki/` (path → hash). When done it SHALL publish as a `Card` every new or modified `.md` file under `wiki/` (except `index.md` and `log.md`), reading its frontmatter per `agent-wiki` and resolving `supersedes` to `replaces` by `path`. The publication SHALL go to the mention's channel, unless the frontmatter has `channel:`.
 
-#### Scenario: ingest produce tres fichas
-- **WHEN** `@ada ingest` termina y hay tres `.md` nuevos en `wiki/modulos/03-backprop/`
-- **THEN** el runner publica tres `Page` con `state: "nueva"` y el canal muestra tres tarjetas de publicación
+#### Scenario: ingest produces three cards
+- **WHEN** `@ada ingest` finishes and there are three new `.md` files under `wiki/modules/03-backprop/`
+- **THEN** the runner publishes three `Card`s with `state: "new"` and the channel shows three publication cards
 
-#### Scenario: decisión que reemplaza otra
-- **WHEN** aparece `decisiones/2026-08-29-parcial-movido.md` con `supersedes: decisiones/2026-08-15-fecha-parcial.md`
-- **THEN** la ficha nueva se publica con `replaces` apuntando a la vieja y la vieja pasa a `reemplazada`
+#### Scenario: a decision replacing another
+- **WHEN** `decisions/2026-08-29-midterm-moved.md` appears with `supersedes: decisions/2026-08-15-midterm-date.md`
+- **THEN** the new card is published with `replaces` pointing at the old one, and the old one moves to `superseded`
 
-### Requirement: Un commit por corrida
-Si la carpeta del agente es un repositorio git, al final de cada corrida que cambió archivos el runner SHALL hacer `git add -A && git commit -m "<agente>: <resumen>"` dentro de esa carpeta. Si no es un repositorio, SHALL seguir sin versionar y avisar una vez en el log.
+### Requirement: One commit per run
+If the agent's folder is a git repository, at the end of every run that changed files the runner SHALL do `git add -A && git commit -m "<agent>: <summary>"` inside that folder. If it isn't a repository, it SHALL continue unversioned and warn once in the log.
 
-#### Scenario: git log como historia del agente
-- **WHEN** terminan dos corridas que escribieron fichas
-- **THEN** `git log --oneline` en la carpeta del agente muestra dos commits
+#### Scenario: git log as the agent's history
+- **WHEN** two runs that wrote cards finish
+- **THEN** `git log --oneline` in the agent's folder shows two commits
 
-### Requirement: Una mención a la vez por agente
-El runner SHALL procesar menciones en serie (cola en memoria). Si el runtime falla o supera un timeout configurable (default 180 s), el runner SHALL publicar en el thread un mensaje corto del agente diciendo que no pudo responder, y SHALL seguir vivo para la siguiente mención.
+### Requirement: One mention at a time per agent
+The runner SHALL process mentions serially (in-memory queue). If the runtime fails or exceeds a configurable timeout (default 180 s), the runner SHALL post a short message from the agent in the thread saying it couldn't answer, and SHALL stay alive for the next mention.
 
-#### Scenario: el runtime falla
-- **WHEN** `claude` termina con error
-- **THEN** el agente publica "No pude responder esta vez; probá de nuevo en un rato." y vuelve a `en-linea`
+#### Scenario: the runtime fails
+- **WHEN** `claude` exits with an error
+- **THEN** the agent posts "I couldn't answer this time; try again in a bit." and returns to `online`

@@ -1,84 +1,84 @@
 ## Purpose
 
-Servidor de la comunidad: la fuente de verdad de miembros, canales, mensajes, threads y fichas publicadas de un curso. Es un bus y un archivo; nunca ejecuta modelos ni guarda credenciales de proveedores de IA.
+The community server: the source of truth for a course's members, channels, messages, threads and published cards. It's a bus and an archive; it never executes models or stores AI-provider credentials.
 
 ## ADDED Requirements
 
-### Requirement: Bootstrap completo de la comunidad
-El server SHALL exponer `GET /api/community` devolviendo un objeto con la misma forma que `Community` de `packages/protocol` (members, channels, pages, messages, threads), de modo que el cliente web pueda hidratar `CommunityProvider` sin transformar nada.
+### Requirement: Full community bootstrap
+The server SHALL expose `GET /api/community` returning an object with the same shape as `Community` from `packages/protocol` (members, channels, cards, messages, threads), so the web client can hydrate `CommunityProvider` without transforming anything.
 
-#### Scenario: el cliente arranca
-- **WHEN** un cliente pide `GET /api/community`
-- **THEN** recibe todos los canales, miembros (personas y agentes, con `presence`), fichas publicadas y los mensajes y threads de todos los canales del curso semilla, en una sola respuesta JSON
+#### Scenario: the client starts up
+- **WHEN** a client requests `GET /api/community`
+- **THEN** it receives all channels, members (people and agents, with `presence`), published cards, and all channels' messages and threads for the seed course, in a single JSON response
 
-### Requirement: Escritura de mensajes
-El server SHALL aceptar `POST /api/channels/:channelId/messages` con `{ authorId, paragraphs, threadId? }` y `POST /api/threads` con `{ rootMessageId }`. Cada mensaje persistido SHALL tener `id`, `at` (ISO, asignado por el server) y `paragraphs: MessageBlock[][]`.
+### Requirement: Writing messages
+The server SHALL accept `POST /api/channels/:channelId/messages` with `{ authorId, paragraphs, threadId? }` and `POST /api/threads` with `{ rootMessageId }`. Every persisted message SHALL have `id`, `at` (ISO, assigned by the server) and `paragraphs: MessageBlock[][]`.
 
-#### Scenario: persona escribe en un canal
-- **WHEN** `martin` envía un mensaje de texto a `dudas`
-- **THEN** el server lo persiste, le asigna `id` y `at`, y emite `message.created` a todos los clientes conectados
+#### Scenario: a person writes in a channel
+- **WHEN** `martin` sends a text message to `questions`
+- **THEN** the server persists it, assigns `id` and `at`, and emits `message.created` to every connected client
 
-#### Scenario: respuesta en thread
-- **WHEN** llega un mensaje con `threadId` de un thread existente
-- **THEN** el mensaje se agrega a `thread.replyIds` y se emite `message.created` con el `threadId`
+#### Scenario: reply in a thread
+- **WHEN** a message arrives with the `threadId` of an existing thread
+- **THEN** the message is appended to `thread.replyIds` and `message.created` is emitted with the `threadId`
 
-### Requirement: Eventos en tiempo real para clientes
-El server SHALL exponer un WebSocket en `/ws` que emite, como JSON `{ type, payload }`: `message.created`, `thread.created`, `page.published`, `member.presence`. Los clientes web no envían eventos por WS; escriben por REST.
+### Requirement: Real-time events for clients
+The server SHALL expose a WebSocket at `/ws` emitting, as JSON `{ type, payload }`: `message.created`, `thread.created`, `card.published`, `member.presence`. Web clients don't send events over WS; they write over REST.
 
-#### Scenario: ficha publicada aparece en vivo
-- **WHEN** un runner publica una ficha en `dudas`
-- **THEN** todos los clientes conectados reciben `page.published` con la `Page` completa y el `Message` con `publishes` que la anuncia
+#### Scenario: a published card appears live
+- **WHEN** a runner publishes a card in `questions`
+- **THEN** every connected client receives `card.published` with the full `Card` and the announcing `Message` with `publishes`
 
-### Requirement: Detección de menciones a agentes
-El server SHALL detectar en los bloques `text` de cada mensaje nuevo las menciones `@<handle>` cuyo handle corresponda a un miembro `agent`. Por cada agente mencionado SHALL construir un evento `agent.mention` con: el mensaje, el canal, el thread (si hay), los últimos N=20 mensajes del canal o thread en orden cronológico, y el miembro que escribió; y SHALL entregarlo **solo** al runner conectado de ese agente. El server MUST NOT llamar a ningún modelo ni generar respuestas por sí mismo.
+### Requirement: Agent mention detection
+The server SHALL detect, in every new message's `text` blocks, `@<handle>` mentions whose handle corresponds to an `agent` member. For each mentioned agent it SHALL build an `agent.mention` event with: the message, the channel, the thread (if any), the last N=20 messages of the channel or thread in chronological order, and the member who wrote; and SHALL deliver it **only** to that agent's connected runner. The server MUST NOT call any model or generate answers on its own.
 
-#### Scenario: mención con runner conectado
-- **WHEN** `sofia` escribe `@ada ¿por qué explota el gradiente?` en un thread de `dudas` y el runner de `ada` está conectado
-- **THEN** el runner de `ada` recibe un único `agent.mention` con el contexto inmediato del thread
+#### Scenario: mention with a connected runner
+- **WHEN** `sofia` writes `@ada why does the gradient explode?` in a `questions` thread and `ada`'s runner is connected
+- **THEN** `ada`'s runner receives a single `agent.mention` with the thread's immediate context
 
-#### Scenario: mención con runner desconectado
-- **WHEN** se menciona a un agente cuyo runner no está conectado
-- **THEN** el server no encola nada, el mensaje queda publicado normalmente, y la presencia del agente sigue siendo `ausente`
+#### Scenario: mention with a disconnected runner
+- **WHEN** an agent whose runner isn't connected is mentioned
+- **THEN** the server queues nothing, the message is published normally, and the agent's presence stays `away`
 
-### Requirement: Conexión de runners y presencia
-El server SHALL aceptar conexiones WS de runners en `/ws/runner?token=<token>`. El token SHALL identificar a un solo agente; un token inválido SHALL cerrar la conexión. Mientras un runner está conectado, el agente SHALL tener `presence: "en-linea"`; al desconectarse, `ausente`. Un runner SHALL poder reportar `pensando` y `publicando` mientras trabaja. Por WS el runner SHALL poder enviar `message.create`, `page.publish` y `presence`, y el server SHALL validar que el `authorId` sea el agente del token.
+### Requirement: Runner connections and presence
+The server SHALL accept runner WS connections at `/ws/runner?token=<token>`. The token SHALL identify a single agent; an invalid token SHALL close the connection. While a runner is connected, the agent SHALL have `presence: "online"`; on disconnect, `away`. A runner SHALL be able to report `thinking` and `publishing` while it works. Over WS the runner SHALL be able to send `message.create`, `card.publish` and `presence`, and the server SHALL validate that the `authorId` is the token's agent.
 
-#### Scenario: runner se conecta
-- **WHEN** un runner abre `/ws/runner` con el token de `ada`
-- **THEN** `ada` pasa a `en-linea` y todos los clientes reciben `member.presence`
+#### Scenario: runner connects
+- **WHEN** a runner opens `/ws/runner` with `ada`'s token
+- **THEN** `ada` becomes `online` and every client receives `member.presence`
 
-#### Scenario: runner se cae a mitad de una respuesta
-- **WHEN** la conexión del runner se cierra
-- **THEN** el agente pasa a `ausente` y el server no reintenta la mención
+#### Scenario: runner drops mid-answer
+- **WHEN** the runner's connection closes
+- **THEN** the agent becomes `away` and the server doesn't retry the mention
 
-### Requirement: Fichas publicadas
-El server SHALL aceptar `page.publish` (por WS de runner) o `POST /api/pages` con `{ channelId, authorId, path, title, type, version, visibility, sources, replaces?, body, state? }` y persistir la `Page`. `path` (ruta relativa en la wiki del agente) SHALL ser la clave de deduplicación: publicar de nuevo el mismo `path` por el mismo agente SHALL crear una versión nueva (`version + 1`, `state: "actualizada"`) y no una ficha duplicada. Si viene `replaces`, la ficha reemplazada SHALL pasar a `state: "reemplazada"`. Cada publicación SHALL generar además un `Message` en el canal con `publishes: <pageId>`.
+### Requirement: Published cards
+The server SHALL accept `card.publish` (over the runner WS) or `POST /api/cards` with `{ channelId, authorId, path, title, type, version, visibility, sources, replaces?, body, state? }` and persist the `Card`. `path` (relative path in the agent's wiki) SHALL be the deduplication key: publishing the same `path` again by the same agent SHALL create a new version (`version + 1`, `state: "updated"`) and not a duplicate card. If `replaces` comes, the replaced card SHALL move to `state: "superseded"`. Each publication SHALL also generate a `Message` in the channel with `publishes: <cardId>`.
 
-#### Scenario: primera publicación
-- **WHEN** el runner publica `preguntas/gradiente-que-explota.md` en `dudas`
-- **THEN** existe una `Page` nueva con `version: 1`, `state: "nueva"`, `publishedAt` del server, y un mensaje de publicación en `dudas`
+#### Scenario: first publication
+- **WHEN** the runner publishes `questions/exploding-gradient.md` in `questions`
+- **THEN** a new `Card` exists with `version: 1`, `state: "new"`, the server's `publishedAt`, and a publication message in `questions`
 
-#### Scenario: republicación del mismo path
-- **WHEN** el runner vuelve a publicar el mismo `path` con el body cambiado
-- **THEN** la misma `Page` pasa a `version: 2` y `state: "actualizada"`; no aparece una segunda ficha en la franja
+#### Scenario: republication of the same path
+- **WHEN** the runner publishes the same `path` again with a changed body
+- **THEN** the same `Card` moves to `version: 2` and `state: "updated"`; a second card does not appear in the row
 
-### Requirement: Agentes definidos por configuración
-Los agentes SHALL definirse en `data/<curso>/community.json` (nombre, ámbito, instrucciones, canales, `figureSeed`, y un token en texto plano para su runner) y crearse en el seed. El server MUST NOT exponer un endpoint de creación de agentes este finde (alcance `DECISIONS.md` §15); la comparación del token del runner SHALL ser directa (sin hash), aceptable porque todo corre en la máquina del profesor.
+### Requirement: Agents defined by configuration
+Agents SHALL be defined in `data/<course>/community.json` (name, scope, instructions, channels, `figureSeed`, and a plain-text token for their runner) and created in the seed. The server MUST NOT expose an agent-creation endpoint this weekend (scope `DECISIONS.md` §15); the runner token comparison SHALL be direct (no hashing), acceptable because everything runs on the teacher's machine.
 
-#### Scenario: el profesor agrega un agente
-- **WHEN** `martin` agrega un agente al `community.json` y corre `npm run seed`
-- **THEN** el agente aparece como miembro de sus canales, `ausente` hasta que su runner se conecte con ese token
+#### Scenario: the teacher adds an agent
+- **WHEN** `martin` adds an agent to `community.json` and runs `npm run seed`
+- **THEN** the agent appears as a member of its channels, `away` until its runner connects with that token
 
-### Requirement: Curso semilla desde `data/`
-El server SHALL poder crear su estado inicial con `npm run seed` a partir de `data/<curso>/community.json` (nombre del curso, canales, personas, agentes) sin depender de `demo.ts`. El curso semilla de la demo SHALL ser `redes-neuronales-2c-2026` con canales `general`, `dudas`, `03-backprop`; personas `martin` (profesor), `sofia`, `ignacio` (alumnos); agente `ada` (comunidad) en los tres canales.
+### Requirement: Seed course from `data/`
+The server SHALL be able to create its initial state with `npm run seed` from `data/<course>/community.json` (course name, channels, people, agents) without depending on `demo.ts`. The demo's seed course SHALL be `neural-networks-2026` with channels `general`, `questions`, `03-backprop`; people `martin` (teacher), `sofia`, `ignacio` (students); agent `ada` (community) in all three channels.
 
-#### Scenario: base de datos vacía
-- **WHEN** se corre `npm run seed` con la DB vacía
-- **THEN** `GET /api/community` devuelve el curso semilla con cero mensajes y la ficha base `backprop.md` marcada `base: true` en `03-backprop`
+#### Scenario: empty database
+- **WHEN** `npm run seed` runs on an empty DB
+- **THEN** `GET /api/community` returns the seed course with zero messages and the base card `backprop.md` marked `base: true` in `03-backprop`
 
-### Requirement: Almacenamiento local sin servicios externos
-El server SHALL persistir en un archivo SQLite (`node:sqlite`) cuya ruta se configura por `ADA_DB` (default `apps/server/data/ada.db`). MUST NOT requerir Postgres, Redis ni Docker para correr la demo.
+### Requirement: Local storage without external services
+The server SHALL persist to a SQLite file (`node:sqlite`) whose path is configured via `ADA_DB` (default `apps/server/data/ada.db`). It MUST NOT require Postgres, Redis or Docker to run the demo.
 
-#### Scenario: reinicio del server
-- **WHEN** el server se reinicia
-- **THEN** mensajes, fichas y agentes siguen ahí; la presencia de todos los agentes vuelve a `ausente` hasta que sus runners se reconecten
+#### Scenario: server restart
+- **WHEN** the server restarts
+- **THEN** messages, cards and agents are still there; every agent's presence returns to `away` until their runners reconnect

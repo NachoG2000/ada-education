@@ -1,6 +1,6 @@
-/* @ada/protocol — el único lugar donde vive el modelo de dominio de Ada.
-   Lo consumen las tres piezas: apps/web, apps/server y packages/runner.
-   Los eventos de la API (REST + WS) se agregan acá cuando se implemente
-   el server (openspec/changes/demo-local-backend/specs/community-server). */
+/* @ada/protocol — the one place where Ada's domain model lives.
+   Consumed by all three pieces: apps/web, apps/server, and packages/runner.
+   The API events (REST + WS) get added here once the server is implemented
+   (openspec/changes/demo-local-backend/specs/community-server). */
 export * from "./types.js"
 export * from "./events.js"

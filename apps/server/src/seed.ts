@@ -4,7 +4,7 @@ import {
   openDatabase,
   seedCommunity,
   upsertAgent,
-  upsertBasePage,
+  upsertBaseCard,
   upsertChannel,
   upsertPerson,
   addChannelMember,
@@ -13,7 +13,7 @@ import {
   type SeedChannel,
   type SeedPerson,
 } from "./db.js"
-import type { PageType } from "@ada/protocol"
+import type { CardType } from "@ada/protocol"
 
 interface CourseConfig {
   id?: string
@@ -28,9 +28,9 @@ interface CourseConfig {
     channelId: string
     path: string
     title: string
-    type: PageType
+    type: CardType
     authorId?: string
-    sources?: Array<{ kind: "mensaje" | "archivo"; ref: string; label: string }>
+    sources?: Array<{ kind: "message" | "file"; ref: string; label: string }>
   }>
 }
 
@@ -40,18 +40,18 @@ export interface SeedOptions {
 }
 
 export function seedCourse(options: SeedOptions = {}): void {
-  const courseDir = resolve(repoRoot, options.courseDir ?? process.env.ADA_COURSE ?? "data/redes-neuronales-2c-2026")
+  const courseDir = resolve(repoRoot, options.courseDir ?? process.env.ADA_COURSE ?? "data/neural-networks-2026")
   const config = JSON.parse(readFileSync(resolve(courseDir, "community.json"), "utf8")) as CourseConfig
   const database = openDatabase(options.dbPath)
   try {
     const channelIds = config.channels.map((channel) => channel.id)
     seedCommunity(database, {
-      id: config.id ?? courseDir.split("/").pop() ?? "curso",
+      id: config.id ?? courseDir.split("/").pop() ?? "course",
       name: config.name,
-      subtitle: config.subtitle ?? "Comunidad del curso",
+      subtitle: config.subtitle ?? "Course community",
       initial: config.initial ?? config.name.slice(0, 1).toUpperCase(),
     })
-    // Las membresías se agregan después de insertar todos los miembros (FKs activas).
+    // Memberships are added after inserting all members (FKs are active).
     for (const channel of config.channels) upsertChannel(database, { ...channel, memberIds: [] })
     const people = config.people ?? config.persons ?? []
     for (const person of people) {
@@ -65,19 +65,19 @@ export function seedCourse(options: SeedOptions = {}): void {
     for (const doc of config.baseDocs ?? []) {
       const authorId = doc.authorId ?? doc.path.split("/")[0]
       const body = readFileSync(resolve(courseDir, "raw", doc.path), "utf8")
-      upsertBasePage(database, {
+      upsertBaseCard(database, {
         channelId: doc.channelId,
         authorId,
         path: doc.path,
         title: doc.title,
         type: doc.type,
-        visibility: "canal",
-        sources: doc.sources ?? [{ kind: "archivo", ref: `raw/${doc.path}`, label: doc.title }],
+        visibility: "channel",
+        sources: doc.sources ?? [{ kind: "file", ref: `raw/${doc.path}`, label: doc.title }],
         body,
         base: true,
       })
     }
-    console.log(`Seed listo: ${config.name} (${config.channels.length} canales, ${people.length + (config.agents ?? []).length} miembros). Repetible sin duplicar.`)
+    console.log(`Seed complete: ${config.name} (${config.channels.length} channels, ${people.length + (config.agents ?? []).length} members). Repeatable without duplicating.`)
   } finally {
     database.close()
   }

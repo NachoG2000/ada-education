@@ -1,4 +1,4 @@
-/* Sidebar de Ada sobre las primitivas de shadcn (variante inset). Cajones: Curso · Trabajo · Privados · Miembros. */
+/* Ada's sidebar over the shadcn primitives (inset variant). Drawers: Course · Work · Private · Members. */
 
 import { ChevronsUpDownIcon, PlusIcon } from "lucide-react"
 import {
@@ -20,23 +20,24 @@ import type { Channel, WorkStatus } from "@/lib/types"
 import { MemberAvatar, PRESENCE_LABEL, agentInk } from "@/components/ada/identity"
 
 const STATUS: Record<WorkStatus, { dot: string; label: string }> = {
-  activo: { dot: "bg-estado-activo", label: "activo" },
-  entregado: { dot: "bg-estado-entregado", label: "entregado" },
-  archivado: { dot: "bg-estado-archivado", label: "archivado" },
+  active: { dot: "bg-status-active", label: "active" },
+  submitted: { dot: "bg-status-submitted", label: "submitted" },
+  archived: { dot: "bg-status-archived", label: "archived" },
 }
 
 function ChannelItem({ channel }: { channel: Channel }) {
   const { activeChannelId, setActiveChannelId, community, member } = useCommunity()
   const active = channel.id === activeChannelId
-  const pagesCount = community.pages.filter((p) => p.channelId === channel.id).length
-  const dm = channel.group === "privados" ? member(channel.memberIds.find((id) => id !== community.meId) ?? channel.memberIds[0]) : null
+  const cardsCount = community.cards.filter((c) => c.channelId === channel.id).length
+  const dm = channel.group === "private" ? member(channel.memberIds.find((id) => id !== community.meId) ?? channel.memberIds[0]) : null
 
   return (
     <SidebarMenuItem>
       <SidebarMenuButton
         isActive={active}
+        aria-current={active ? "page" : undefined}
         onClick={() => setActiveChannelId(channel.id)}
-        className={cn(channel.unread && !active && "font-semibold", channel.work?.status === "archivado" && !active && "text-ink-3")}
+        className={cn(channel.unread && !active && "font-semibold", channel.work?.status === "archived" && !active && "text-ink-3")}
       >
         {channel.work ? (
           <span aria-hidden className={cn("size-2 shrink-0 rounded-full", STATUS[channel.work.status].dot)} />
@@ -49,10 +50,10 @@ function ChannelItem({ channel }: { channel: Channel }) {
         )}
         <span className="min-w-0 flex-1 truncate">{channel.name}</span>
         {channel.unread && !active && <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-ink" />}
-        {active && pagesCount > 0 && <span className="meta shrink-0 text-ink-3">{pagesCount} fichas</span>}
+        {active && cardsCount > 0 && <span className="meta shrink-0 text-ink-3">{cardsCount} cards</span>}
         {channel.work && !active && (
           <span className="meta shrink-0 text-ink-4">
-            {channel.work.status === "activo" && channel.work.due ? `activo · ${channel.work.due}` : STATUS[channel.work.status].label}
+            {channel.work.status === "active" && channel.work.due ? `active · ${channel.work.due}` : STATUS[channel.work.status].label}
           </span>
         )}
       </SidebarMenuButton>
@@ -68,9 +69,9 @@ function Drawer({ label, count, action, children }: { label: string; count?: num
         {typeof count === "number" && <span className="ml-1.5 font-normal">· {count}</span>}
       </SidebarGroupLabel>
       {action && (
-        <SidebarGroupAction title={`Nuevo en ${label}`}>
+        <SidebarGroupAction title={`New in ${label}`}>
           <PlusIcon />
-          <span className="sr-only">Nuevo en {label}</span>
+          <span className="sr-only">New in {label}</span>
         </SidebarGroupAction>
       )}
       <SidebarGroupContent>
@@ -83,7 +84,7 @@ function Drawer({ label, count, action, children }: { label: string; count?: num
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { community, me, member } = useCommunity()
   const groups = (g: Channel["group"]) => community.channels.filter((c) => c.group === g)
-  const presenceOrder = { publicando: 0, pensando: 1, "en-linea": 2, ausente: 3 } as const
+  const presenceOrder = { publishing: 0, thinking: 1, online: 2, away: 3 } as const
   const members = [...community.members].sort((a, b) => presenceOrder[a.presence] - presenceOrder[b.presence])
 
   return (
@@ -91,8 +92,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" aria-label="Cambiar de comunidad">
-              <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-sol font-serif text-[15px] font-semibold text-sol-ink">
+            <SidebarMenuButton size="lg" aria-label={`${community.name}, switch community`}>
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-sun font-sans text-[15px] font-semibold text-sun-ink">
                 {community.initial}
               </span>
               <div className="grid flex-1 text-left leading-tight">
@@ -106,22 +107,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
 
       <SidebarContent>
-        <Drawer label="Curso" action>
-          {groups("curso").map((c) => (
+        <Drawer label="Course" action>
+          {groups("course").map((c) => (
             <ChannelItem key={c.id} channel={c} />
           ))}
         </Drawer>
-        <Drawer label="Trabajo" action>
-          {groups("trabajo").map((c) => (
+        <Drawer label="Work" action>
+          {groups("work").map((c) => (
             <ChannelItem key={c.id} channel={c} />
           ))}
         </Drawer>
-        <Drawer label="Privados" action>
-          {groups("privados").map((c) => (
+        <Drawer label="Private" action>
+          {groups("private").map((c) => (
             <ChannelItem key={c.id} channel={c} />
           ))}
         </Drawer>
-        <Drawer label="Miembros" count={31}>
+        <Drawer label="Members" count={31}>
           {members.map((m) => (
             <SidebarMenuItem key={m.id}>
               <SidebarMenuButton className="text-ink-2">
@@ -132,15 +133,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <span className="meta shrink-0 truncate text-ink-4">
                   {m.kind === "person"
                   ? m.id === me.id
-                    ? "vos"
-                    : m.role === "profesor"
-                      ? "profesor"
+                    ? "you"
+                    : m.role === "teacher"
+                      ? "teacher"
                       : ""
-                  : m.presence === "publicando" || m.presence === "pensando"
+                  : m.presence === "publishing" || m.presence === "thinking"
                     ? PRESENCE_LABEL[m.presence]
                     : m.scope === "personal"
-                      ? "tu agente"
-                      : `de ${member(m.createdBy).name}`}
+                      ? "your agent"
+                      : `${member(m.createdBy).name}'s`}
                 </span>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -155,7 +156,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <MemberAvatar member={me} size={28} presence />
               <div className="grid flex-1 text-left leading-tight">
                 <span className="truncate text-[13.5px] font-semibold">{me.name}</span>
-                <span className="meta truncate text-ink-3">clave local</span>
+                <span className="meta truncate text-ink-3">local key</span>
               </div>
               <kbd className="ml-auto rounded-md bg-panel-3 px-1.5 py-0.5 font-sans text-[10.5px] font-medium text-ink-3">⌘K</kbd>
             </SidebarMenuButton>

@@ -1,0 +1,75 @@
+{
+  "id": "neural-networks-2026",
+  "name": "Neural Networks 2026",
+  "subtitle": "Term 2 2026",
+  "initial": "N",
+  "channels": [
+    {
+      "id": "general",
+      "name": "general",
+      "group": "course",
+      "memberIds": ["martin", "sofia", "ignacio", "ada"]
+    },
+    {
+      "id": "questions",
+      "name": "questions",
+      "group": "course",
+      "description": "Ask anything. Ada answers and archives what's worth keeping.",
+      "memberIds": ["martin", "sofia", "ignacio", "ada"]
+    },
+    {
+      "id": "03-backprop",
+      "name": "03-backprop",
+      "group": "course",
+      "memberIds": ["martin", "sofia", "ignacio", "ada"]
+    }
+  ],
+  "people": [
+    {
+      "kind": "person",
+      "id": "martin",
+      "name": "Martin",
+      "initials": "M",
+      "tone": "seal-soft",
+      "role": "teacher"
+    },
+    {
+      "kind": "person",
+      "id": "sofia",
+      "name": "Sofia",
+      "initials": "S",
+      "tone": "cardstock",
+      "role": "student"
+    },
+    {
+      "kind": "person",
+      "id": "ignacio",
+      "name": "Ignacio",
+      "initials": "I",
+      "tone": "card",
+      "role": "student"
+    }
+  ],
+  "agents": [
+    {
+      "kind": "agent",
+      "id": "ada",
+      "name": "Ada",
+      "scope": "community",
+      "createdBy": "martin",
+      "figureSeed": "ada",
+      "instructions": "Keep the course cards up to date: answer questions by citing cards, and archive anything that comes up again as an answer.",
+      "provider": { "mode": "subscription", "model": "Claude" },
+      "channelIds": ["general", "questions", "03-backprop"],
+      "token": "ada-demo-token"
+    }
+  ],
+  "baseDocs": [
+    {
+      "channelId": "03-backprop",
+      "path": "martin/modules/03-backprop/backprop.md",
+      "title": "Backpropagation — base document",
+      "type": "note"
+    }
+  ]
+}

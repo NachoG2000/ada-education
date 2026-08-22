@@ -1,5 +1,5 @@
 # CLAUDE.md
 
-Las reglas de este repo viven en **`AGENTS.md`**, un solo archivo para Claude Code, Codex y cualquier otro agente. Claude Code lo importa acá; si tenés que cambiar una regla, editá `AGENTS.md`.
+This repo's rules live in **`AGENTS.md`**, a single file for Claude Code, Codex and any other agent. Claude Code imports it here; if you need to change a rule, edit `AGENTS.md`.
 
 @AGENTS.md

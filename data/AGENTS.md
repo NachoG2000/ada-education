@@ -1,19 +1,19 @@
-# data/ — los cursos (la memoria vive acá, no en la DB)
+# data/ — the courses (the memory lives here, not in the DB)
 
-**Hoy:** el curso semilla `redes-neuronales-2c-2026` tiene `community.json` con sus tres canales, personas, el agente `ada` y el documento base declarado; `raw/martin/modulos/03-backprop/backprop.md` es todavía un placeholder. El seed del server lee esta configuración y publica el documento base como ficha `base`.
+**Today:** the seed course `neural-networks-2026` has a `community.json` with its three channels, people, the `ada` agent, and the declared base document; `raw/martin/modules/03-backprop/backprop.md` is still a placeholder. The server's seed reads this configuration and publishes the base document as the `base` card.
 
-**Layout por curso** (`DECISIONS.md` §6):
+**Layout per course** (`DECISIONS.md` §6):
 
 ```
-data/<curso>/
-  community.json                 ← curso, canales, personas, agentes (con token del runner)
-  raw/<persona>/...              ← documentos base; los humanos escriben acá, los agentes solo leen
-  agents/<agente>/
-    CLAUDE.md                    ← reglas + instrucciones del agente (las lee su runtime)
-    wiki/                        ← la memoria compilada: index.md, log.md, modulos/, preguntas/, decisiones/, dificultades/
-    about/                       ← lo que el agente sabe de cada persona
+data/<course>/
+  community.json                 ← course, channels, people, agents (with the runner's token)
+  raw/<person>/...                ← base documents; humans write here, agents only read
+  agents/<agent>/
+    CLAUDE.md                    ← rules + instructions for the agent (its runtime reads this)
+    wiki/                        ← the compiled memory: index.md, log.md, modules/, questions/, decisions/, difficulties/
+    about/                       ← what the agent knows about each person
 ```
 
-Principios: todo markdown legible (`ls` es la interfaz de auditoría), git como versionado (un commit por corrida del runner, en el repo que contenga la carpeta), el server solo guarda la **copia publicada** de cada ficha. En el repo público este curso es **de ejemplo**: en uso real la carpeta vive donde vive el runner, fuera del repo de código (`docs/como-funciona.html` §4).
+Principles: everything is readable markdown (`ls` is the audit interface), git as versioning (one commit per runner run, in the repo that holds the folder), the server only stores the **published copy** of each card. In the public repo this course is a **sample**: in real use the folder lives wherever the runner lives, outside the code repo (`docs/como-funciona.html` §4).
 
-**Cómo crece (idea, no código):** un repo git por curso, `people/<alumno>/wiki` para agentes personales, permisos por composición de carpetas (bind mounts / Archil) — `DECISIONS.md` §14.7.
+**How it grows (idea, not code):** one git repo per course, `people/<student>/wiki` for personal agents, permissions by folder composition (bind mounts / Archil) — `DECISIONS.md` §14.7.

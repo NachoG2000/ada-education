@@ -1,9 +1,9 @@
 import type { Agent, Channel, Member, Message, MessageBlock } from "@ada/protocol"
 
 /**
- * Busca handles en los bloques de texto, nunca en citas ni en código.
- * Los ids de Ada son deliberadamente simples, pero aceptamos guiones y
- * guiones bajos para que el contrato no dependa del nombre visible.
+ * Looks for handles in text blocks only, never in citations or code.
+ * Ada's ids are deliberately simple, but we accept hyphens and
+ * underscores so the contract doesn't depend on the visible name.
  */
 export function mentionedAgentIds(message: Message, channel: Channel, members: Member[]): string[] {
   const memberIds = new Set(channel.memberIds)
@@ -26,9 +26,10 @@ export function mentionedAgentIds(message: Message, channel: Channel, members: M
 }
 
 /**
- * Contexto determinista para un runner: cronológico, acotado a 20 y sin
- * mensajes del futuro según el reloj del server. El mensaje recién creado se
- * incluye porque el caller lo pasa en `messages` antes de armar el evento.
+ * Deterministic context for a runner: chronological, capped at 20, and
+ * without messages from the future per the server's clock. The just-created
+ * message is included because the caller passes it in `messages` before
+ * building the event.
  */
 export function mentionContext(
   messages: Message[],
@@ -52,7 +53,7 @@ export function mentionContext(
     .slice(-20)
 }
 
-/** Extrae texto recursivamente sin que otros bloques puedan disparar menciones. */
+/** Recursively extracts text without letting other blocks trigger mentions. */
 export function textBlocks(paragraphs: Message["paragraphs"]): string[] {
   return paragraphs.flatMap((paragraph) =>
     paragraph.flatMap((block: MessageBlock) => (block.kind === "text" ? [block.text] : [])),

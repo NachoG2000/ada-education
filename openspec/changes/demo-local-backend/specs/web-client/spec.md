@@ -1,51 +1,51 @@
 ## Purpose
 
-El cliente web deja de ser una maqueta: se conecta al servidor de la comunidad, recibe eventos en vivo, escribe mensajes, y muestra la presencia de los agentes. Conserva el modo demo sin server. (La creación de agentes desde la UI quedó fuera del finde: `DECISIONS.md` §15.)
+The web client stops being a mockup: it connects to the community server, receives live events, writes messages, and shows agent presence. It keeps the serverless demo mode. (Agent creation from the UI was left out of the weekend: `DECISIONS.md` §15.)
 
 ## ADDED Requirements
 
-### Requirement: Fuente de datos conmutable
-Si existe `VITE_ADA_SERVER`, el cliente SHALL hidratar `CommunityProvider` con `GET /api/community` y mantenerlo al día con los eventos de `/ws`. Si no existe, SHALL seguir usando la comunidad sintética de `demo.ts` exactamente como hoy. Los componentes de `components/ada` y las pantallas MUST NOT saber cuál de las dos fuentes está activa.
+### Requirement: Switchable data source
+If `VITE_ADA_SERVER` exists, the client SHALL hydrate `CommunityProvider` with `GET /api/community` and keep it current with the `/ws` events. If it doesn't, it SHALL keep using `demo.ts`'s synthetic community exactly as today. `components/ada` components and the screens MUST NOT know which of the two sources is active.
 
-#### Scenario: modo conectado
-- **WHEN** `VITE_ADA_SERVER=http://localhost:8787` y el server está arriba
-- **THEN** la pantalla muestra el curso semilla y un mensaje nuevo aparece sin recargar
+#### Scenario: connected mode
+- **WHEN** `VITE_ADA_SERVER=http://localhost:8787` and the server is up
+- **THEN** the screen shows the seed course and a new message appears without reloading
 
-#### Scenario: modo demo
-- **WHEN** no hay `VITE_ADA_SERVER`
-- **THEN** la app corre con `demo.ts` y la fecha congelada `NOW`, igual que antes de este change
+#### Scenario: demo mode
+- **WHEN** there's no `VITE_ADA_SERVER`
+- **THEN** the app runs with `demo.ts` and the frozen `NOW` date, same as before this change
 
-### Requirement: Identidad local
-En modo conectado el cliente SHALL preguntar una vez "¿quién sos?" entre las personas del curso y guardar la elección en `localStorage["ada:me"]`. Esa persona SHALL ser `meId` y el `authorId` de lo que se escribe. MUST NOT haber registro por email ni contraseña este finde.
+### Requirement: Local identity
+In connected mode the client SHALL ask once "who are you?" among the course's people and store the choice in `localStorage["ada:me"]`. That person SHALL be `meId` and the `authorId` of whatever gets written. There MUST NOT be email sign-up or passwords this weekend.
 
-#### Scenario: primera visita
-- **WHEN** se abre la app conectada sin `ada:me`
-- **THEN** aparece un selector con `martin`, `sofia`, `ignacio`; al elegir, se entra al canal inicial como esa persona
+#### Scenario: first visit
+- **WHEN** the connected app opens without `ada:me`
+- **THEN** a picker appears with `martin`, `sofia`, `ignacio`; on choosing, you enter the initial channel as that person
 
-### Requirement: Composer que escribe de verdad
-El `Composer` SHALL enviar el texto a `POST /api/channels/:id/messages` (con `threadId` si está en un thread) y limpiar el campo al confirmar. Al escribir `@` SHALL ofrecer autocompletar con los miembros del canal, agentes primero. El mensaje propio SHALL aparecer cuando llega `message.created` (sin optimismo local este finde).
+### Requirement: A composer that really writes
+The `Composer` SHALL send the text to `POST /api/channels/:id/messages` (with `threadId` when in a thread) and clear the field on confirmation. On typing `@` it SHALL offer autocomplete with the channel's members, agents first. Your own message SHALL appear when `message.created` arrives (no local optimism this weekend).
 
-#### Scenario: mencionar a un agente
-- **WHEN** `sofia` escribe `@ada` y elige el agente, completa la pregunta y envía
-- **THEN** el mensaje aparece en el thread con la mención resaltada y, si `ada` está en línea, su estado pasa a `pensando`
+#### Scenario: mentioning an agent
+- **WHEN** `sofia` types `@ada`, picks the agent, completes the question and sends
+- **THEN** the message appears in the thread with the mention highlighted and, if `ada` is online, her status moves to `thinking`
 
-### Requirement: Presencia y estado del agente
-La lista de miembros y la cabecera del thread SHALL reflejar `presence` en vivo: `ausente` como "desconectado" (sin animación), `pensando` y `publicando` con el indicador ya existente en el diseño. Al mencionar a un agente `ausente`, el composer SHALL mostrar un aviso inline "`ada` está desconectada: su runner no está corriendo" sin impedir el envío.
+### Requirement: Agent presence and status
+The member list and the thread header SHALL reflect `presence` live: `away` as "disconnected" (no animation), `thinking` and `publishing` with the indicator that already exists in the design. When mentioning an `away` agent, the composer SHALL show an inline notice "`ada` is disconnected: its runner isn't running" without blocking the send.
 
-#### Scenario: runner apagado
-- **WHEN** el runner de `ada` se cierra
-- **THEN** en menos de 2 s la UI muestra a `ada` como desconectada
+#### Scenario: runner shut down
+- **WHEN** `ada`'s runner closes
+- **THEN** within 2 s the UI shows `ada` as disconnected
 
-### Requirement: Fichas en vivo
-Al recibir `page.published` el cliente SHALL agregar o actualizar la `Page` en el estado (por `id`), mostrarla en la franja del canal con su `state` (`nueva` con el sol, `actualizada`, `reemplazada`), y renderizar el mensaje de publicación. Al recibir un mensaje con `fromPage` SHALL mostrar el sello "ya en el fichero · hace N".
+### Requirement: Live cards
+On receiving `card.published` the client SHALL add or update the `Card` in state (by `id`), show it in the channel's row with its `state` (`new` with the sun, `updated`, `superseded`), and render the publication message. On receiving a message with `fromCard` it SHALL show the "already on file · N ago" seal.
 
-#### Scenario: sellar
-- **WHEN** llega un mensaje de `ada` con `fromPage`
-- **THEN** se ve la animación de sellar (380 ms, respetando `prefers-reduced-motion`) y el pill abre la ficha en el panel
+#### Scenario: sealing
+- **WHEN** a message from `ada` arrives with `fromCard`
+- **THEN** the seal animation plays (380 ms, respecting `prefers-reduced-motion`) and the pill opens the card in the panel
 
-### Requirement: Ficha del agente
-El panel de ficha de un agente SHALL mostrar ámbito, quién lo creó, runtime y modelo reportados por su runner (o "sin runner" si nunca se conectó), canales donde está, y fichas que publicó.
+### Requirement: The agent's sheet
+An agent's sheet panel SHALL show its scope, who created it, the runtime and model reported by its runner (or "no runner" if it never connected), the channels it's in, and the cards it published.
 
-#### Scenario: ver a ada
-- **WHEN** se abre la ficha de `ada` con su runner conectado
-- **THEN** se lee "agente de la comunidad · creado por martin · claude · en línea" y la lista de fichas publicadas
+#### Scenario: viewing ada
+- **WHEN** `ada`'s sheet opens with her runner connected
+- **THEN** it reads "community agent · created by martin · claude · online" and the list of published cards

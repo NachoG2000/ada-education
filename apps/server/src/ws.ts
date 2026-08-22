@@ -2,17 +2,17 @@ import type { IncomingMessage, Server as HttpServer } from "node:http"
 import type { Socket } from "node:net"
 import type {
   Agent,
+  Card,
   Channel,
   Member,
   Message,
-  Page,
   Presence,
   Thread,
 } from "@ada/protocol"
 import {
   runnerClientMessageSchema,
   type Ack,
-  type PagePublishInput,
+  type CardPublishInput,
   type RunnerClientMessage,
   type RunnerServerMessage,
   type ServerEvent,
@@ -22,7 +22,7 @@ import { mentionContext, mentionedAgentIds } from "./mentions.js"
 
 export type AgentRecord = Agent & { token: string; runtime?: string; model?: string }
 
-/** Funciones que el hub necesita del archivo SQLite; no contiene storage. */
+/** Functions the hub needs from the SQLite file; it holds no storage of its own. */
 export type WsStore = {
   findAgentByToken(token: string): AgentRecord | undefined
   members(): Member[]
@@ -35,10 +35,10 @@ export type WsStore = {
     channelId: string
     threadId?: string
     paragraphs: Message["paragraphs"]
-    fromPage?: { pageId: string; ago: string }
+    fromCard?: { cardId: string; ago: string }
     publishes?: string
   }): Message
-  publishPage(input: PagePublishInput & { authorId: string }): { page: Page; message: Message }
+  publishCard(input: CardPublishInput & { authorId: string }): { card: Card; message: Message }
 }
 
 export type PresenceChange = (agentId: string, presence: Presence, runtime?: string, model?: string) => void
@@ -49,7 +49,7 @@ export type WebSocketHub = {
   presence: Map<string, { presence: Presence; runtime?: string; model?: string }>
   broadcast(event: ServerEvent): void
   onMessageCreated(message: Message): void
-  onPagePublished(page: Page, message: Message): void
+  onCardPublished(card: Card, message: Message): void
   onThreadCreated(thread: Thread): void
   handleUpgrade(request: IncomingMessage, socket: Socket, head: Buffer): void
   close(): Promise<void>
@@ -107,15 +107,15 @@ export function createWebSocketHub(server: HttpServer, store: WsStore, onPresenc
     try {
       parsed = runnerClientMessageSchema.parse(JSON.parse(raw))
     } catch {
-      // Si alcanzamos a leer una ref, devolvemos el ack de error del contrato.
-      // Sin ref no hay respuesta protocolar posible y se ignora el frame.
+      // If we managed to read a ref, we return the contract's error ack.
+      // Without a ref there is no possible protocol response, so the frame is ignored.
       try {
         const candidate: unknown = JSON.parse(raw)
         if (isRecord(candidate) && typeof candidate.ref === "string") {
-          send(socket, { type: "ack", ref: candidate.ref, ok: false, error: "mensaje de runner inválido" } satisfies Ack)
+          send(socket, { type: "ack", ref: candidate.ref, ok: false, error: "invalid runner message" } satisfies Ack)
         }
       } catch {
-        // JSON inválido: se descarta sin inventar un tipo de evento.
+        // Invalid JSON: discarded without inventing an event type.
       }
       return
     }
@@ -131,14 +131,14 @@ export function createWebSocketHub(server: HttpServer, store: WsStore, onPresenc
         mention(message)
         return
       }
-      const result = store.publishPage({ authorId: agent.id, ...parsed.payload })
-      send(socket, { type: "ack", ref: parsed.ref, ok: true, page: result.page, message: result.message } satisfies Ack)
-      broadcast({ type: "page.published", payload: result })
+      const result = store.publishCard({ authorId: agent.id, ...parsed.payload })
+      send(socket, { type: "ack", ref: parsed.ref, ok: true, card: result.card, message: result.message } satisfies Ack)
+      broadcast({ type: "card.published", payload: result })
       mention(result.message)
     } catch (error) {
-      const detail = error instanceof Error ? error.message : "operación rechazada"
+      const detail = error instanceof Error ? error.message : "operation rejected"
       if ("ref" in parsed) send(socket, { type: "ack", ref: parsed.ref, ok: false, error: detail } satisfies Ack)
-      else console.error(`No se pudo actualizar la presencia del runner: ${detail}`)
+      else console.error(`Could not update runner presence: ${detail}`)
     }
   }
 
@@ -152,14 +152,14 @@ export function createWebSocketHub(server: HttpServer, store: WsStore, onPresenc
     const token = new URL(request.url ?? "/", "http://localhost").searchParams.get("token")
     const agent = token ? store.findAgentByToken(token) : undefined
     if (!agent) {
-      socket.close(4401, "token inválido")
+      socket.close(4401, "invalid token")
       return
     }
     const old = runners.get(agent.id)
-    old?.close(1000, "runner reemplazado")
+    old?.close(1000, "runner replaced")
     runners.set(agent.id, socket)
     setPresence(agent, {
-      presence: "en-linea",
+      presence: "online",
       ...(agent.runtime ? { runtime: agent.runtime } : {}),
       ...(agent.model ? { model: agent.model } : {}),
     })
@@ -168,7 +168,7 @@ export function createWebSocketHub(server: HttpServer, store: WsStore, onPresenc
       if (runners.get(agent.id) !== socket) return
       runners.delete(agent.id)
       setPresence(agent, {
-        presence: "ausente",
+        presence: "away",
         ...(agent.runtime ? { runtime: agent.runtime } : {}),
         ...(agent.model ? { model: agent.model } : {}),
       })
@@ -179,7 +179,7 @@ export function createWebSocketHub(server: HttpServer, store: WsStore, onPresenc
   const handleUpgrade = (request: IncomingMessage, socket: Socket, head: Buffer): void => {
     const pathname = new URL(request.url ?? "/", "http://localhost").pathname
     if (pathname !== "/ws" && pathname !== "/ws/runner") {
-      // Un upgrade ajeno al server no se puede manejar acá.
+      // An upgrade unrelated to this server can't be handled here.
       socket.destroy()
       return
     }
@@ -196,8 +196,8 @@ export function createWebSocketHub(server: HttpServer, store: WsStore, onPresenc
       broadcast({ type: "message.created", payload: { message } })
       mention(message)
     },
-    onPagePublished(page, message) {
-      broadcast({ type: "page.published", payload: { page, message } })
+    onCardPublished(card, message) {
+      broadcast({ type: "card.published", payload: { card, message } })
       mention(message)
     },
     onThreadCreated(thread) {
@@ -207,7 +207,7 @@ export function createWebSocketHub(server: HttpServer, store: WsStore, onPresenc
     close() {
       server.off("upgrade", handleUpgrade)
       const sockets = [...web, ...runners.values()]
-      for (const socket of sockets) socket.close(1000, "servidor apagándose")
+      for (const socket of sockets) socket.close(1000, "server shutting down")
       web.clear()
       runners.clear()
       return new Promise<void>((resolve) => {

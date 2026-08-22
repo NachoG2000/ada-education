@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How Ada Works</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,600&family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ground:#f1f1ef; --panel:#fff; --panel-2:#f7f6f3; --panel-3:#efede8; --line:#ebe9e4; --line-strong:#dedbd4;
+    --ink:#1b1b20; --ink-2:#5a5a63; --ink-3:#8b8b95; --ink-4:#b9b9c2;
+    --sol:#ffd43b; --sol-soft:#fff3c4; --sol-ink:#6f5200; --sello:#2f55d4; --sello-soft:#e9eefc; --alerta:#e0493f; --alerta-soft:#fde9e7;
+    --ok:#d9f4e6; --ok-ink:#1f7a4a; --tab-note:#d9e8ff; --tab-note-ink:#1f55a8; --tab-assignment:#ffe4c7; --tab-assignment-ink:#9a4f0a; --tab-decision:#d7f3de; --tab-decision-ink:#1f6b3c;
+    --sans:"Inter",system-ui,-apple-system,sans-serif; --serif:"Literata",Georgia,serif; --mono:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+    --r-panel:12px; --r-card:16px; --shadow-card:0 1px 2px rgba(24,24,36,.04),0 8px 20px -12px rgba(24,24,36,.18);
+  }
+  * { box-sizing:border-box }
+  html { background:var(--ground); color:var(--ink) }
+  body { margin:0; font-family:var(--sans); font-size:16px; line-height:1.55 }
+  main { max-width:960px; margin:0 auto; padding:48px 24px 96px }
+  h1,h2,h3 { font-family:var(--serif); font-weight:600; letter-spacing:-.01em; line-height:1.2 }
+  h1 { font-size:40px; margin:0 0 8px }
+  h2 { font-size:26px; margin:64px 0 16px; padding-top:24px; border-top:1px solid var(--line-strong) }
+  h3 { font-size:18px; margin:24px 0 8px }
+  p { margin:0 0 14px; max-width:72ch }
+  .lead { font-family:var(--serif); font-size:20px; color:var(--ink-2); max-width:64ch }
+  .meta { font-family:var(--mono); font-size:12px; color:var(--ink-3); letter-spacing:.02em }
+  code, kbd { font-family:var(--mono); font-size:.9em; background:var(--panel-3); padding:1px 6px; border-radius:6px }
+  pre { font-family:var(--mono); font-size:13px; background:var(--panel); border:1px solid var(--line); border-radius:var(--r-panel); padding:16px 18px; overflow-x:auto; line-height:1.5 }
+  .panel { background:var(--panel); border-radius:var(--r-card); box-shadow:var(--shadow-card); padding:20px 22px }
+  .grid { display:grid; gap:16px }
+  .grid.two { grid-template-columns:repeat(auto-fit,minmax(300px,1fr)) }
+  .grid.four { grid-template-columns:repeat(auto-fit,minmax(210px,1fr)) }
+  .card h3 { margin-top:0 }
+  .card dl { margin:0; display:grid; grid-template-columns:auto 1fr; gap:4px 12px; font-size:14px }
+  .card dt { color:var(--ink-3); font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; padding-top:3px }
+  .card dd { margin:0 }
+  .tag { display:inline-block; font-family:var(--mono); font-size:11px; letter-spacing:.04em; padding:2px 8px; border-radius:999px; background:var(--panel-3); color:var(--ink-2) }
+  .tag.sol { background:var(--sol); color:var(--sol-ink) }
+  .tag.sello { background:var(--sello-soft); color:var(--sello) }
+  .tag.ok { background:var(--ok); color:var(--ok-ink) }
+  .tag.alerta { background:var(--alerta-soft); color:var(--alerta) }
+  .tag.note { background:var(--tab-note); color:var(--tab-note-ink) }
+  .tag.assignment { background:var(--tab-assignment); color:var(--tab-assignment-ink) }
+  .tag.decision { background:var(--tab-decision); color:var(--tab-decision-ink) }
+  table { border-collapse:collapse; width:100%; font-size:14px; background:var(--panel); border-radius:var(--r-panel); overflow:hidden; box-shadow:var(--shadow-card) }
+  th,td { text-align:left; padding:10px 12px; border-bottom:1px solid var(--line); vertical-align:top }
+  th { font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-3); background:var(--panel-2); font-weight:500 }
+  tr:last-child td { border-bottom:0 }
+  .wrap { overflow-x:auto }
+  svg { display:block; max-width:100%; height:auto }
+  svg text { font-family:var(--sans); font-size:13px; fill:var(--ink) }
+  svg .mono { font-family:var(--mono); font-size:11.5px; fill:var(--ink-2) }
+  svg .h { font-family:var(--serif); font-size:15px; font-weight:600 }
+  svg .dim { fill:var(--ink-3) }
+  svg .box { fill:var(--panel); stroke:var(--line-strong) }
+  svg .box.ground { fill:var(--panel-2) }
+  svg .box.sol { fill:var(--sol-soft); stroke:var(--sol) }
+  svg .box.sello { fill:var(--sello-soft); stroke:var(--sello) }
+  svg .box.alerta { fill:var(--alerta-soft); stroke:var(--alerta) }
+  svg .arrow { stroke:var(--ink-2); stroke-width:1.5; fill:none; marker-end:url(#m) }
+  svg .arrow.soft { stroke:var(--ink-4) }
+  svg .num { fill:var(--ink); font-family:var(--mono); font-size:11px; font-weight:600 }
+  svg .numbg { fill:var(--sol) }
+  ol.steps { counter-reset:s; list-style:none; padding:0; margin:0; max-width:72ch }
+  ol.steps li { counter-increment:s; position:relative; padding:10px 0 10px 44px; border-bottom:1px solid var(--line) }
+  ol.steps li::before { content:counter(s); position:absolute; left:0; top:10px; width:28px; height:28px; border-radius:999px; background:var(--sol); color:var(--sol-ink); font-family:var(--mono); font-size:12px; font-weight:600; display:grid; place-items:center }
+  ol.steps li b { font-weight:600 }
+  .faq details { background:var(--panel); border-radius:var(--r-panel); box-shadow:var(--shadow-card); padding:14px 18px; margin-bottom:10px }
+  .faq summary { cursor:pointer; font-weight:600; font-family:var(--serif); font-size:17px }
+  .faq details p { margin-top:10px }
+  .nota { border-left:3px solid var(--sol); background:var(--sol-soft); padding:12px 16px; border-radius:0 var(--r-panel) var(--r-panel) 0; max-width:72ch }
+  .nota.roja { border-color:var(--alerta); background:var(--alerta-soft) }
+  dl.glos { display:grid; grid-template-columns:max-content 1fr; gap:8px 18px; font-size:15px; max-width:80ch }
+  dl.glos dt { font-family:var(--serif); font-weight:600 }
+  dl.glos dd { margin:0; color:var(--ink-2) }
+  footer { margin-top:64px; padding-top:24px; border-top:1px solid var(--line-strong); color:var(--ink-3); font-size:13px }
+  a { color:var(--sello) }
+  @media (prefers-reduced-motion:no-preference) { details[open] summary ~ * { animation:fade .2s ease } }
+  @keyframes fade { from { opacity:0; transform:translateY(-2px) } to { opacity:1; transform:none } }
+</style>
+</head>
+<body>
+<main>
+  <p class="meta">docs/how-it-works.html · written 2026-08-22 · sources: DECISIONS.md §6 and §14</p>
+  <h1>How Ada Works</h1>
+  <div class="nota" style="margin:12px 0 20px"><b>Future direction.</b> This page describes the full architecture Ada is growing toward, not today's code. What gets built this weekend is the "laptop" row in section 6: a local install for one specific professor (<code>DECISIONS.md</code> §15, spec in <code>openspec/</code>). If this page contradicts the code or the spec, they win.</div>
+  <p class="lead">One page to understand it once, so you never have to piece it back together in your head. This isn't a classic SaaS, and that's half the confusion: the AI model doesn't run on our server — it runs on a "plug" that each person connects from their own machine.</p>
+
+  <h2 id="saas">1. Why it isn't "frontend + API + DB + agent"</h2>
+  <div class="wrap">
+  <svg viewBox="0 0 920 300" role="img" aria-label="Comparison between a classic SaaS and Ada">
+    <defs><marker id="m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5a5a63"/></marker></defs>
+    <!-- Classic SaaS -->
+    <text x="20" y="28" class="h">Classic SaaS</text>
+    <rect x="20" y="50" width="400" height="220" rx="14" class="box ground"/>
+    <rect x="40" y="80" width="100" height="44" rx="10" class="box"/><text x="90" y="107" text-anchor="middle">Frontend</text>
+    <rect x="180" y="80" width="100" height="44" rx="10" class="box"/><text x="230" y="107" text-anchor="middle">API</text>
+    <rect x="320" y="80" width="80" height="44" rx="10" class="box"/><text x="360" y="107" text-anchor="middle">DB</text>
+    <path d="M140,102 L178,102" class="arrow"/><path d="M280,102 L318,102" class="arrow"/>
+    <rect x="180" y="180" width="100" height="44" rx="10" class="box alerta"/><text x="230" y="207" text-anchor="middle">LLM</text>
+    <path d="M230,124 L230,178" class="arrow"/>
+    <text x="300" y="200" class="mono">with the company's</text>
+    <text x="300" y="215" class="mono">API key</text>
+    <text x="40" y="255" class="mono dim">the company pays for and controls inference</text>
+    <!-- Ada -->
+    <text x="480" y="28" class="h">Ada</text>
+    <rect x="480" y="50" width="420" height="120" rx="14" class="box ground"/>
+    <text x="496" y="70" class="mono dim">our server (or a professor's, on Railway)</text>
+    <rect x="500" y="84" width="100" height="44" rx="10" class="box"/><text x="550" y="111" text-anchor="middle">Web client</text>
+    <rect x="640" y="84" width="120" height="44" rx="10" class="box"/><text x="700" y="105" text-anchor="middle">Server</text><text x="700" y="121" text-anchor="middle" class="mono">bus + storage</text>
+    <rect x="800" y="84" width="80" height="44" rx="10" class="box"/><text x="840" y="111" text-anchor="middle">SQLite</text>
+    <path d="M600,106 L638,106" class="arrow"/><path d="M760,106 L798,106" class="arrow"/>
+    <rect x="480" y="190" width="420" height="90" rx="14" class="box sol"/>
+    <text x="620" y="210" class="mono dim">the machine of whoever created the agent</text>
+    <rect x="496" y="222" width="100" height="44" rx="10" class="box"/><text x="546" y="243" text-anchor="middle">Runner</text><text x="546" y="259" text-anchor="middle" class="mono">ada-runner</text>
+    <rect x="622" y="222" width="150" height="44" rx="10" class="box alerta"/><text x="697" y="243" text-anchor="middle">Runtime</text><text x="697" y="259" text-anchor="middle" class="mono">claude · codex · pi</text>
+    <rect x="798" y="222" width="90" height="44" rx="10" class="box"/><text x="843" y="243" text-anchor="middle">Folder</text><text x="843" y="259" text-anchor="middle" class="mono">wiki/ in md</text>
+    <path d="M596,244 L620,244" class="arrow"/><path d="M772,244 L796,244" class="arrow"/>
+    <path d="M520,222 L520,160 L700,160 L700,130" class="arrow"/>
+    <text x="530" y="185" class="mono dim">Outbound WebSocket, with the agent's token</text>
+  </svg>
+  </div>
+  <p>In a classic SaaS, the API calls the model with the company's API key: the company pays, controls, and is responsible. In Ada the server <b>never calls a model</b>. It's a chat with storage: it stores messages, members, channels, and published cards, and notifies over WebSocket when something happens. Intelligence comes in through the <b>runner</b>: a small process that runs wherever the credentials of whoever created the agent live, using the AI program that person already has (<code>claude</code>, <code>codex</code>, <code>pi</code> with an open model).</p>
+  <p>The most useful analogy: <b>GitHub Actions runners</b>. GitHub keeps the repo and the job queue; the runner can be GitHub's own (paid, always on) or one of yours on your machine (free, turns off when you turn it off). Same result, different question of who pays and who keeps it alive.</p>
+
+  <h2 id="piezas">2. The four pieces</h2>
+  <div class="grid four">
+    <div class="panel card"><h3>Server</h3>
+      <dl><dt>knows</dt><dd>members, channels, messages, threads, published cards, which agent is online</dd>
+      <dt>doesn't know</dt><dd>which model each agent uses, any credentials, what's in the wiki except what's published</dd>
+      <dt>runs on</dt><dd>Railway, our hosting, or a laptop</dd>
+      <dt>who pays</dt><dd>whoever hosts it; it's cheap — there's no inference</dd></dl></div>
+    <div class="panel card"><h3>Runner</h3>
+      <dl><dt>knows</dt><dd>the token of <i>one</i> agent, its folder path, which runtime to use</dd>
+      <dt>doesn't know</dt><dd>AI credentials (the runtime handles those), nothing about other agents</dd>
+      <dt>runs on</dt><dd>the machine of whoever created the agent, or on hosting</dd>
+      <dt>who pays</dt><dd>no one — it's a small process</dd></dl></div>
+    <div class="panel card"><h3>Runtime</h3>
+      <dl><dt>is</dt><dd>the Claude Code, Codex, or pi binary, <b>unmodified</b></dd>
+      <dt>does</dt><dd>reads the wiki, thinks, writes cards, returns text</dd>
+      <dt>credential</dt><dd>its owner's: a subscription (claude, codex) or an API key (pi, open models)</dd>
+      <dt>who pays</dt><dd>the credential's owner</dd></dl></div>
+    <div class="panel card"><h3>Agent folder</h3>
+      <dl><dt>is</dt><dd><code>CLAUDE.md</code> + <code>wiki/</code> in markdown + git</dd>
+      <dt>lives in</dt><dd>wherever the runner lives</dd>
+      <dt>who sees it</dt><dd>whoever created the agent (and the server, only what's published)</dd>
+      <dt>is</dt><dd>the memory — the only thing that persists between questions</dd></dl></div>
+  </div>
+  <p style="margin-top:16px">An agent <b>is</b> the sum of the last three plus an identity on the server. If the runner isn't connected, the agent exists as a member but shows as "offline": you can mention it, it won't answer. That's not a bug — it's what happens when a student turns off the computer running their personal agent.</p>
+
+  <h2 id="mencion">3. What happens when Sofia types <code>@ada</code></h2>
+  <div class="wrap">
+  <svg viewBox="0 0 920 330" role="img" aria-label="Sequence of a mention">
+    <!-- columns -->
+    <text x="70" y="24" text-anchor="middle" class="h">Sofia</text>
+    <text x="290" y="24" text-anchor="middle" class="h">Server</text>
+    <text x="530" y="24" text-anchor="middle" class="h">Ada's runner</text>
+    <text x="790" y="24" text-anchor="middle" class="h">claude in agents/ada/</text>
+    <line x1="70" y1="36" x2="70" y2="320" stroke="#dedbd4" stroke-dasharray="3 4"/>
+    <line x1="290" y1="36" x2="290" y2="320" stroke="#dedbd4" stroke-dasharray="3 4"/>
+    <line x1="530" y1="36" x2="530" y2="320" stroke="#dedbd4" stroke-dasharray="3 4"/>
+    <line x1="790" y1="36" x2="790" y2="320" stroke="#dedbd4" stroke-dasharray="3 4"/>
+    <!-- 1 -->
+    <path d="M70,60 L288,60" class="arrow"/><circle cx="84" cy="60" r="9" class="numbg"/><text x="84" y="64" text-anchor="middle" class="num">1</text>
+    <text x="180" y="54" text-anchor="middle" class="mono">POST message "@ada why does it explode?"</text>
+    <!-- 2 -->
+    <rect x="300" y="76" width="150" height="30" rx="8" class="box ground"/><text x="375" y="95" text-anchor="middle" class="mono">saves · detects @ada</text>
+    <circle cx="290" cy="91" r="9" class="numbg"/><text x="290" y="95" text-anchor="middle" class="num">2</text>
+    <!-- 3 -->
+    <path d="M290,124 L528,124" class="arrow"/><circle cx="304" cy="124" r="9" class="numbg"/><text x="304" y="128" text-anchor="middle" class="num">3</text>
+    <text x="410" y="118" text-anchor="middle" class="mono">agent.mention + last 20 messages</text>
+    <!-- 4 -->
+    <path d="M530,158 L788,158" class="arrow"/><circle cx="544" cy="158" r="9" class="numbg"/><text x="544" y="162" text-anchor="middle" class="num">4</text>
+    <text x="660" y="152" text-anchor="middle" class="mono">spawn: claude -p "…" (cwd = folder)</text>
+    <path d="M530,140 L292,140" class="arrow soft"/><text x="410" y="136" text-anchor="middle" class="mono dim">presence: thinking</text>
+    <!-- 5 -->
+    <rect x="700" y="176" width="190" height="58" rx="8" class="box sol"/>
+    <text x="795" y="194" text-anchor="middle" class="mono">reads index.md and ≤5 cards</text>
+    <text x="795" y="209" text-anchor="middle" class="mono">writes questions/explodes.md</text>
+    <text x="795" y="224" text-anchor="middle" class="mono">replies with [[path]]</text>
+    <circle cx="790" cy="176" r="9" class="numbg"/><text x="790" y="180" text-anchor="middle" class="num">5</text>
+    <!-- 6 -->
+    <path d="M790,252 L532,252" class="arrow"/><circle cx="776" cy="252" r="9" class="numbg"/><text x="776" y="256" text-anchor="middle" class="num">6</text>
+    <text x="660" y="246" text-anchor="middle" class="mono">final text · wiki/ diff · git commit</text>
+    <!-- 7 -->
+    <path d="M530,284 L292,284" class="arrow"/><circle cx="516" cy="284" r="9" class="numbg"/><text x="516" y="288" text-anchor="middle" class="num">7</text>
+    <text x="410" y="278" text-anchor="middle" class="mono">page.publish + message.create (with cite)</text>
+    <!-- 8 -->
+    <path d="M290,310 L72,310" class="arrow"/><circle cx="276" cy="310" r="9" class="numbg"/><text x="276" y="314" text-anchor="middle" class="num">8</text>
+    <text x="180" y="304" text-anchor="middle" class="mono">WS: new card + reply</text>
+  </svg>
+  </div>
+  <ol class="steps">
+    <li><b>Sofia writes</b> in the thread. The client does a POST; it doesn't know Ada is an agent.</li>
+    <li><b>The server saves</b> the message and sees <code>@ada</code> in the text. If Ada's runner isn't connected, it stops here: the message stays, Ada shows as offline.</li>
+    <li><b>It sends the mention</b> to the runner, along with the thread's last 20 messages (the "immediate layer" from DECISIONS §6).</li>
+    <li><b>The runner builds a prompt</b> (who's asking, context, question) and <b>runs</b> <code>claude -p</code> with <code>cwd</code> in Ada's folder. It doesn't pass it the wiki: the runtime reads that on its own.</li>
+    <li><b>Claude reads</b> <code>CLAUDE.md</code> (the rules), <code>wiki/index.md</code>, opens up to 5 cards, and if the question is reusable, <b>writes a new card</b>. It replies citing <code>[[questions/explodes.md]]</code>.</li>
+    <li><b>The runner compares</b> <code>wiki/</code> before and after: whatever changed gets published. If nothing changed and there's a citation, the reply gets marked "from the file." It makes a commit.</li>
+    <li><b>It publishes</b> the card and the message (citations already turned into pills).</li>
+    <li><b>Everyone sees it</b> live: the card in the channel's strip, the reply in the thread, Ada goes back to "online."</li>
+  </ol>
+
+  <h2 id="data">4. "Why is <code>data/</code> in the repo next to <code>apps/</code>?"</h2>
+  <p>Because this weekend everything runs on a laptop, and we need a sample course that gets cloned along with the code. But these are two different things, and it's worth being clear about that from the start:</p>
+  <div class="grid two">
+    <div class="panel"><h3>The repo = code + a sample course</h3>
+      <pre>apps/web          client
+apps/server       server
+packages/runner   ada-runner
+packages/protocol types and events
+data/neural-…/    <b>sample course</b> (seed)</pre>
+      <p>It's published on GitHub. Anyone can clone it and have the demo running.</p></div>
+    <div class="panel"><h3>In real use, the folder lives wherever the runner lives</h3>
+      <pre>~/ada/courses/neural-networks-2026/agents/tutor/   ← Sofia's laptop
+/srv/ada/courses/neural-networks-2026/agents/ada/  ← the professor's Railway
+/vol/ada/&lt;tenant&gt;/agents/…/           ← our hosting</pre>
+      <p>The runner receives <code>--cwd</code> and can point anywhere. The server never sees that folder: it only receives what the runner publishes.</p></div>
+  </div>
+
+  <h2 id="aislamiento">5. "Claude can see the whole filesystem, right?" Isolation, in three layers</h2>
+  <p>Yes, technically Claude Code can see whatever the operating system lets it see. The right question is <b>how much isolation each tier needs</b>, because it isn't the same problem on Sofia's laptop as on one of our servers running a hundred agents for a hundred people.</p>
+  <table>
+    <thead><tr><th>Layer</th><th>How</th><th>What it guarantees</th><th>When</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag sol">1 · policy</span></td>
+        <td><code>cwd</code> in the agent's folder; <code>--add-dir</code> only for <code>raw/</code>; scoped <code>--allowedTools</code>; path-based <code>deny</code> rules in the folder's <code>.claude/settings.json</code>; no <code>Bash</code> except <code>git add/commit</code>.</td>
+        <td>Claude Code refuses to read or write outside it. It's a rule the runtime follows, <b>not a wall</b>.</td>
+        <td>This weekend, and the local tier forever: on your laptop, everything is already yours. If you run your agent on your own machine, there's no one to isolate it from.</td></tr>
+      <tr><td><span class="tag sello">2 · wall</span></td>
+        <td>A container (or micro-VM) per agent. Only two things get mounted: the course's <code>raw/</code>, read-only, and the agent's folder, read/write. Nothing else exists inside.</td>
+        <td>Operating-system-level isolation. Even if the model wanted to, there's no other folder to read.</td>
+        <td>Hosted tier v1 (us) and, optionally, the professor's Railway. It's plain Docker; no need to host anything new.</td></tr>
+      <tr><td><span class="tag ok">3 · composition</span></td>
+        <td>Each agent sees a <b>virtual tree</b> built from the folders of the channels it's a member of, plus its own (DECISIONS §6, "permissions = folder composition"). With bind mounts today; with <b>Archil</b> once it's multi-machine.</td>
+        <td>The same as layer 2, but the agent's view changes when it's added to or removed from a channel, with no reconfiguration.</td>
+        <td>Once several agents share knowledge across channels. Not needed this weekend, nor for the local tier.</td></tr>
+    </tbody>
+  </table>
+  <div class="nota" style="margin-top:16px"><b>About Archil.</b> Yes: Archil is a hosted service (mountable disks backed by S3), so using it implies the hosted tier. But Archil isn't what provides isolation — it provides the <i>composed view</i> in layer 3. Isolation comes from layer 2, with one container per agent, which we can do today with no external service. Sensible order: layer 1 now → layer 2 once we host → layer 3 once agents need to share folders.</div>
+
+  <h2 id="tiers">6. The three ways to run it</h2>
+  <table>
+    <thead><tr><th>Where the runner runs</th><th>Runtime and credential</th><th>Isolation</th><th>It's online…</th><th>Cost</th></tr></thead>
+    <tbody>
+      <tr><td><b>Laptop</b> of whoever created the agent</td><td><code>claude</code>/<code>codex</code> with their subscription, or <code>pi</code> + Ollama (open model, local)</td><td>layer 1 (it's their machine)</td><td>…while the laptop is on</td><td>$0 for us; the person already pays for their subscription, or nothing</td></tr>
+      <tr><td><b>Professor's Railway</b></td><td>unmodified <code>claude</code>, with <code>claude setup-token</code> that they generate themselves and paste into <i>their own</i> environment variables</td><td>layer 1, layer 2 if they want</td><td>…always</td><td>Railway + their plan. Allowed by Anthropic as long as it's their binary and their login</td></tr>
+      <tr><td><b>Hosted by us</b></td><td><code>pi</code> with an open model (cheap default) or Claude/GPT with an API key: the professor's (BYO) or ours with a margin</td><td>layer 2, then layer 3</td><td>…always</td><td>This is where we charge. Never with someone else's subscription: it's prohibited and blocked</td></tr>
+    </tbody>
+  </table>
+  <p style="margin-top:14px"><b>Community</b> agents (the professor's) tend toward the second or third case because they have to always be able to answer. Students' <b>personal</b> agents tend toward the first: free, private, and no big deal if they go offline.</p>
+
+  <h2 id="faq">7. Questions we've already asked ourselves</h2>
+  <div class="faq">
+    <details><summary>Can a professor use their Claude subscription on Railway?</summary><p>Yes, as long as what's running is the unmodified <code>claude</code> binary and they log in through Anthropic's own flow (<code>claude setup-token</code>). Claude Code's legal page says it outright: «<i>Nor does it prevent an end user from signing in to the unmodified Claude Code binary with their own Claude subscription, including where a platform hosts Claude Code</i>». What we can't do is request, store, or route that token. Source and detail: <code>research/2026-08-22-suscripciones-runners-buzz-pi.md</code>.</p></details>
+    <details><summary>What about pi.dev? I wanted to avoid depending on a single provider.</summary><p>pi is the right harness for that: 15+ providers, open models via Ollama/OpenRouter, headless mode, reads <code>CLAUDE.md</code>. What it <b>doesn't</b> give you is subscriptions: its OAuth login with Claude is exactly what Anthropic banned (since April 2026 it responds "Third-party apps now draw from your extra usage"). So: pi = runtime with API keys and open models; claude/codex = runtime with a subscription. The runner treats them the same.</p></details>
+    <details><summary>Why doesn't the server call the model, "even just for the demo"?</summary><p>Because it's the decision you can't undo later. The moment the server holds an API key, you have to store it, rotate it, bill for it, and the local tier stops being free and private. Keeping server and runner separate costs an afternoon today and nothing tomorrow.</p></details>
+    <details><summary>What happens if the student turns off their computer?</summary><p>Their personal agent shows as "offline" in the UI. Mentions don't get queued: they're lost, with a warning shown when writing. That's exactly what Buzz does. If they want it always on, they move it to the hosted tier.</p></details>
+    <details><summary>Open source models?</summary><p>They come in through pi (local Ollama, your own vLLM, OpenRouter). On hosted, they're the cheap default. No terms-of-service issue with anyone.</p></details>
+    <details><summary>Why didn't we fork Buzz in the end?</summary><p>It wasn't up and running before the 14:00 checkpoint, and we already had our own client. We copied its topology (a relay that doesn't run agents + a separate harness + provider runtimes), not its code. DECISIONS §7 was superseded by §14.</p></details>
+    <details><summary>How does billing work?</summary><p>Only on hosted: hosting + an always-on runner + tokens (usage-based or per-seat; not decided) + backups and analytics for the institution. Local and self-host are free, Apache-2.0.</p></details>
+  </div>
+
+  <h2 id="glosario">8. Glossary</h2>
+  <dl class="glos">
+    <dt>Community</dt><dd>A course. One server = one community this weekend.</dd>
+    <dt>Channel</dt><dd>Steady (<code>#questions</code>, <code>#03-backprop</code>) or a work channel (an assignment; design-only this weekend).</dd>
+    <dt>Card</dt><dd>A markdown page with a type, version, sources, and "replaces." It's the published copy of a file from an agent's wiki.</dd>
+    <dt>Agent</dt><dd>An identity in the community + a folder + a runner. Community (created by the professor) or personal (created by a student).</dd>
+    <dt>Runner</dt><dd><code>ada-runner</code>: the process that connects an agent to the server and runs its runtime.</dd>
+    <dt>Runtime</dt><dd>The AI program that does the thinking: <code>claude</code>, <code>codex</code>, <code>pi</code>. Unmodified, with its owner's credentials.</dd>
+    <dt>Wiki</dt><dd><code>wiki/</code> inside the agent's folder: <code>index.md</code>, <code>log.md</code>, <code>modules/</code>, <code>questions/</code>, <code>decisions/</code>, <code>difficulties/</code>.</dd>
+    <dt>Ingest</dt><dd><code>@agent ingest</code>: read what's new in <code>raw/</code> and compile it into cards. Not triggered per message.</dd>
+    <dt>From the file</dt><dd>A reply that cites an existing card without writing anything new. The "already on file · N days ago" stamp.</dd>
+    <dt>supersedes</dt><dd>A new card that replaces another. The old one isn't edited: it becomes "superseded."</dd>
+    <dt>Immediate layer</dt><dd>The last 20 messages in the channel or thread, which the server sends with every mention.</dd>
+  </dl>
+
+  <footer>
+    This page is direction, not status: the code, <code>openspec/</code>, and <code>DECISIONS.md</code> §14-§15 are what govern. Implementation spec: <code>openspec/changes/demo-local-backend/</code>. Sourced research: <code>research/2026-08-22-suscripciones-runners-buzz-pi.md</code>. If anything on this page contradicts those files, this page is out of date.
+  </footer>
+</main>
+</body>
+</html>

@@ -5,7 +5,7 @@
   "type": "module",
   "bin": { "ada-runner": "./src/cli.ts" },
   "scripts": {
-    "dev": "echo 'todavía no implementado: ver openspec/changes/demo-local-backend (grupo 4)' && exit 1"
+    "dev": "echo 'not implemented yet: see openspec/changes/demo-local-backend (group 4)' && exit 1"
   },
   "dependencies": {
     "@ada/protocol": "*"

@@ -1,13 +1,14 @@
 # research/
 
-Investigación con fuentes. Respaldo de `PROBLEM.md`; no es autoridad por sí misma (ver `AGENTS.md`, «toda la información entra en el repo»).
+Research with sources. Backs up `PROBLEM.md`; it is not an authority on its own (see `AGENTS.md`, "all information goes into the repo").
 
-Convención: un archivo por sesión o documento, `AAAA-MM-DD-<tema>.md`. Cada afirmación lleva fuente, URL y nivel de verificación: **✓ primaria** (leída en la fuente original), **~ snippet** (solo visto en un resultado de búsqueda), **≈ secundaria** (nota periodística o blog sobre la fuente). Una cifra sin fuente se marca como estimación.
+Convention: one file per session or document, `YYYY-MM-DD-<topic>.md`. Every claim carries a source, a URL, and a verification level: **✓ primary** (read at the original source), **~ snippet** (only seen in a search result), **≈ secondary** (news or blog coverage of the source). A figure without a source is marked as an estimate.
 
-| Archivo | Qué es |
+| File | What it is |
 |---|---|
-| `2024-11-tfg-siglo21.md` | Resumen del TFG de 2024 (antecedente de Ada): problema, solución descartada, qué sobrevive. |
-| `2026-08-22-impacto-del-problema-en-2026.md` | Evidencia 2025–2026 en seis frentes (alumnos, docentes, pérdida de conocimiento, memoria de agentes y tutores IA, Argentina, herramientas) + lo que la investigación no prueba. |
-| `2026-08-22-suscripciones-runners-buzz-pi.md` | Reglas de Anthropic/OpenAI sobre suscripciones en servidores y harnesses de terceros, topología de agentes de Buzz, y qué es pi.dev. Base de `DECISIONS.md` §14. |
-| `2026-08-22-por-que-ahora.md` | Timing tecnológico verificado (MCP, ACP, Buzz, costos, memoria-como-archivos, políticas de IA) y auditoría del claim "el problema es la atención/ritmo": qué framing sobrevive a la evidencia. Base de `PROBLEM.md` §4/§8/§9. |
-| `2026-08-22-open-source-vs-premium.md` | Precedentes de open source edtech y open-core vs. venta a colegios de élite; criterios del jurado de Aleph. Base de `DECISIONS.md` §16. |
+| `2026-08-22-problem-impact.md` | 2025–2026 evidence across six fronts (students, teachers, knowledge loss, agent memory and AI tutors, Argentina, tools) + what the research does not prove. |
+| `2026-08-22-subscriptions-runners-buzz-pi.md` | Anthropic/OpenAI rules on subscriptions in third-party servers and harnesses, Buzz's agent topology, and what pi.dev is. Basis for `DECISIONS.md` §14. |
+| `2026-08-22-why-now.md` | Verified technological timing (MCP, ACP, Buzz, costs, memory-as-files, AI policy) and an audit of the "the problem is attention/pace" claim: which framing survives the evidence. Basis for `PROBLEM.md` §4/§8/§9. |
+| `2026-08-22-open-source-vs-premium.md` | Precedents from open source edtech and open-core vs. selling to elite schools; Aleph jury criteria. Basis for `DECISIONS.md` §16. |
+| `2026-08-22-aleph-submission-and-pitch.md` | Aleph 2026 submission rules and pitch guidance: demo video constraints, judging criteria, and what we decided for the pitch structure. |
+| `2026-08-22-api-local-frameworks.md` | Technical claims used to implement Ada's local API: Hono on Node, WebSocket, and Node's built-in SQLite. |

@@ -2,7 +2,7 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-/* Tipografías (gratuitas, variables): Inter → UI · Literata → fichas · Geist Mono → código */
+/* Typefaces (free, variable): Inter → UI · Literata → cards · Geist Mono → code */
 @import "@fontsource-variable/inter/opsz.css";
 @import "@fontsource-variable/inter/opsz-italic.css";
 @import "@fontsource-variable/literata/opsz.css";
@@ -12,16 +12,16 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ------------------------------------------------------------------
-   Tokens de Ada · «El fichero» (ver DESIGN.md).
-   Suelo neutro, paneles inset con lengüetas, pestañas por tipo de ficha,
-   un amarillo pleno como acento, pills pastel para estado, agentes planos.
+   Ada's tokens · "The File" (see DESIGN.md).
+   Neutral ground, inset panels with tabs, tabs colored by card type,
+   a solid yellow as accent, pastel pills for state, flat agents.
    ------------------------------------------------------------------ */
 @theme {
   --font-sans: "Inter Variable", Inter, system-ui, -apple-system, sans-serif;
   --font-serif: "Literata Variable", Literata, Georgia, serif;
   --font-mono: "Geist Mono Variable", "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  /* superficies */
+  /* surfaces */
   --color-ground: #f1f1ef;
   --color-panel: #ffffff;
   --color-panel-2: #f7f6f3;
@@ -29,55 +29,56 @@
   --color-line: #ebe9e4;
   --color-line-strong: #dedbd4;
 
-  /* tinta */
+  /* ink */
   --color-ink: #1b1b20;
   --color-ink-2: #5a5a63;
-  --color-ink-3: #8b8b95;
-  --color-ink-4: #b9b9c2;
+  --color-ink-3: #6b6b74; /* floor 4.5:1 over panel, panel-2, panel-3 and ground */
+  --color-ink-4: #b9b9c2; /* decorative or disabled: dots, separators, rings. Never text. */
 
-  /* acentos */
-  --color-sol: #ffd43b; /* el amarillo pleno de la referencia */
-  --color-sol-soft: #fff3c4;
-  --color-sol-ink: #6f5200;
-  --color-sello: #2f55d4; /* acción */
-  --color-sello-soft: #e9eefc;
-  --color-alerta: #e0493f;
-  --color-alerta-soft: #fde9e7;
+  /* accents */
+  --color-sun: #ffd43b; /* the solid yellow from the reference */
+  --color-sun-soft: #fff3c4;
+  --color-sun-ink: #6f5200;
+  --color-seal: #2f55d4; /* action */
+  --color-seal-soft: #e9eefc;
+  --color-alert: #e0493f;
+  --color-alert-soft: #fde9e7;
 
-  /* pestañas por tipo de ficha (fondo / tinta) */
-  --color-tab-apunte: #d9e8ff;
-  --color-tab-apunte-ink: #1f55a8;
-  --color-tab-consigna: #ffe4c7;
-  --color-tab-consigna-ink: #9a4f0a;
+  /* tabs by card type (background / ink) */
+  --color-tab-note: #d9e8ff;
+  --color-tab-note-ink: #1f55a8;
+  --color-tab-assignment: #ffe4c7;
+  --color-tab-assignment-ink: #9a4f0a;
   --color-tab-decision: #d7f3de;
   --color-tab-decision-ink: #1f6b3c;
-  --color-tab-respuesta: #fff0b3;
-  --color-tab-respuesta-ink: #7a5a00;
-  --color-tab-entrega: #ffdbe6;
-  --color-tab-entrega-ink: #a8335f;
+  --color-tab-answer: #fff0b3;
+  --color-tab-answer-ink: #7a5a00;
+  --color-tab-submission: #ffdbe6;
+  --color-tab-submission-ink: #a8335f;
 
-  /* pills de estado */
+  /* status pills */
   --color-ok: #d9f4e6;
   --color-ok-ink: #1f7a4a;
 
-  /* estados de canal de trabajo */
-  --color-estado-activo: #3fbf6b;
-  --color-estado-entregado: #2f55d4;
-  --color-estado-archivado: #b9b9c2;
+  /* work-channel status */
+  --color-status-active: #3fbf6b;
+  --color-status-submitted: #2f55d4;
+  --color-status-archived: #b9b9c2;
 
   --radius-panel: 12px;
   --radius-card: 16px;
-  --radius-ficha: 14px;
+  --radius-card-tab: 14px;
   --radius-control: 10px;
   --radius-pill: 999px;
 
+  --shadow-panel: 0 1px 2px rgba(24, 24, 36, 0.04), 0 18px 40px -22px rgba(24, 24, 36, 0.22);
   --shadow-card: 0 1px 2px rgba(24, 24, 36, 0.04), 0 8px 20px -12px rgba(24, 24, 36, 0.18);
   --shadow-pop: 0 2px 6px rgba(24, 24, 36, 0.08), 0 24px 48px -16px rgba(24, 24, 36, 0.35);
 
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* shadcn semantic vars → mundo Ada */
+/* shadcn semantic vars → Ada's world */
 @theme inline {
   --color-background: var(--color-panel);
   --color-foreground: var(--color-ink);
@@ -93,10 +94,10 @@
   --color-muted-foreground: var(--color-ink-3);
   --color-accent: var(--color-panel-3);
   --color-accent-foreground: var(--color-ink);
-  --color-destructive: var(--color-alerta);
+  --color-destructive: var(--color-alert);
   --color-border: var(--color-line);
   --color-input: var(--color-line-strong);
-  --color-ring: var(--color-sello);
+  --color-ring: var(--color-seal);
   --color-sidebar: var(--color-ground);
   --color-sidebar-foreground: var(--color-ink);
   --color-sidebar-primary: var(--color-ink);
@@ -104,12 +105,12 @@
   --color-sidebar-accent: var(--color-panel-3);
   --color-sidebar-accent-foreground: var(--color-ink);
   --color-sidebar-border: var(--color-line-strong);
-  --color-sidebar-ring: var(--color-sello);
-  --color-chart-1: var(--color-tab-apunte-ink);
-  --color-chart-2: var(--color-tab-consigna-ink);
+  --color-sidebar-ring: var(--color-seal);
+  --color-chart-1: var(--color-tab-note-ink);
+  --color-chart-2: var(--color-tab-assignment-ink);
   --color-chart-3: var(--color-tab-decision-ink);
-  --color-chart-4: var(--color-tab-respuesta-ink);
-  --color-chart-5: var(--color-tab-entrega-ink);
+  --color-chart-4: var(--color-tab-answer-ink);
+  --color-chart-5: var(--color-tab-submission-ink);
   --radius-sm: 8px;
   --radius-md: 10px;
   --radius-lg: 14px;
@@ -141,18 +142,18 @@
     letter-spacing: -0.006em;
   }
   ::selection {
-    background: color-mix(in oklch, var(--color-sol) 60%, transparent);
+    background: color-mix(in oklch, var(--color-sun) 60%, transparent);
   }
 }
 
 @layer components {
-  /* Panel inset (mismo estilo que el SidebarInset de shadcn): blanco, radio 12, sombra chica. */
+  /* Inset panel (same style as shadcn's SidebarInset): white, radius 12, small shadow. */
   .panel {
     background: var(--color-panel);
     border-radius: 0.75rem;
-    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    box-shadow: var(--shadow-panel);
   }
-  /* Rótulo: Inter chica, semibold, mayúsculas. Con moderación. */
+  /* Label: small Inter, semibold, uppercase. Used sparingly. */
   .label {
     font-family: var(--font-sans);
     font-size: 0.6875rem;
@@ -167,7 +168,7 @@
     line-height: 1.25;
     letter-spacing: 0;
   }
-  /* Pill de estado: fondo pastel, texto en tinta del mismo tono. */
+  /* Status pill: pastel background, text in the same-tone ink. */
   .pill {
     display: inline-flex;
     align-items: center;
@@ -183,8 +184,8 @@
   }
 }
 
-/* Movimientos autorizados: archivar (la ficha entra), sellar (la pill aterriza) */
-@keyframes archivar {
+/* Authorized motion: archive (the card slides in), seal (the pill lands) */
+@keyframes archive {
   0% {
     opacity: 0;
     transform: translateY(12px) scale(0.98);
@@ -194,7 +195,7 @@
     transform: translateY(0) scale(1);
   }
 }
-@keyframes sellar {
+@keyframes seal {
   0% {
     opacity: 0;
     transform: scale(1.25);
@@ -208,20 +209,20 @@
     transform: scale(1);
   }
 }
-.animate-archivar {
-  animation: archivar 360ms var(--ease-out-expo) both;
+.animate-archive {
+  animation: archive 360ms var(--ease-out-expo) both;
 }
-.animate-sellar {
-  animation: sellar 380ms var(--ease-out-expo) both;
+.animate-seal {
+  animation: seal 380ms var(--ease-out-expo) both;
 }
 
-/* Rayos X de fuentes */
+/* Source X-ray */
 html[data-xray] [id^="msg-"]:not([data-xray-target]) {
   opacity: 0.22;
   transition: opacity 300ms var(--ease-out-expo);
 }
 html[data-xray] [data-xray-target] {
-  background: var(--color-sol-soft);
+  background: var(--color-sun-soft);
   border-radius: var(--radius-card);
 }
 @keyframes dash {
@@ -234,8 +235,19 @@ html[data-xray] [data-xray-target] {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-sellar,
-  .animate-archivar {
+  .animate-seal,
+  .animate-archive {
     animation: none;
+  }
+  /* X-ray: the stroke arrives already drawn, with no travel. We redefine the
+     keyframe instead of the class because the dash is applied with an
+     arbitrary value. */
+  @keyframes dash {
+    from {
+      stroke-dasharray: 2000 0;
+    }
+    to {
+      stroke-dasharray: 2000 0;
+    }
   }
 }

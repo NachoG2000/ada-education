@@ -1,12 +1,12 @@
 import { z } from "zod"
 import type { Community } from "./types.js"
 
-const pageTypeSchema = z.enum(["apunte", "consigna", "decision", "respuesta", "entrega"])
-const visibilitySchema = z.enum(["canal", "solo-yo"])
-const presenceSchema = z.enum(["en-linea", "ausente", "pensando", "publicando"])
+const cardTypeSchema = z.enum(["note", "assignment", "decision", "answer", "submission"])
+const visibilitySchema = z.enum(["channel", "only-me"])
+const presenceSchema = z.enum(["online", "away", "thinking", "publishing"])
 
 export const citationSchema = z.object({
-  pageId: z.string(),
+  cardId: z.string(),
   section: z.string().optional(),
 })
 
@@ -23,7 +23,7 @@ export const messageSchema = z.object({
   at: z.string(),
   paragraphs: z.array(z.array(messageBlockSchema)),
   threadId: z.string().optional(),
-  fromPage: z.object({ pageId: z.string(), ago: z.string() }).optional(),
+  fromCard: z.object({ cardId: z.string(), ago: z.string() }).optional(),
   publishes: z.string().optional(),
   reactions: z.array(z.object({ emoji: z.string(), count: z.number() })).optional(),
 })
@@ -32,7 +32,7 @@ export const threadSchema = z.object({
   id: z.string(),
   rootMessageId: z.string(),
   replyIds: z.array(z.string()),
-  publishedPageId: z.string().optional(),
+  publishedCardId: z.string().optional(),
 })
 
 const personSchema = z.object({
@@ -40,8 +40,8 @@ const personSchema = z.object({
   id: z.string(),
   name: z.string(),
   initials: z.string(),
-  tone: z.enum(["ficha", "cartulina", "sello-soft", "rojo-soft"]),
-  role: z.enum(["profesor", "alumno"]).optional(),
+  tone: z.enum(["card", "cardstock", "seal-soft", "red-soft"]),
+  role: z.enum(["teacher", "student"]).optional(),
   presence: presenceSchema,
 })
 
@@ -49,34 +49,34 @@ const agentSchema = z.object({
   kind: z.literal("agent"),
   id: z.string(),
   name: z.string(),
-  scope: z.enum(["comunidad", "personal"]),
+  scope: z.enum(["community", "personal"]),
   createdBy: z.string(),
   figureSeed: z.string().optional(),
-  figureColor: z.enum(["coral", "verde", "amarillo", "azul", "lila", "rosa", "teal", "naranja", "rojo", "lima"]).optional(),
+  figureColor: z.enum(["coral", "green", "yellow", "blue", "lilac", "pink", "teal", "orange", "red", "lime"]).optional(),
   instructions: z.string(),
-  provider: z.object({ mode: z.enum(["suscripcion", "api-key"]), model: z.string() }),
+  provider: z.object({ mode: z.enum(["subscription", "api-key"]), model: z.string() }),
   channelIds: z.array(z.string()),
   presence: presenceSchema,
 })
 
 export const memberSchema = z.discriminatedUnion("kind", [personSchema, agentSchema])
 
-export const pageSchema = z.object({
+export const cardSchema = z.object({
   id: z.string(),
   channelId: z.string(),
   title: z.string(),
-  type: pageTypeSchema,
+  type: cardTypeSchema,
   authorId: z.string(),
   version: z.number(),
   visibility: visibilitySchema,
   sources: z.array(z.object({
-    kind: z.enum(["mensaje", "archivo"]),
+    kind: z.enum(["message", "file"]),
     ref: z.string(),
     label: z.string(),
   })),
   replaces: z.string().optional(),
   base: z.boolean().optional(),
-  state: z.enum(["nueva", "actualizada", "reemplazada", "compilando"]).optional(),
+  state: z.enum(["new", "updated", "superseded", "compiling"]).optional(),
   publishedAt: z.string(),
   body: z.string(),
 })
@@ -84,18 +84,18 @@ export const pageSchema = z.object({
 export const channelSchema = z.object({
   id: z.string(),
   name: z.string(),
-  group: z.enum(["curso", "trabajo", "privados"]),
+  group: z.enum(["course", "work", "private"]),
   description: z.string().optional(),
   memberIds: z.array(z.string()),
   memberCount: z.number().optional(),
   work: z.object({
-    status: z.enum(["activo", "entregado", "archivado"]),
+    status: z.enum(["active", "submitted", "archived"]),
     due: z.string().optional(),
   }).optional(),
   unread: z.boolean().optional(),
 })
 
-/** Snapshot que hidrata la web; `meId` lo decide cada cliente local. */
+/** Snapshot that hydrates the web client; each local client decides its own `meId`. */
 export const communitySnapshotSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -103,18 +103,18 @@ export const communitySnapshotSchema = z.object({
   initial: z.string(),
   members: z.array(memberSchema),
   channels: z.array(channelSchema),
-  pages: z.array(pageSchema),
+  cards: z.array(cardSchema),
   messages: z.array(messageSchema),
   threads: z.array(threadSchema),
 })
 
-export const pagePublishInputSchema = z.object({
+export const cardPublishInputSchema = z.object({
   channelId: z.string(),
   path: z.string(),
   title: z.string(),
-  type: pageTypeSchema,
+  type: cardTypeSchema,
   visibility: visibilitySchema,
-  sources: pageSchema.shape.sources,
+  sources: cardSchema.shape.sources,
   replaces: z.string().optional(),
   body: z.string(),
   base: z.boolean().optional(),
@@ -130,8 +130,8 @@ export const serverEventSchema = z.discriminatedUnion("type", [
     payload: z.object({ thread: threadSchema }),
   }),
   z.object({
-    type: z.literal("page.published"),
-    payload: z.object({ page: pageSchema, message: messageSchema }),
+    type: z.literal("card.published"),
+    payload: z.object({ card: cardSchema, message: messageSchema }),
   }),
   z.object({
     type: z.literal("member.presence"),
@@ -173,14 +173,14 @@ export const runnerClientMessageSchema = z.discriminatedUnion("type", [
       channelId: z.string(),
       threadId: z.string().optional(),
       paragraphs: z.array(z.array(messageBlockSchema)),
-      fromPage: z.object({ pageId: z.string(), ago: z.string() }).optional(),
+      fromCard: z.object({ cardId: z.string(), ago: z.string() }).optional(),
       publishes: z.string().optional(),
     }),
   }),
   z.object({
-    type: z.literal("page.publish"),
+    type: z.literal("card.publish"),
     ref: z.string(),
-    payload: pagePublishInputSchema,
+    payload: cardPublishInputSchema,
   }),
 ])
 
@@ -189,7 +189,7 @@ const ackSuccessSchema = z.object({
   ref: z.string(),
   ok: z.literal(true),
   message: messageSchema.optional(),
-  page: pageSchema.optional(),
+  card: cardSchema.optional(),
 })
 
 const ackErrorSchema = z.object({
@@ -205,5 +205,5 @@ export type CommunitySnapshot = Omit<Community, "meId">
 export type ServerEvent = z.infer<typeof serverEventSchema>
 export type RunnerServerMessage = z.infer<typeof runnerServerMessageSchema>
 export type RunnerClientMessage = z.infer<typeof runnerClientMessageSchema>
-export type PagePublishInput = z.infer<typeof pagePublishInputSchema>
+export type CardPublishInput = z.infer<typeof cardPublishInputSchema>
 export type Ack = z.infer<typeof ackSchema>

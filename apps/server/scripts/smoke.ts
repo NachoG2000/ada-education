@@ -13,7 +13,7 @@ function json(data: WebSocket.RawData): JsonObject {
 
 function opened(socket: WebSocket): Promise<void> {
   return new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => reject(new Error("timeout abriendo WS")), timeoutMs)
+    const timeout = setTimeout(() => reject(new Error("timeout opening WS")), timeoutMs)
     socket.once("open", () => {
       clearTimeout(timeout)
       resolve()
@@ -22,11 +22,11 @@ function opened(socket: WebSocket): Promise<void> {
   })
 }
 
-function next(socket: WebSocket, predicate: (event: JsonObject) => boolean, label = "evento WS"): Promise<JsonObject> {
+function next(socket: WebSocket, predicate: (event: JsonObject) => boolean, label = "WS event"): Promise<JsonObject> {
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {
       socket.off("message", onMessage)
-      reject(new Error(`timeout esperando ${label}`))
+      reject(new Error(`timeout waiting for ${label}`))
     }, timeoutMs)
     const onMessage = (raw: WebSocket.RawData): void => {
       let event: JsonObject
@@ -46,7 +46,7 @@ function next(socket: WebSocket, predicate: (event: JsonObject) => boolean, labe
 
 function closed(socket: WebSocket): Promise<number> {
   return new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => reject(new Error("timeout cerrando WS inválido")), timeoutMs)
+    const timeout = setTimeout(() => reject(new Error("timeout closing invalid WS")), timeoutMs)
     socket.once("close", (code) => {
       clearTimeout(timeout)
       resolve(code)
@@ -75,8 +75,8 @@ async function main(): Promise<void> {
   const online = next(client, (event) =>
     event.type === "member.presence"
       && (event.payload as JsonObject | undefined)?.memberId === "ada"
-      && (event.payload as JsonObject | undefined)?.presence === "en-linea",
-    "presencia en-linea de ada",
+      && (event.payload as JsonObject | undefined)?.presence === "online",
+    "online presence for ada",
   )
   await opened(runner)
   await online
@@ -84,116 +84,116 @@ async function main(): Promise<void> {
   const thinking = next(client, (event) =>
     event.type === "member.presence"
       && (event.payload as JsonObject | undefined)?.memberId === "ada"
-      && (event.payload as JsonObject | undefined)?.presence === "pensando",
-    "presencia pensando de ada",
+      && (event.payload as JsonObject | undefined)?.presence === "thinking",
+    "thinking presence for ada",
   )
   runner.send(JSON.stringify({
     type: "presence",
-    payload: { presence: "pensando", runtime: "claude", model: "smoke-model" },
+    payload: { presence: "thinking", runtime: "claude", model: "smoke-model" },
   }))
   const thinkingEvent = await thinking
   const thinkingPayload = thinkingEvent.payload as JsonObject
   if (thinkingPayload.runtime !== "claude" || thinkingPayload.model !== "smoke-model") {
-    throw new Error("presence no propagó runtime/model del runner")
+    throw new Error("presence did not propagate the runner's runtime/model")
   }
 
   const mention = next(runner, (event) => event.type === "agent.mention", "agent.mention")
-  const created = await post("/api/channels/dudas/messages", {
+  const created = await post("/api/channels/questions/messages", {
     authorId: "sofia",
-    paragraphs: [[{ kind: "text", text: "hola @ada" }]],
+    paragraphs: [[{ kind: "text", text: "hello @ada" }]],
   })
   const mentionEvent = await mention
   const mentionPayload = mentionEvent.payload as JsonObject
   const context = mentionPayload.context as unknown[]
   if (!Array.isArray(context) || !context.some((item) => (item as JsonObject).id === created.id)) {
-    throw new Error("agent.mention no trae el mensaje recién persistido en context")
+    throw new Error("agent.mention does not carry the just-persisted message in context")
   }
 
-  const path = `preguntas/smoke-${Date.now()}.md`
-  const pageEvent = next(client, (event) =>
-    event.type === "page.published" && (event.payload as JsonObject | undefined)?.page !== undefined,
-    "page.published",
+  const path = `questions/smoke-${Date.now()}.md`
+  const cardEvent = next(client, (event) =>
+    event.type === "card.published" && (event.payload as JsonObject | undefined)?.card !== undefined,
+    "card.published",
   )
-  const pageAck = next(runner, (event) => event.type === "ack" && event.ref === "smoke-page", "ack de page.publish")
+  const cardAck = next(runner, (event) => event.type === "ack" && event.ref === "smoke-card", "ack for card.publish")
   runner.send(JSON.stringify({
-    type: "page.publish",
-    ref: "smoke-page",
+    type: "card.publish",
+    ref: "smoke-card",
     payload: {
-      channelId: "dudas",
+      channelId: "questions",
       path,
-      title: "Pregunta del smoke",
-      type: "respuesta",
-      visibility: "canal",
-      sources: [{ kind: "mensaje", ref: String(created.id), label: "Pregunta" }],
-      body: "Respuesta de prueba del smoke.",
+      title: "Smoke test question",
+      type: "answer",
+      visibility: "channel",
+      sources: [{ kind: "message", ref: String(created.id), label: "Question" }],
+      body: "Test answer from smoke.",
     },
   }))
-  const published = await pageAck
-  if (published.ok !== true) throw new Error(String(published.error ?? "page.publish rechazado"))
-  const page = published.page as JsonObject
-  if (!page || page.authorId !== "ada") throw new Error("page.publish no derivó authorId=ada")
-  const pagePublishedEvent = await pageEvent
-  const pageEventPayload = pagePublishedEvent.payload as JsonObject
-  const announcedPage = pageEventPayload.page as JsonObject
-  const announcedMessage = pageEventPayload.message as JsonObject
-  if (!announcedPage || announcedPage.id !== page.id || announcedMessage?.publishes !== page.id) {
-    throw new Error("page.published no trae el mensaje de publicación con publishes correcto")
+  const published = await cardAck
+  if (published.ok !== true) throw new Error(String(published.error ?? "card.publish rejected"))
+  const card = published.card as JsonObject
+  if (!card || card.authorId !== "ada") throw new Error("card.publish did not derive authorId=ada")
+  const cardPublishedEvent = await cardEvent
+  const cardEventPayload = cardPublishedEvent.payload as JsonObject
+  const announcedCard = cardEventPayload.card as JsonObject
+  const announcedMessage = cardEventPayload.message as JsonObject
+  if (!announcedCard || announcedCard.id !== card.id || announcedMessage?.publishes !== card.id) {
+    throw new Error("card.published does not carry the publish message with the correct publishes")
   }
 
   const messageEvent = next(client, (event) =>
     event.type === "message.created" && (event.payload as JsonObject | undefined)?.message !== undefined,
     "message.created",
   )
-  const messageAck = next(runner, (event) => event.type === "ack" && event.ref === "smoke-message", "ack de message.create")
+  const messageAck = next(runner, (event) => event.type === "ack" && event.ref === "smoke-message", "ack for message.create")
   runner.send(JSON.stringify({
     type: "message.create",
     ref: "smoke-message",
     payload: {
-      channelId: "dudas",
+      channelId: "questions",
       paragraphs: [[{
         kind: "cite",
-        text: "Pregunta del smoke",
-        cite: { pageId: String(page.id) },
+        text: "Smoke test question",
+        cite: { cardId: String(card.id) },
       }]],
     },
   }))
   const cited = await messageAck
-  if (cited.ok !== true) throw new Error(String(cited.error ?? "message.create rechazado"))
+  if (cited.ok !== true) throw new Error(String(cited.error ?? "message.create rejected"))
   const citedMessage = cited.message as JsonObject | undefined
-  if (!citedMessage || citedMessage.authorId !== "ada") throw new Error("message.create no derivó authorId=ada")
+  if (!citedMessage || citedMessage.authorId !== "ada") throw new Error("message.create did not derive authorId=ada")
   const messageCreatedEvent = await messageEvent
   const messageEventPayload = messageCreatedEvent.payload as JsonObject
   const createdEventMessage = messageEventPayload.message as JsonObject
   if (!createdEventMessage || createdEventMessage.id !== citedMessage.id) {
-    throw new Error("message.created no corresponde al mensaje del ACK")
+    throw new Error("message.created does not match the ACK's message")
   }
 
   const offline = next(client, (event) =>
     event.type === "member.presence"
       && (event.payload as JsonObject | undefined)?.memberId === "ada"
-      && (event.payload as JsonObject | undefined)?.presence === "ausente",
-    "presencia ausente de ada",
+      && (event.payload as JsonObject | undefined)?.presence === "away",
+    "away presence for ada",
   )
   runner.close(1000)
   await offline
 
-  const invalid = new WebSocket(`${wsUrl}/ws/runner?token=token-invalido`)
+  const invalid = new WebSocket(`${wsUrl}/ws/runner?token=invalid-token`)
   activeSockets.add(invalid)
   const close = closed(invalid)
   await opened(invalid).catch(() => undefined)
   const closeCode = await close
-  if (closeCode !== 4401) throw new Error(`token inválido cerró con ${closeCode}, esperaba 4401`)
+  if (closeCode !== 4401) throw new Error(`invalid token closed with ${closeCode}, expected 4401`)
 
   client.close(1000)
   runner.close(1000)
   invalid.close(1000)
   activeSockets.clear()
-  console.log("Smoke OK: presencia, mención con contexto, page.publish, message.create con cite y token inválido (4401).")
+  console.log("Smoke OK: presence, mention with context, card.publish, message.create with cite, and invalid token (4401).")
 }
 
 main().catch((error: unknown) => {
   for (const socket of activeSockets) socket.terminate()
   activeSockets.clear()
-  console.error(`Smoke falló: ${error instanceof Error ? error.message : String(error)}`)
+  console.error(`Smoke failed: ${error instanceof Error ? error.message : String(error)}`)
   process.exitCode = 1
 })

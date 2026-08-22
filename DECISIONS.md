@@ -1,272 +1,285 @@
 # DECISIONS.md — Ada Education
 
-Contexto completo del proyecto. Léelo entero antes de tocar código. Actualizado sábado 22/08 (Aleph Hackathon 2026, General Track únicamente).
+Full project context. Read it whole before touching code. Updated Saturday 08/22 (Aleph Hackathon 2026, General Track only).
 
-> **Qué es este archivo:** dirección e ideas, con su historia (las secciones reemplazadas quedan marcadas, no se borran). **No describe el código actual.** El estado real del código vive en `AGENTS.md` (mapa del repo) y `openspec/` (spec de lo que se está construyendo). El alcance vigente del finde es **§15**; §14 es la arquitectura a futuro.
+> **What this file is:** direction and ideas, with their history (superseded sections stay marked, never deleted). **It does not describe the current code.** The actual state of the code lives in `AGENTS.md` (repo map) and `openspec/` (spec of what's being built). The weekend's current scope is **§15**; §14 is the future architecture.
 
 ---
 
-## 0. Problema
+## 0. Problem
 
-Este archivo es la solución. **El problema está en `PROBLEM.md`**: cuatro fugas por las que el conocimiento de un curso se pierde (se repregunta lo respondido; se pregunta donde nada queda; desde 2025 se pregunta en privado a una IA que no conoce el curso; y al terminar el cuatrimestre no queda nada), a quién le duele, causas raíz, y los ocho criterios (§7) que cualquier feature tiene que cumplir. Evidencia con fuentes en `research/2026-08-22-impacto-del-problema-en-2026.md`.
+This file is the solution. **The problem lives in `PROBLEM.md`**: four leaks through which a course's knowledge is lost (what was answered gets re-asked; questions go where nothing is kept; since 2025 they go privately to an AI that doesn't know the course; and when the semester ends nothing remains), who it hurts, root causes, and the eight criteria (§7) every feature has to meet. Evidence with sources in `research/2026-08-22-problem-impact.md`.
 
-Antecedente: el TFG de noviembre de 2024 (`research/2024-11-tfg-siglo21.md`) tenía la misma intuición con un problema genérico y una solución que descartamos (LMS en Next.js + Postgres, chatbot por pestaña, gamificación). Lo que sobrevive de ahí es la visión de abajo; lo que no, está explicado en `PROBLEM.md` §9.
-
-## 1. Visión
+## 1. Vision
 
 Every group of people who learn together builds up knowledge that mostly disappears: the explanation that finally made something click, the reason a decision was made, the question three people asked separately. We believe that knowledge should belong to the group, grow on its own, and outlive any single conversation. So we're building a place where humans and AI agents are members of the same community, where what gets understood once becomes something everyone can read, and where the agents remember alongside the people instead of starting over every time.
 
 **Humans and agents learn together, and what they learn stays with them.**
 
-Tres compromisos que no cambian:
-1. **Los agentes son miembros.** Identidad propia, pertenecen a canales, firman lo que escriben. Los crea la comunidad, no la plataforma.
-2. **El conocimiento vive en archivos que el grupo posee.** Páginas legibles, versionadas, con fuentes. Nada que el grupo no pueda hacer `ls`.
-3. **Se compila una vez, se compone cada vez.** Lo caro es leer las fuentes crudas y entenderlas, y eso se hace una sola vez: el resultado son fichas conectadas entre sí (temas, decisiones, dificultades), no una lista de respuestas. Cada respuesta se compone fresca desde las fichas, a la medida de quien pregunta, sin volver a las fuentes. **No es un caché de respuestas:** la segunda persona que pregunta «lo mismo» lo pregunta con otras palabras y otro hueco, y lo que le sirve es una respuesta nueva armada con lo que el grupo ya entendió, quizás conectando dos fichas que la primera persona nunca necesitó juntas. Si el ángulo nuevo no estaba cubierto, la ficha se enriquece; no nace un duplicado. La memoria compila, no acumula.
+Three commitments that don't change:
+1. **Agents are members.** Their own identity, they belong to channels, they sign what they write. The community creates them, not the platform.
+2. **Knowledge lives in files the group owns.** Readable, versioned pages with sources. Nothing the group can't `ls`.
+3. **Compiled once, composed every time.** The expensive part is reading the raw sources and understanding them, and that happens only once: the result is cards connected to each other (topics, decisions, difficulties), not a list of answers. Every answer is composed fresh from the cards, tailored to whoever asks, without going back to the sources. **It is not an answer cache:** the second person asking "the same thing" asks it with other words and another gap, and what serves them is a new answer built from what the group already understood, perhaps connecting two cards the first person never needed together. If the new angle wasn't covered, the card is enriched; a duplicate isn't born. The memory compiles, it doesn't accumulate.
 
-## 2. Tesis a probar
+## 2. Theses to prove
 
-1. La UI del futuro es **Buzz** (Block) con agentes como miembros, canales y permisos. Buzz es la referencia única; no comparamos con Slack.
-2. La memoria (second brain / company brain) funciona en **filesystem**, no en DB. Referencias: LLM wiki de Karpathy, Stash (Fergana), Archil. Contrapunto: Cortex (DB relacional + world model compilado). Acá probamos lo opuesto.
-3. **Educación** es un buen dominio: un curso es un grupo de cerebros con canales, decisiones y conocimiento que se pierde cada cuatrimestre.
+1. The UI of the future is **Buzz** (Block) with agents as members, channels and permissions. Buzz is the single reference; we don't compare against Slack.
+2. Memory (second brain / company brain) works on the **filesystem**, not in a DB. References: Karpathy's LLM wiki, Stash (Fergana), Archil. Counterpoint: Cortex (relational DB + compiled world model). Here we prove the opposite.
+3. **Education** is a good domain: a course is a group of brains with channels, decisions and knowledge that gets lost every semester.
 
-## 3. Qué es Buzz (y por qué lo forkeamos)
+## 3. What Buzz is (and why we'd fork it)
 
-Buzz es un workspace self-hosteable donde humanos y agentes comparten las mismas rooms. Es un relay Nostr: cada mensaje, reacción, paso de workflow y evento de git es un evento firmado en un solo log, con la misma forma, identidad y audit trail sea persona o proceso. Backend en PostgreSQL (eventos + full-text search), Redis (pub/sub) y S3/MinIO para media; cliente desktop en Tauri + React; servidor en Rust. Habla NIP-01, NIP-42 (auth) y NIP-34 (git). Funciona hoy: relay, canales, threads, DMs, canvases, media, búsqueda, audit log, desktop app, buzz-cli, harness ACP para Goose/Codex/Claude Code, motor de workflows, personas y equipos de agentes, huddles. En progreso: mobile (Flutter), approval gates, push. Pendiente: git hosting, web-of-trust, emojis/polls, E2E en DMs. Tiene modo multi-comunidad (tenants scopeados por host) y deploy del relay a Railway en un click. Licencia Apache-2.0.
+Buzz is a self-hostable workspace where humans and agents share the same rooms. It's a Nostr relay: every message, reaction, workflow step and git event is a signed event in a single log, with the same shape, identity and audit trail whether it's a person or a process. Backend on PostgreSQL (events + full-text search), Redis (pub/sub) and S3/MinIO for media; desktop client on Tauri + React; server in Rust. It speaks NIP-01, NIP-42 (auth) and NIP-34 (git). It works today: relay, channels, threads, DMs, canvases, media, search, audit log, desktop app, buzz-cli, ACP harness for Goose/Codex/Claude Code, workflow engine, agent personas and teams, huddles. In progress: mobile (Flutter), approval gates, push. Pending: git hosting, web-of-trust, emojis/polls, E2E in DMs. It has multi-community mode (host-scoped tenants) and one-click relay deploy to Railway. Apache-2.0 license.
 
-**Cómo entran los agentes.** El harness `buzz-acp` escucha @mentions en el relay, le pasa el prompt al agente, y el agente responde usando el Buzz CLI. Buzz Desktop permite registrar cualquier runtime que hable ACP: Goose, Claude Code, Codex y Buzz Agent son tier-1 con instaladores y onboarding; Cursor, OpenCode, OpenClaw y otros son presets.
+**How agents come in.** The `buzz-acp` harness listens for @mentions on the relay, passes the prompt to the agent, and the agent replies using the Buzz CLI. Buzz Desktop lets you register any runtime that speaks ACP: Goose, Claude Code, Codex and Buzz Agent are tier-1 with installers and onboarding; Cursor, OpenCode, OpenClaw and others are presets.
 
-**Por qué esto cambia todo para nosotros:** el agente de curso puede ser **Claude Code (o Codex) corriendo en la carpeta de la wiki**, invocado por `buzz-acp` en cada @mention, respondiendo con `buzz-cli`. El harness, la identidad del agente, los canales, los threads y los canvases ya existen. Nuestro trabajo es la wiki, el skill del agente, y la capa "curso" sobre "organización".
+**Why this changes everything for us:** the course agent can be **Claude Code (or Codex) running in the wiki folder**, invoked by `buzz-acp` on every @mention, replying through `buzz-cli`. The harness, the agent identity, the channels, the threads and the canvases already exist. Our work is the wiki, the agent's skill, and the "course" layer over "organization".
 
-**Reglas para forkear.** Apache-2.0 permite fork, renombrar y uso comercial. Hay que conservar `LICENSE` y `NOTICE` con la atribución a Block, y no usar "Buzz" como nombre del producto (marca). Block no acepta PRs externos; irrelevante para un fork. Berd describe "distribution seams" para que terceros armen distribuciones propias; buscar si Buzz tiene lo mismo antes de modificar el core.
+**Forking rules.** Apache-2.0 allows forking, renaming and commercial use. `LICENSE` and `NOTICE` with Block's attribution must be kept, and "Buzz" can't be used as the product name (trademark). Block doesn't accept external PRs; irrelevant for a fork. Berd describes "distribution seams" so third parties can build their own distributions; check whether Buzz has the same before modifying the core.
 
-**Nombre del producto:** Ada Education (a confirmar). El agente de ejemplo se llama Ada.
+**Product name:** Ada Education (to be confirmed). The example agent is called Ada.
 
-## 4. Modelo de producto: open-core, igual que Buzz
+## 4. Product model: open-core, like Buzz
 
-- **Open source (Apache-2.0).** Cualquier profesor o institución puede correrlo gratis: relay + desktop + agentes con su propia API key o su suscripción de Claude/Codex (buzz-acp ya soporta los runtimes).
-- **Tres formas de correrlo**, las mismas que Buzz: (a) todo local con `docker compose` + desktop app; (b) relay self-hosteado en Railway en un click + desktop app; (c) **hosted** (premium): relays multi-comunidad administrados por nosotros, onboarding por link, agentes gestionados, sin setup.
-- **No hay "API propia" aparte del relay.** El relay es la API. Un cliente web, si se hace, habla Nostr contra el relay igual que el desktop.
-- **Premium futuro:** hosting, agentes gestionados (con nuestras API keys, nunca con suscripciones de usuarios: ver §14), backups de la wiki, analíticas del curso para la institución.
+- **Open source (Apache-2.0).** Any teacher or institution can run it for free: relay + desktop + agents with their own API key or their Claude/Codex subscription (buzz-acp already supports the runtimes).
+- **Three ways to run it**, the same as Buzz: (a) fully local with `docker compose` + desktop app; (b) self-hosted relay on Railway in one click + desktop app; (c) **hosted** (premium): multi-community relays managed by us, onboarding by link, managed agents, no setup.
+- **There is no "own API" besides the relay.** The relay is the API. A web client, if built, speaks Nostr to the relay just like the desktop.
+- **Future premium:** hosting, managed agents (with our API keys, never with users' subscriptions: see §14), wiki backups, course analytics for the institution.
 
-Respuesta a "¿local y que cada uno se hostee, o web fácil?": **las dos, porque Buzz ya separa relay de cliente.** El hackathon demuestra (a). El producto vende (c).
+Answer to "local and self-hosted, or easy web?": **both, because Buzz already separates relay from client.** The hackathon demonstrates (a). The product sells (c).
 
-## 5. Entidades (Buzz → curso)
+## 5. Entities (Buzz → course)
 
-> Tabla histórica: mapea conceptos de Buzz a los nuestros. Sigue siendo útil como diccionario, pero ya no hay Buzz en el stack (§14); "Canvas" hoy es la ficha publicada en nuestro server.
+> Historical table: it maps Buzz concepts to ours. Still useful as a dictionary, but there's no Buzz in the stack anymore (§14); "Canvas" today is the published card in our server.
 
-| Buzz | Ada Education | Nota |
+| Buzz | Ada Education | Note |
 |---|---|---|
-| Community | Curso | Un relay / un tenant = un curso (multi-comunidad después) |
-| Channel | Canal estable (`#general`, `#dudas`, `#03-backprop`) | Uno por módulo |
-| Branch-as-room (canal volátil) | Canal de trabajo (TP, evaluación) | Nace con una consigna, se archiva al cerrar. **Solo diseño este finde.** |
-| DM | Canal privado alumno ↔ agente personal | |
-| Canvas | Página | Tipo, autor, versión, `sources`, `supersedes`, visibilidad |
-| Agent (persona + runtime) | Agente de curso / agente personal | El profesor crea los de curso; cada alumno puede crear uno personal |
-| Member / role | profesor · alumno · agente | |
-| Media upload | Documento base del canal | Lo sube el profesor en settings del canal; el agente lo ingiere |
+| Community | Course | One relay / one tenant = one course (multi-community later) |
+| Channel | Stable channel (`#general`, `#questions`, `#03-backprop`) | One per module |
+| Branch-as-room (volatile channel) | Work channel (assignment, exam) | Born from an assignment, archived on close. **Design only this weekend.** |
+| DM | Private channel student ↔ personal agent | |
+| Canvas | Card | Type, author, version, `sources`, `supersedes`, visibility |
+| Agent (persona + runtime) | Course agent / personal agent | The teacher creates course agents; each student can create a personal one |
+| Member / role | teacher · student · agent | |
+| Media upload | Channel base document | The teacher uploads it in channel settings; the agent ingests it |
 
-**UI:** mismo layout de tres paneles que Buzz y mismos componentes, para que se sienta familiar. Cambios solo donde el curso lo pide: franja de páginas del canal, marcador "respondido desde una página", ficha de agente con "en qué canales está / qué páginas publicó", estado de canal de trabajo. Estilo en `DESIGN.md`.
+**UI:** same three-panel layout as Buzz and same components, so it feels familiar. Changes only where the course demands them: the channel's card strip, the "answered from a card" marker, the agent sheet with "which channels it's in / which cards it published", work-channel status. Style in `DESIGN.md`.
 
-## 6. Modelo de memoria
+## 6. Memory model
 
-Tres capas, como un LLM tradicional:
+Three layers, like a traditional LLM:
 
-| Capa | Dónde vive | Quién la escribe | Cuándo se lee |
+| Layer | Where it lives | Who writes it | When it's read |
 |---|---|---|---|
-| **Inmediata** | últimos N mensajes del canal/thread, los manda el server con cada mención | todos | en cada respuesta del agente |
-| **Wiki (compilada)** | filesystem, carpeta del agente | solo ese agente | en cada respuesta (lee `index.md` + ≤5 páginas) |
-| **Raw** | filesystem, documentos base y uploads | humanos | en ingest |
+| **Immediate** | last N messages of the channel/thread, sent by the server with each mention | everyone | on every agent reply |
+| **Wiki (compiled)** | filesystem, the agent's folder | only that agent | on every reply (reads `index.md` + ≤5 cards) |
+| **Raw** | filesystem, base documents and uploads | humans | on ingest |
 
-**Ingest no es por mensaje.** Triggers: `@agente ingest` explícito, o cada N=20 mensajes en un canal, o diario. Entre ingests, el agente responde con la capa inmediata + la wiki, y archiva respuestas reutilizables como páginas en el momento. Así la wiki está "al día" sin recompilar por mensaje.
+**Ingest is not per message.** Triggers: explicit `@agent ingest`, or every N=20 messages in a channel, or daily. Between ingests, the agent answers with the immediate layer + the wiki, and archives reusable answers as cards on the spot. That keeps the wiki "current" without recompiling per message.
 
 ```
-data/<curso>/
-  raw/<profesor>/modulos/<nn>-<slug>/...
-  raw/<alumno>/...
-  agents/<agente>/
+data/<course>/
+  raw/<teacher>/modules/<nn>-<slug>/...
+  raw/<student>/...
+  agents/<agent>/
     wiki/
       index.md
       log.md
-      modulos/<nn>-<slug>/<tema>.md
-      decisiones/<fecha>-<slug>.md
-      preguntas/<slug>.md            ← cómo se preguntó un tema (índice de ángulos), apunta a modulos/; no es un log de Q&A
-      dificultades/<modulo>.md        ← agregado por módulo, visible al profesor
-    about/<alumno>.md                 ← lo que el agente sabe de cada alumno
-  people/<alumno>/wiki/               ← escribe el agente personal del alumno
+      modules/<nn>-<slug>/<topic>.md
+      decisions/<date>-<slug>.md
+      questions/<slug>.md            ← how a topic was asked (index of angles), points into modules/; not a Q&A log
+      difficulties/<module>.md        ← aggregate per module, visible to the teacher
+    about/<student>.md                ← what the agent knows about each student
+  people/<student>/wiki/              ← written by the student's personal agent
 ```
 
-**Permisos = composición de carpetas.** Cada agente ve un árbol virtual con las carpetas de los canales donde es miembro + la suya. Si no está montada, no existe. Archil hace exactamente esto (capas montadas con permisos); para el finde, directorio local con la misma estructura; Archil si el paso 7 está hecho a tiempo.
+**Permissions = folder composition.** Each agent sees a virtual tree with the folders of the channels it belongs to + its own. If it's not mounted, it doesn't exist. Archil does exactly this (mounted layers with permissions); for the weekend, a local directory with the same structure; Archil if step 7 is done in time.
 
-**Quién ve qué (decisión):**
-- El profesor ve todo lo que escriben los agentes **que él creó**: wiki, `dificultades/`, `about/<alumno>`. No ve canales privados ni `people/<alumno>/wiki`.
-- El alumno ve la wiki del curso, su `about/` y su wiki personal.
-- Regla general: **quien crea el agente ve lo que el agente escribe.**
+**Who sees what (decision):**
+- The teacher sees everything written by the agents **they created**: wiki, `difficulties/`, `about/<student>`. They don't see private channels or `people/<student>/wiki`.
+- The student sees the course wiki, their `about/` and their personal wiki.
+- General rule: **whoever creates the agent sees what the agent writes.**
 
-**Versionado:** un commit de git por ingest. `git diff` = "qué aprendió el agente esta semana".
+**Versioning:** one git commit per ingest. `git diff` = "what the agent learned this week".
 
 **Frontmatter:**
 ```yaml
 ---
-type: tema | decision | pregunta | consigna | entrega | dificultad | persona
+type: topic | decision | question | assignment | submission | difficulty | person
 title: ...
 valid_from: 2026-08-22
-supersedes: decisiones/....md
+supersedes: decisions/....md
 sources: [raw/martin/..., nostr:<event-id>]
 updated: 2026-08-22
 ---
 ```
 
-**Reglas del agente (van en su CLAUDE.md / AGENTS.md):**
-1. Antes de responder, leer `index.md`. Abrir máximo 5 páginas.
-2. Toda respuesta cita páginas por path.
-3. Componer desde las fichas, nunca pegar una respuesta anterior. Si la pregunta trae un ángulo que la ficha no cubría, enriquecer la ficha (sección o link nuevo); no crear otra ficha para lo mismo.
-4. Archivar como ficha solo lo que otro alumno podría necesitar: el concepto, la conexión o la dificultad, no la conversación.
-5. Nunca escribir fuera de su carpeta.
-6. Si una fuente contradice una página: nueva página con `supersedes`, no editar la vieja. (Enriquecer ≠ contradecir: agregar un ángulo es editar; cambiar un hecho es reemplazar.)
-7. Publicar páginas nuevas como canvas en el canal (`buzz-cli`), con link al archivo.
+**Agent rules (they go in its CLAUDE.md / AGENTS.md):**
+1. Before answering, read `index.md`. Open at most 5 cards.
+2. Every answer cites cards by path.
+3. Compose from the cards, never paste a previous answer. If the question brings an angle the card didn't cover, enrich the card (new section or link); don't create another card for the same thing.
+4. Archive as a card only what another student could need: the concept, the connection or the difficulty, not the conversation.
+5. Never write outside your folder.
+6. If a source contradicts a card: new card with `supersedes`, don't edit the old one. (Enriching ≠ contradicting: adding an angle is editing; changing a fact is replacing.)
+7. Publish new cards as a canvas in the channel (`buzz-cli`), with a link to the file.
 
-## 7. Stack y arquitectura
+## 7. Stack and architecture
 
-> **Reemplazada el 22/08 19:45 por §14.** El fork de Buzz no se hizo antes del checkpoint de las 14:00; se ejecuta el Plan B con la topología de §14. El modelo de memoria (§6) no cambia.
+> **Superseded on 08/22 19:45 by §14.** The Buzz fork didn't happen before the 14:00 checkpoint; Plan B runs with the §14 topology. The memory model (§6) doesn't change.
 
 ```
-Buzz relay (Rust, docker)  ←──Nostr/WS──→  Buzz Desktop (Tauri + React), forkeado y renombrado
+Buzz relay (Rust, docker)  ←──Nostr/WS──→  Buzz Desktop (Tauri + React), forked and renamed
         ↑
    buzz-acp (harness)  ──@mention──→  Claude Code / Codex
-                                       cwd = data/<curso>/agents/<agente>/
-                                       CLAUDE.md = reglas de la sección 6
+                                       cwd = data/<course>/agents/<agent>/
+                                       CLAUDE.md = section 6 rules
                                        tools = filesystem + buzz-cli
-                                       (Archil mount cuando esté)
+                                       (Archil mount when ready)
 ```
 
-- El agente **es** el CLI (Claude Code o Codex) con un `CLAUDE.md`/`AGENTS.md` y un skill `ada-wiki`. Esto cumple tu pedido: todo se puede laburar desde Claude Code o Codex, y un profesor puede usar su suscripción en vez de una API key.
-- Personalización del desktop: mínima. Presets de canales por curso, franja de páginas (canvases filtrados por tag `page`), marcador "desde una página", ficha de agente.
-- Comunicación agente → UI: `buzz-cli` para mensajes y canvases. Sin endpoints nuevos.
+- The agent **is** the CLI (Claude Code or Codex) with a `CLAUDE.md`/`AGENTS.md` and an `ada-wiki` skill. This satisfies the requirement: everything can be worked from Claude Code or Codex, and a teacher can use their subscription instead of an API key.
+- Desktop customization: minimal. Course channel presets, card strip (canvases filtered by `page` tag), "from a card" marker, agent sheet.
+- Agent → UI communication: `buzz-cli` for messages and canvases. No new endpoints.
 
-**Plan B (si `just dev` de Buzz no levanta antes de las 14:00):** app propia en Next.js + Postgres para mensajes + mismo `data/` en filesystem + Claude Agent SDK. El modelo de memoria y el skill son idénticos; cambia solo la cáscara.
+**Plan B (if Buzz's `just dev` doesn't come up before 14:00):** our own app for messages + the same `data/` on the filesystem + Claude Agent SDK. The memory model and the skill are identical; only the shell changes.
 
-## 8. Descartado
+## 8. Discarded
 
-- **WDK, QVAC, Pears (tracks de Tether).** Cada uno obligaba a una tecnología (wallet, inferencia local, runtime Bare) que ponía el riesgo en la infraestructura en vez de en el producto. Pears encajaba bien con la tesis de memoria (Hyperdrive, permisos = keys); queda como experimento futuro.
-- **Construir el chat desde cero.** Buzz ya tiene relay, desktop, agentes y canvases.
-- **Slack como referencia.** La referencia es Buzz.
+- **WDK, QVAC, Pears (Tether tracks).** Each forced a technology (wallet, local inference, Bare runtime) that put the risk in the infrastructure instead of the product. Pears fit the memory thesis well (Hyperdrive, permissions = keys); it remains a future experiment.
+- **Building the chat from scratch.** Buzz already has relay, desktop, agents and canvases.
+- **Slack as a reference.** The reference is Buzz.
 
-## 9. Fuera de scope este finde
+## 9. Out of scope this weekend
 
-> Ampliado por §15: también quedan fuera del finde crear agentes desde la UI, agentes personales de alumnos, tokens/hosting y todo lo multi-tenant. Y "cliente web" acá abajo está al revés: el cliente **es** la web (esta SPA); lo que no hay es desktop.
+> Extended by §15: also out of the weekend are creating agents from the UI, students' personal agents, tokens/hosting and everything multi-tenant. And "web client" below is reversed: the client **is** the web (this SPA); what doesn't exist is the desktop.
 
-Corrección de entregas · edición colaborativa de páginas · búsqueda vectorial · multi-curso · pantalla de permisos · revocación · canales de trabajo (solo diseño) · móvil · cliente web (el desktop es el cliente).
+Submission grading · collaborative card editing · vector search · multi-course · permissions screen · revocation · work channels (design only) · mobile · web client (the desktop is the client).
 
-## 10. Orden de construcción
+## 10. Build order
 
-> **Reemplazada el 22/08 por el spec de OpenSpec** (`openspec/changes/demo-local-backend/tasks.md`), que es el orden vigente bajo el alcance de §15. Los pasos 1-2 (Buzz) no se hicieron; el resto sobrevive con otra forma.
+> **Superseded on 08/22 by the OpenSpec change** (`openspec/changes/demo-local-backend/tasks.md`), which is the current order under the §15 scope. Steps 1-2 (Buzz) didn't happen; the rest survives in another shape.
 
-1. **Levantar Buzz** (`just dev` o docker). Relay + desktop corriendo. Dos personas chateando. *Hasta 14:00 o Plan B.*
-2. Fork + rename + presets de curso: `#general`, `#dudas`, `#03-backprop`, roles profesor/alumno.
-3. Agente "Ada" vía `buzz-acp` con Claude Code, cwd en `data/<curso>/agents/ada/`, `CLAUDE.md` con las reglas. Responde a un @mention en un thread.
-4. Skill `ada-wiki`: ingest de un md desde `raw/` → páginas + `index.md` + `log.md` + commit. Publicar página como canvas.
-5. Query con citas + archivar respuesta. Franja de páginas en el canal.
-6. Segunda pregunta parecida → "respondido desde una página", marcador visual.
-7. Decisiones con `supersedes`. `dificultades/<modulo>.md`.
-8. Agente personal: un alumno crea el suyo desde la UI de agentes de Buzz; canal privado; `people/<alumno>/wiki`.
-9. Archil como mount de `data/` si 1-8 están hechos antes de las 02:00.
-10. Lint si sobra.
+1. **Bring up Buzz** (`just dev` or docker). Relay + desktop running. Two people chatting. *Until 14:00 or Plan B.*
+2. Fork + rename + course presets: `#general`, `#questions`, `#03-backprop`, teacher/student roles.
+3. "Ada" agent via `buzz-acp` with Claude Code, cwd in `data/<course>/agents/ada/`, `CLAUDE.md` with the rules. Answers an @mention in a thread.
+4. `ada-wiki` skill: ingest of one md from `raw/` → cards + `index.md` + `log.md` + commit. Publish a card as a canvas.
+5. Query with citations + archive the answer. Card strip in the channel.
+6. Second similar question → "answered from a card", visual marker.
+7. Decisions with `supersedes`. `difficulties/<module>.md`.
+8. Personal agent: a student creates theirs from Buzz's agent UI; private channel; `people/<student>/wiki`.
+9. Archil as the `data/` mount if 1-8 are done before 02:00.
+10. Lint if time remains.
 
-Corte: domingo 04:00. Después, solo video y README.
+Cutoff: Sunday 04:00. After that, only video and README.
 
-## 11. Guion de demo (3 min)
+## 11. Demo script (3 min)
 
-1. Martín abre el curso, invita a Sofía e Ignacio. (20s)
-2. Crea a Ada, la agrega a `#general`, `#dudas`, `#03-backprop`. Se ve como miembro. (20s)
-3. Carga `backprop.md` como documento base. `@Ada ingest`. Aparecen páginas en la franja. (20s)
-4. Sofía pregunta en `#dudas`. Ada responde en el thread citando. Aparece `preguntas/...`. (30s)
-5. Ignacio pregunta «lo mismo» con otras palabras y otro hueco. Ada responde **desde el fichero**: compone con dos fichas, sin releer el apunte, y la ficha gana una sección con el ángulo nuevo. (20s)
-6. Martín anuncia que mueve el parcial. Aparece `decisiones/...` con rationale. (20s)
-7. Sofía crea su agente personal; le pide un plan; aparece en su wiki. (20s)
-8. Terminal: `ls data/` + `git log`. "Esto es todo lo que sabe el curso, en markdown." (20s)
-9. Cierre: humans and agents learn together, and what they learn stays with them. (10s)
+1. Martin opens the course, invites Sofia and Ignacio. (20s)
+2. He creates Ada, adds her to `#general`, `#questions`, `#03-backprop`. She shows up as a member. (20s)
+3. He uploads `backprop.md` as a base document. `@Ada ingest`. Cards appear in the strip. (20s)
+4. Sofia asks in `#questions`. Ada answers in the thread, citing. `questions/...` appears. (30s)
+5. Ignacio asks "the same thing" with other words and another gap. Ada answers **from the card file**: composes from two cards, without re-reading the notes, and the card gains a section with the new angle. (20s)
+6. Martin announces the midterm moves. `decisions/...` appears with the rationale. (20s)
+7. Sofia creates her personal agent; asks it for a plan; it appears in her wiki. (20s)
+8. Terminal: `ls data/` + `git log`. "This is everything the course knows, in markdown." (20s)
+9. Close: humans and agents learn together, and what they learn stays with them. (10s)
 
-## 12. Dudas abiertas
+## 12. Open questions
 
-- Nombre final del producto.
-- ~~¿Buzz tiene "distribution seams" como Berd?~~ Cerrada: no forkeamos Buzz (§14).
-- ~~¿Los canvases de Buzz soportan frontmatter completo?~~ Cerrada: la página vive en el archivo del agente; el server guarda la copia publicada (§14.6).
-- N del ingest automático (arrancar con 20).
-- ~~Archil: ¿mount por agente o un solo mount para el finde?~~ Cerrada: sin Archil este finde; directorio local, capas de aislamiento en §14.7.
+- Final product name.
+- ~~Does Buzz have "distribution seams" like Berd?~~ Closed: we're not forking Buzz (§14).
+- ~~Do Buzz canvases support full frontmatter?~~ Closed: the card lives in the agent's file; the server stores the published copy (§14.6).
+- N for automatic ingest (start with 20).
+- ~~Archil: one mount per agent or a single mount for the weekend?~~ Closed: no Archil this weekend; local directory, isolation layers in §14.7.
 
 ## 13. Timeline
 
-- Sáb 12:00 — kickoff. Paso 1.
-- Sáb 14:00 — checkpoint Buzz levantado o Plan B.
-- Sáb 18:00 — checkpoint: pasos 1-4.
-- Dom 00:00 — checkpoint: pasos 5-8.
-- Dom 04:00 — corte.
-- Dom 12:00 — cierre. Juzgado 13:00–17:00, demo async.
+- Sat 12:00 — kickoff. Step 1.
+- Sat 14:00 — checkpoint: Buzz up or Plan B.
+- Sat 18:00 — checkpoint: steps 1-4.
+- Sun 00:00 — checkpoint: steps 5-8.
+- Sun 04:00 — cutoff.
+- Sun 12:00 — close. Judging 13:00–17:00, async demo.
 
-## 14. Topología de agentes: identidad + carpeta + runner (22/08, reemplaza a §7)
+## 14. Agent topology: identity + folder + runner (08/22, supersedes §7)
 
-Decisión tomada después de verificar las reglas de Anthropic, la arquitectura de Buzz y pi.dev (`research/2026-08-22-suscripciones-runners-buzz-pi.md`). Spec de implementación: `openspec/changes/demo-local-backend/`.
+Decision taken after verifying Anthropic's rules, Buzz's architecture and pi.dev (`research/2026-08-22-subscriptions-runners-buzz-pi.md`). Implementation spec: `openspec/changes/demo-local-backend/`.
 
-**Un agente = identidad en la comunidad + carpeta (wiki) + runner.** La comunidad solo conoce identidad, membresía y fichas publicadas. Dónde corre, con qué modelo y con qué credencial es problema del runner, y el runner es de quien creó el agente.
+**An agent = an identity in the community + a folder (wiki) + a runner.** The community only knows identity, membership and published cards. Where it runs, with which model and which credential is the runner's problem, and the runner belongs to whoever created the agent.
 
 ```
-            server de la comunidad (Railway / nuestro)
-            mensajes · miembros · canales · fichas publicadas · NUNCA inferencia
+            community server (Railway / ours)
+            messages · members · channels · published cards · NEVER inference
                    ▲                  ▲                    ▲
-      WS + token   │                  │                    │
-      del agente   │                  │                    │
-   runner en la laptop      runner en el Railway     runner hosteado por nosotros
-   del alumno/profe         del profe                pi + modelo abierto, o Claude/GPT con API key
-   claude/codex (suscrip.)  claude (setup-token)     premium · siempre on · se cobra
-   o pi + Ollama            gratis · siempre on
-   gratis · offline si se apaga
+      WS + agent   │                  │                    │
+      token        │                  │                    │
+   runner on the student's/   runner on the teacher's   runner hosted by us
+   teacher's laptop           Railway                    pi + open model, or Claude/GPT with API key
+   claude/codex (subscript.)  claude (setup-token)       premium · always on · billed
+   or pi + Ollama             free · always on
+   free · offline if shut
 ```
 
-Analogía: runners de GitHub Actions, self-hosted o hosted.
+Analogy: GitHub Actions runners, self-hosted or hosted.
 
-1. **El server nunca ejecuta modelos.** Es bus + storage. No intermediamos credenciales de nadie (cumple Anthropic), no elegimos proveedor por el usuario, hostearlo es barato.
-2. **El runner es un proceso aparte y pluggable** (`ada-runner`): se conecta saliente con el token del agente, recibe menciones, spawnea el runtime con `cwd = carpeta del agente`, publica respuesta y fichas. Runtime = `claude` | `codex` | `pi` | `goose`. Modelos abiertos entran por pi (Ollama, OpenRouter, vLLM). "Detectar tus agentes" = ver qué binarios hay en PATH.
-3. **Quien crea el agente lo corre y ve lo que escribe.** El profesor crea agentes de comunidad; cada alumno, el suyo. Crear = identidad + carpeta + token. Conectar = pegar un comando.
-4. **Online/offline es estado de producto.** Runner desconectado = agente "desconectado" en la UI. Sin cola de menciones. La solución al "se apagó la laptop" es el punto 5.
-5. **Hosted = runner nuestro con API keys, jamás con suscripciones ajenas.** BYO key o la nuestra con margen. Modelo abierto como default barato; Claude/GPT premium. Acá se cobra (por tokens o por asiento: pendiente).
-6. **La wiki vive donde vive el runner; el server guarda la copia publicada.** Privacidad real para agentes personales; export para hosted.
+1. **The server never executes models.** It's a bus + storage. We don't broker anyone's credentials (complies with Anthropic), we don't pick a provider for the user, hosting it is cheap.
+2. **The runner is a separate, pluggable process** (`ada-runner`): it connects outbound with the agent's token, receives mentions, spawns the runtime with `cwd = the agent's folder`, publishes the answer and cards. Runtime = `claude` | `codex` | `pi` | `goose`. Open models come in via pi (Ollama, OpenRouter, vLLM). "Detect your agents" = see which binaries are on PATH.
+3. **Whoever creates the agent runs it and sees what it writes.** The teacher creates community agents; each student, their own. Creating = identity + folder + token. Connecting = pasting one command.
+4. **Online/offline is product state.** Disconnected runner = agent shown "disconnected" in the UI. No mention queue. The fix for "the laptop shut down" is point 5.
+5. **Hosted = our runner with API keys, never with other people's subscriptions.** BYO key or ours with margin. Open model as the cheap default; Claude/GPT premium. This is where it's billed (per token or per seat: pending).
+6. **The wiki lives where the runner lives; the server stores the published copy.** Real privacy for personal agents; export for hosted.
 
-7. **Aislamiento por capas, según el tier.** (1) *Política*: `cwd` en la carpeta del agente, `--add-dir` solo para `raw/`, `--allowedTools` acotado y reglas `deny` por path en `.claude/settings.json` de la carpeta; alcanza para el tier local (en tu máquina todo es tuyo) y para este finde. (2) *Muro*: un contenedor por agente con `raw/` en solo lectura y su carpeta en lectura/escritura; para hosted v1, sin servicios nuevos. (3) *Composición*: árbol virtual por agente con las carpetas de los canales donde es miembro (§6, "permisos = composición de carpetas"), con bind mounts y, multi-máquina, Archil. Archil da la vista compuesta, no el aislamiento; es hosted y por eso queda para el tier hosted. Explicado con diagramas en `docs/como-funciona.html`.
+7. **Isolation in layers, per tier.** (1) *Policy*: `cwd` in the agent's folder, `--add-dir` only for `raw/`, a narrow `--allowedTools`, and `deny` path rules in the folder's `.claude/settings.json`; enough for the local tier (on your machine everything is yours) and for this weekend. (2) *Wall*: one container per agent with `raw/` read-only and its folder read/write; for hosted v1, no new services. (3) *Composition*: a virtual tree per agent with the folders of its channels (§6, "permissions = folder composition"), with bind mounts and, multi-machine, Archil. Archil gives the composed view, not the isolation; it's hosted-only and thus stays in the hosted tier. Explained with diagrams in `docs/how-it-works.html`.
 
-No hacer: que el server llame modelos "por comodidad"; pedir tokens de Claude en nuestra UI; diseñar alrededor de un solo proveedor.
+Don't do: have the server call models "for convenience"; ask for Claude tokens in our UI; design around a single provider.
 
-**Plan B en concreto (este finde):** `apps/server` (Node 24 + Hono + `node:sqlite` + WS), `packages/runner` (CLI, runtime `claude -p`), `packages/protocol` (tipos + eventos), `apps/web` (la SPA actual), `data/<curso>/` (wiki). Todo local en una laptop. Detalle en el change de OpenSpec.
+**Plan B in concrete terms (this weekend):** `apps/server` (Node 24 + Hono + `node:sqlite` + WS), `packages/runner` (CLI, `claude -p` runtime), `packages/protocol` (types + events), `apps/web` (the current SPA), `data/<course>/` (wiki). All local on one laptop. Details in the OpenSpec change.
 
-## 15. Pivot de alcance: un desarrollo para un profesor puntual (22/08, tarde)
+## 15. Scope pivot: a custom build for one specific teacher (08/22, afternoon)
 
-Consejo del mentor, adoptado: *"prefiero que el sistema sea acotado — como un desarrollo para un profesor en particular, para que lo tenga en su computadora — antes que un sistema escalable y completo".*
+Mentor's advice, adopted: *"I'd rather have a narrow system — like a custom build for one particular teacher, running on their machine — than a complete, scalable one."*
 
-**Qué significa para el finde:**
-- Construimos Ada como si fuera un desarrollo a medida para **un profesor concreto**: todo corre en su computadora (server + runner + cliente web en localhost; los alumnos podrían entrar por LAN, pero la demo es una sola máquina).
-- El curso, los canales, las personas y el agente se definen en un archivo de configuración (`data/<curso>/community.json`), no desde la UI. Sin creación de agentes por UI, sin agentes personales de alumnos, sin tokens con hash, sin multi-curso, sin hosting.
-- La separación server / runner / carpeta del agente **se mantiene** (§14): es barata hoy y es lo que permite crecer después sin reescribir.
-- Guion de demo (§11): el núcleo son los pasos 1-6 y el cierre en terminal (`ls data/` + `git log`). Los pasos de agente personal (7) quedan como extensión solo si sobra tiempo.
+**What it means for the weekend:**
+- We build Ada as if it were a custom build for **one concrete teacher**: everything runs on their machine (server + runner + web client on localhost; students could join over LAN, but the demo is one machine).
+- The course, channels, people and agent are defined in a config file (`data/<course>/community.json`), not from the UI. No agent creation from the UI, no student personal agents, no hashed tokens, no multi-course, no hosting.
+- The server / runner / agent-folder separation **stays** (§14): it's cheap today and it's what allows growing later without a rewrite.
+- Demo script (§11): the core is steps 1-6 and the terminal close (`ls data/` + `git log`). The personal-agent step (7) is an extension only if time remains.
 
-**Dónde vive cada cosa a partir de este pivot:**
-- El **código y su verdad**: `AGENTS.md` (mapa, comandos, estado real) + `openspec/changes/demo-local-backend/` (spec de lo que se construye hoy).
-- La **arquitectura completa a futuro** (runners remotos, tiers, hosted, open source a escala): §14 de este archivo + `docs/como-funciona.html` y `docs/usecases-api.html`, que son **inspiración a futuro, no descripción del código**.
-- Cada área del repo lleva su propio `AGENTS.md` corto: qué es hoy, y cómo crecería mañana. Regla: si tocás el área, mantené ese archivo al día.
+**Where each thing lives after this pivot:**
+- The **code and its truth**: `AGENTS.md` (map, commands, actual state) + `openspec/changes/demo-local-backend/` (spec of what's built today).
+- The **full future architecture** (remote runners, tiers, hosted, open source at scale): §14 of this file + `docs/how-it-works.html` and `docs/usecases-api.html`, which are **future inspiration, not a description of the code**.
+- Every area of the repo carries its own short `AGENTS.md`: what it is today, and how it grows tomorrow. Rule: if you touch the area, keep that file current.
 
-## 16. Posicionamiento del pitch: open source amplio, con lo premium como secuencia (22/08, noche — recomendación, a confirmar por Ignacio)
+## 16. Pitch positioning: broad open source, with premium as a sequence (08/22, night — confirmed)
 
-Dos opciones sobre la mesa para el pitch de Aleph: **(A)** monetizar apuntando a colegios privados top; **(B)** open source para la mayor amplitud posible (contribuidores, adopción docente por docente), monetizando después vía hosting. Evidencia completa en `research/2026-08-22-open-source-vs-premium.md`.
+Two options were on the table for the Aleph pitch: **(A)** monetize by targeting top private schools; **(B)** open source for the broadest possible reach (contributors, teacher-by-teacher adoption), monetizing later via hosting. Full evidence in `research/2026-08-22-open-source-vs-premium.md`.
 
-**Recomendación: B como identidad y pitch, con A como capítulo futuro del tier hosted.** Razones:
+**Decision: B as identity and pitch, with A as a future chapter of the hosted tier.** Reasons:
 
-1. **La evidencia carga toda para un lado.** Los precedentes de B funcionan y tienen nombre (Moodle: gratis 2002 → MoodleCloud + partners → revenue de decenas de millones; WordPress: GPL 2003 → WordPress.com 2005 → VIP enterprise 2012; GitLab, Supabase, Ghost). Para A casi no hay datos y los que hay están en contra: ciclos de venta de 6-18 meses con comités, y ninguna evidencia de que un equipo de 2 personas sin marca sea creíble en ese canal.
-2. **A y B no compiten: se secuencian.** Es literalmente lo que ya dice §4 ("el hackathon demuestra (a) local; el producto vende (c) hosted"). El colegio de élite es un early customer del hosted (agentes gestionados, backups, analíticas institucionales), no el pitch de la hackathon.
-3. **El jurado de Aleph puntúa Technicality, Originality, UI/UX/DX** (criterio listado en DoraHacks, no verificado en fuente oficial) — no modelo de negocio. La narrativa B apunta a los tres; una proyección de ventas a colegios top no suma puntos y abre flancos.
-4. **Coherencia con todo lo ya decidido:** Apache-2.0 (§4), la topología runner que hace el self-host gratis posible (§14), el pivot del mentor a "un desarrollo para un profesor puntual" (§15), y la tesis misma ("el conocimiento vive en archivos que el grupo posee" casa mal con un producto cerrado para élites).
-5. **La advertencia de Kahoot queda anotada:** el docente enamorado no paga. El que paga es la institución que quiere hosting y soporte — por eso el modelo es Moodle (institución paga hosting), no freemium por docente.
+1. **The evidence all loads one way.** B's precedents work and have names (Moodle: free 2002 → MoodleCloud + partners → tens of millions in revenue; WordPress: GPL 2003 → WordPress.com 2005 → VIP enterprise 2012; GitLab, Supabase, Ghost). For A there's almost no data and what exists points against: 6-18 month sales cycles with committees, and no evidence that a 2-person team without a brand is credible in that channel.
+2. **A and B don't compete: they sequence.** It's literally what §4 already says ("the hackathon demonstrates (a) local; the product sells (c) hosted"). The elite school is an early customer of hosted (managed agents, backups, institutional analytics), not the hackathon pitch.
+3. **The Aleph judges score Technicality, Originality, UI/UX/DX** — not business model. Narrative B targets all three; a sales projection to top schools adds no points and opens flanks.
+4. **Coherence with everything already decided:** Apache-2.0 (§4), the runner topology that makes free self-hosting possible (§14), the mentor's pivot to "a custom build for one teacher" (§15), and the thesis itself ("knowledge lives in files the group owns" sits badly with a closed product for elites).
+5. **The Kahoot warning stays noted:** the teacher in love doesn't pay. Who pays is the institution that wants hosting and support — hence the model is Moodle (institution pays hosting), not per-teacher freemium.
 
-**Frase de posicionamiento para el pitch:** "Open source como Moodle, arquitectura como los runners de GitHub Actions: cualquier profesor lo corre gratis en su compu hoy; las instituciones nos pagarán el hosted mañana."
+**Positioning line for the pitch:** "Open source like Moodle, architecture like GitHub Actions runners: any teacher runs it free on their machine today; institutions will pay us for hosted tomorrow."
 
-Contraejemplos que obligan a ejecutar bien, no a dudar del rumbo: Sakai (comunidad sin motor comercial → declive), Cal.com (se cerró en 2026), Open edX (adopción plana). La lección de los tres: open source sin un dueño comercial del hosting muere; el hosted no es opcional en el roadmap.
+Counterexamples that demand good execution, not doubt about the direction: Sakai (community without a commercial engine → decline), Cal.com (closed up in 2026), Open edX (flat adoption). The lesson of all three: open source without a commercial owner of the hosting dies; hosted is not optional in the roadmap.
 
-Estado: **pendiente de confirmación de Ignacio.** Si se confirma, el pitch se construye sobre esta sección + `PROBLEM.md` §8 ("por qué ahora" en cuatro patas verificadas) + §9/§10 (qué no decir y qué números no usar).
+Status: **confirmed by Ignacio on 08/22 (night).** The pitch is built on this section + `PROBLEM.md` §8 ("why now" on four verified legs) + §9/§10 (what not to say and which numbers not to use).
 
+Details settled while building the slides (08/22, see `research/2026-08-22-aleph-submission-and-pitch.md`):
+- The organizer's rules require a **3-minute demo video** and list **five** judging criteria (Practicality and Presentation join the three in point 3), which reinforces this narrative and justifies investing in slides and editing.
+- **Slides in English.** ~~The product on screen stays in Spanish.~~ Superseded by §17: the whole product is in English. Video structure and script: `pitch/SCRIPT.md`.
+
+## 17. Language: the whole repo and product move to English (08/22, night)
+
+Decision by Ignacio: **everything in the repo is in English** — documents, code comments, identifiers, UI strings, demo data, file and folder names. Rationale: Aleph's judging is async in English or Spanish *with English captions* and the jury is international; the pitch (§16) is open source with the broadest possible reach, and a single language across product, code, docs and pitch removes friction for contributors and judges alike.
+
+What changed with this decision:
+- **Terminology:** «ficha» → **card**; «el fichero» → **the card file** (the design system's name); the seal reads **"already on file · N days ago"**. Card types: note · assignment · decision · answer · submission (+ topic · question · difficulty · person in the wiki frontmatter). States: new · updated · superseded · compiling.
+- **Code:** the `Page` domain type → `Card` (and derivatives), design tokens `sol/sello/alerta/estado-*` → `sun/seal/alert/status-*`, `FIGURE_COLORS` names in English, demo course renamed to "Neural Networks 2026" (`data/neural-networks-2026/`), hash route `#figures`, locale `en-US`.
+- **Research** was consolidated as of today: one corpus of session files dated 2026-08-22, in English. External sources keep their real publication dates.
+- The §16 note that the on-screen product stayed in Spanish is superseded: the product is in English too.
+
+The repo rule lives in `AGENTS.md` ("Language"). Fixed English terminology in `PRODUCT.md`.

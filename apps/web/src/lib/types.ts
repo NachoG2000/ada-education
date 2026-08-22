@@ -1,4 +1,4 @@
-/* Re-export: el modelo de dominio vive en packages/protocol (compartido
-   con el server y el runner). Este archivo existe para no romper los
-   imports históricos `@/lib/types` de la SPA. */
+/* Re-export: the domain model lives in packages/protocol (shared with the
+   server and the runner). This file exists so we don't break the SPA's
+   historical `@/lib/types` imports. */
 export * from "@ada/protocol"

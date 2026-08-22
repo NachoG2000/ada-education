@@ -1,4 +1,4 @@
-/* Renderer mínimo de markdown para el cuerpo de las fichas: ## títulos, párrafos, listas numeradas, **negrita**, *cursiva*, `código`. */
+/* Minimal markdown renderer for card bodies: ## headings, paragraphs, numbered lists, **bold**, *italic*, `code`. */
 
 import { Fragment, type ReactNode } from "react"
 
@@ -14,7 +14,7 @@ function inline(text: string): ReactNode[] {
     if (tok.startsWith("**")) out.push(<strong key={k++}>{tok.slice(2, -2)}</strong>)
     else if (tok.startsWith("`"))
       out.push(
-        <code key={k++} className="rounded-[3px] bg-panel-3 px-1 py-px font-mono text-[13px] text-ink-2">
+        <code key={k++} className="rounded-[3px] bg-panel-3 px-1 py-px font-mono text-[13px] break-words text-ink-2">
           {tok.slice(1, -1)}
         </code>,
       )
@@ -62,7 +62,7 @@ function parse(source: string): Block[] {
 
 export function Markdown({ source }: { source: string }) {
   return (
-    <div className="font-serif text-[15.5px] leading-[1.6] text-ink [&_strong]:font-semibold">
+    <div className="font-serif text-[15.5px] leading-[1.6] break-words text-ink [&_strong]:font-semibold">
       {parse(source).map((b, i) => {
         if (b.kind === "h2")
           return (

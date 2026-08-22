@@ -1,5 +1,5 @@
-/* Carpeta: un panel con lengüetas arriba (la activa se funde con el cuerpo) y acciones flotando a la derecha.
-   La lengüeta termina en una curva suave (como las de una carpeta o un navegador), no en un corte recto. */
+/* Folder: a panel with tabs on top (the active one merges with the body) and actions floating to the right.
+   The tab ends in a soft curve (like a folder's or a browser's), not a straight cut. */
 
 import type { ReactNode } from "react"
 import { cn } from "@/lib/utils"
@@ -29,13 +29,13 @@ export function FolderTab({
       className={cn(
         "group/tab relative flex max-w-[260px] shrink-0 items-center gap-2 rounded-tl-xl pr-2 pl-4 font-sans text-[13.5px] outline-none transition-colors",
         active ? "bg-panel font-semibold text-ink" : "bg-panel/55 font-medium text-ink-3 hover:bg-panel hover:text-ink",
-        "focus-visible:bg-panel focus-visible:text-ink focus-visible:underline focus-visible:decoration-sello focus-visible:underline-offset-4",
+        "focus-visible:bg-panel focus-visible:text-ink focus-visible:underline focus-visible:decoration-seal focus-visible:underline-offset-4",
         className,
       )}
     >
       {icon}
       <span className="truncate">{children}</span>
-      {/* borde derecho curvo, del mismo color que la lengüeta */}
+      {/* curved right edge, same color as the tab */}
       <svg
         aria-hidden
         width={CURVE_W}
@@ -52,7 +52,7 @@ export function FolderTab({
   )
 }
 
-/** Marco de carpeta: tira de lengüetas + acciones flotantes, y el cuerpo blanco debajo. */
+/** Folder frame: tab strip + floating actions, and the white body below. */
 export function Folder({ tabs, actions, children, className }: { tabs: ReactNode; actions?: ReactNode; children: ReactNode; className?: string }) {
   return (
     <div className={cn("flex h-full min-h-0 min-w-0 flex-col", className)}>
@@ -65,7 +65,7 @@ export function Folder({ tabs, actions, children, className }: { tabs: ReactNode
   )
 }
 
-/** Botón flotante para la tira de lengüetas: pill blanca plana con hairline, sin sombra. */
+/** Floating button for the tab strip: flat white pill with a hairline, no shadow. */
 export function FloatingButton({ label, onClick, children, className }: { label: string; onClick?: () => void; children: ReactNode; className?: string }) {
   return (
     <button
@@ -74,7 +74,7 @@ export function FloatingButton({ label, onClick, children, className }: { label:
       title={label}
       onClick={onClick}
       className={cn(
-        "inline-flex h-8 min-w-8 items-center justify-center gap-1.5 rounded-full bg-panel px-2.5 text-ink-3 ring-1 ring-line ring-inset outline-none transition-colors hover:text-ink hover:ring-line-strong focus-visible:ring-2 focus-visible:ring-sello",
+        "inline-flex h-8 min-w-8 items-center justify-center gap-1.5 rounded-full bg-panel px-2.5 text-ink-3 ring-1 ring-line ring-inset outline-none transition-colors hover:text-ink hover:ring-line-strong focus-visible:ring-2 focus-visible:ring-seal",
         className,
       )}
     >

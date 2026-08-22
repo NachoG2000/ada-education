@@ -1,116 +1,116 @@
 # AGENTS.md
 
-Reglas del repo para cualquier agente que trabaje acá (Claude Code, Codex, Cursor, el que sea). `CLAUDE.md` importa este archivo: **editá este, no aquel.**
+Repo rules for any agent working here (Claude Code, Codex, Cursor, whichever). `CLAUDE.md` imports this file: **edit this one, not that one.**
 
-## Qué es este repo
+## What this repo is
 
-**Ada** (nombre provisorio "Ada Education"): comunidad de curso donde humanos y agentes de IA conviven en canales y el conocimiento se compila solo en **fichas** (páginas markdown con tipo, versión, fuentes y "reemplaza a"). Hackathon Aleph 2026, General Track. Corte: domingo 23/08 04:00.
+**Ada** (working name "Ada Education"): a course community where humans and AI agents share channels and knowledge compiles itself into **cards** (markdown pages with a type, a version, sources and "replaces"). Aleph Hackathon 2026, General Track. Code cutoff: Sunday 08/23 04:00.
 
-**Alcance vigente (pivot del 22/08, `DECISIONS.md` §15):** este finde Ada se construye como un desarrollo a medida para **un profesor puntual, todo local en su computadora**. La arquitectura completa (runners remotos, hosted, tiers) es dirección a futuro, no código.
+**Current scope (08/22 pivot, `DECISIONS.md` §15):** this weekend Ada is built as a custom deployment for **one specific teacher, fully local on their machine**. The full architecture (remote runners, hosted, tiers) is future direction, not code.
 
-**Estado real del código hoy:** una SPA Vite + React 19 (`apps/web/`) que todavía corre contra una comunidad sintética (`apps/web/src/lib/demo.ts`), un server local implementado en `apps/server/`, tipos/eventos compartidos en `packages/protocol/`, el seed de ejemplo en `data/redes-neuronales-2c-2026/` y `packages/runner/` como esqueleto documentado. El plan de forkear Buzz quedó descartado (`DECISIONS.md` §7 → §14). Leé `DECISIONS.md` §14-§15 antes de tocar arquitectura, memoria de agentes o alcance.
+**Actual state of the code today:** a Vite + React 19 SPA (`apps/web/`) still running against a synthetic community (`apps/web/src/lib/demo.ts`), a local server implemented in `apps/server/`, shared types/events in `packages/protocol/`, the example seed in `data/neural-networks-2026/` and `packages/runner/` as a documented skeleton. The plan to fork Buzz was discarded (`DECISIONS.md` §7 → §14). Read `DECISIONS.md` §14-§15 before touching architecture, agent memory or scope.
 
-**Cada área del repo tiene su `AGENTS.md`** corto con qué es hoy y cómo crece mañana (`src/`, `docs/`, y cada workspace nuevo debe traer el suyo). Si tocás un área, mantené su archivo al día.
+**Every area of the repo has its own short `AGENTS.md`** with what it is today and how it grows tomorrow (`apps/web/`, `docs/`, and every new workspace must bring its own). If you touch an area, keep its file up to date.
 
-Documentos de verdad, en orden de autoridad:
-- `PROBLEM.md` — el problema antes que la solución: quién lo sufre, evidencia a 2026, causas raíz, qué no es el problema. Si una feature no ataca algo de acá, no va.
-- `DECISIONS.md` — visión, tesis, modelo de memoria, stack, orden de construcción, guion de demo, fuera de scope.
-- `PRODUCT.md` — usuarios, terminología fija, estados que hay que mostrar, restricciones de marca.
-- `DESIGN.md` — sistema de diseño «El fichero» (tokens, tipografía, reglas con nombre). Los tokens reales viven en `src/index.css` y pueden diferir en detalle; el código manda.
-- `research/` — investigación con fuentes, un archivo por sesión. Respaldo de `PROBLEM.md`; no es autoridad por sí misma.
-- `openspec/` — specs y changes: qué se está construyendo y en qué orden. El change activo es `demo-local-backend`.
-- `docs/*.html` — **inspiración a futuro** (arquitectura completa, casos de uso, API ampliada). No describen el código actual; si contradicen al código o al spec, mandan estos últimos.
-- `design/BRIEF.md` y `design/mockups/` — historia, no autoridad. Los mockups HTML están descartados.
+Documents of truth, in order of authority:
+- `PROBLEM.md` — the problem before the solution: who suffers it, evidence as of 2026, root causes, what the problem is not. If a feature doesn't attack something in there, it doesn't ship.
+- `DECISIONS.md` — vision, theses, memory model, stack, build order, demo script, out of scope.
+- `PRODUCT.md` — users, fixed terminology, states that must be visible, brand constraints.
+- `DESIGN.md` — "The card file" design system (tokens, typography, named rules). The real tokens live in `apps/web/src/index.css` and may differ in detail; the code wins.
+- `research/` — research with sources, one file per session. Backing for `PROBLEM.md`; not an authority by itself.
+- `openspec/` — specs and changes: what's being built and in what order. The active change is `demo-local-backend`.
+- `docs/*.html` — **future inspiration** (full architecture, use cases, expanded API). They don't describe the current code; where they contradict the code or the spec, those win.
+- `design/BRIEF.md` and `design/mockups/` — history, not authority. The HTML mockups are discarded.
 
-Idioma: todo (UI, contenido, comentarios, docs) en **español rioplatense con voseo**. Mantenelo.
+Language: everything (UI, content, comments, docs, names) in **English**. Keep it that way.
 
-## Regla: toda la información entra en el repo
+## Rule: all information lands in the repo
 
-Lo que se usó para pensar o decidir algo del proyecto se escribe en un archivo markdown del repo **antes de cerrar la tarea**. Nada queda solo en el chat, en un PDF del Drive, en un hilo de Discord ni en la cabeza de alguien. Es la tesis del producto aplicada a nosotros mismos: el conocimiento vive en archivos que el grupo posee.
+Whatever was used to think about or decide something for the project gets written into a markdown file in the repo **before the task is closed**. Nothing lives only in a chat, a Drive PDF, a Discord thread or someone's head. It's the product's own thesis applied to ourselves: knowledge lives in files the group owns.
 
-Dónde va cada cosa:
-- `PROBLEM.md` — el problema, quién lo sufre, evidencia y causas. Se actualiza cuando aparece evidencia nueva; cada cifra lleva su fuente.
-- `DECISIONS.md` — decisiones y su rationale. Una decisión que cambia no se borra: se marca como reemplazada y se agrega la nueva, con fecha.
-- `PRODUCT.md` / `DESIGN.md` — producto y diseño.
-- `research/AAAA-MM-DD-<tema>.md` — investigación: cada afirmación con fuente, URL, fecha y si se verificó en la fuente original o solo en un snippet de búsqueda. También van acá los resúmenes de documentos externos que el usuario aporta (por ejemplo, el TFG de 2024), con la ruta o URL del original.
-- Si algo no encaja en ningún lado, va en `research/` igual, con una nota de por qué.
+Where each thing goes:
+- `PROBLEM.md` — the problem, who suffers it, evidence and causes. Updated when new evidence appears; every figure carries its source.
+- `DECISIONS.md` — decisions and their rationale. A decision that changes is not deleted: it's marked as superseded and the new one is added, with a date.
+- `PRODUCT.md` / `DESIGN.md` — product and design.
+- `research/YYYY-MM-DD-<topic>.md` — research: every claim with source, URL, date, and whether it was verified in the original source or only in a search snippet. Summaries of external documents the user provides also go here, with the path or URL of the original.
+- If something fits nowhere, it still goes in `research/`, with a note on why.
 
-Cómo lo aplica un agente:
-- Si durante una tarea aprendiste algo del dominio, del usuario, del mercado o de una decisión que otro agente o persona necesitaría saber, escribilo en el archivo que corresponde antes de terminar, y decí en el cierre qué archivo tocaste.
-- Si el usuario te pasa un documento externo (PDF, link, captura, transcripción), dejá en `research/` un resumen con lo que importa y de dónde salió. El original puede quedar afuera del repo si tiene datos personales; el resumen no.
-- No inventes fuentes ni cifras. Una cifra sin fuente se marca como estimación. Una cifra de 2012 se dice que es de 2012.
-- Citá por path y sección («ver `PROBLEM.md` §3.2»), nunca «como hablamos antes».
-- Los mismos principios que el producto exige a sus agentes (leer el índice antes de responder, citar, no editar lo viejo sino reemplazar con `supersedes`) valen para trabajar en este repo.
+How an agent applies this:
+- If during a task you learned something about the domain, the user, the market or a decision that another agent or person would need to know, write it in the corresponding file before finishing, and say in your wrap-up which file you touched.
+- If the user hands you an external document (PDF, link, screenshot, transcript), leave a summary in `research/` with what matters and where it came from. The original can stay out of the repo if it holds personal data; the summary can't.
+- Don't invent sources or figures. A figure without a source is marked as an estimate. A figure from 2012 is stated to be from 2012.
+- Cite by path and section ("see `PROBLEM.md` §3.2"), never "as discussed earlier".
+- The same principles the product demands of its agents (read the index before answering, cite, don't edit the old — replace with `supersedes`) apply to working in this repo.
 
-## Comandos
+## Commands
 
-Monorepo con **npm workspaces** (sin Turborepo): `apps/web` (SPA), `apps/server` (API local), `packages/runner` (esqueleto), `packages/protocol` (tipos y eventos compartidos), `data/<curso>/` (cursos). Cada área tiene su `AGENTS.md`.
+Monorepo with **npm workspaces** (no Turborepo): `apps/web` (SPA), `apps/server` (local API), `packages/runner` (skeleton), `packages/protocol` (shared types and events), `data/<course>/` (courses). Every area has its `AGENTS.md`.
 
 ```bash
-npm install            # una sola vez, en la raíz (instala todos los workspaces)
-npm run seed           # carga data/redes-neuronales-2c-2026 en la DB local
-npm run dev            # web + server en paralelo → http://localhost:5173 y :8787
-npm run dev:web        # solo la SPA con HMR → http://localhost:5173
-npm run dev:server     # solo el server → http://localhost:8787
-npm run check -w @ada/server # typecheck del server
-npx tsx apps/server/scripts/smoke.ts # smoke WS/REST, con el server levantado
-npm run build          # tsc -b && vite build de apps/web → apps/web/dist/
-npm run lint           # oxlint sobre apps y packages; warnings only-export-components en ficha.tsx y ui/sidebar.tsx son conocidos
-npm run typecheck      # tsc -b apps/web (noUnusedLocals/Parameters activos: una variable sin usar rompe el build)
-cd apps/web && npx shadcn add <componente>   # primitivas a src/components/ui (estilo base-nova, Base UI, ícono lucide)
+npm install            # once, at the root (installs all workspaces)
+npm run seed           # loads data/neural-networks-2026 into the local DB
+npm run dev            # web + server in parallel → http://localhost:5173 and :8787
+npm run dev:web        # SPA only, with HMR → http://localhost:5173
+npm run dev:server     # server only → http://localhost:8787
+npm run check -w @ada/server # server typecheck
+npx tsx apps/server/scripts/smoke.ts # WS/REST smoke test, with the server up
+npm run build          # tsc -b && vite build of apps/web → apps/web/dist/
+npm run lint           # oxlint over apps and packages; only-export-components warnings in card.tsx and ui/sidebar.tsx are known
+npm run typecheck      # tsc -b apps/web (noUnusedLocals/Parameters active: one unused variable breaks the build)
+cd apps/web && npx shadcn add <component>   # primitives into src/components/ui (base-nova style, Base UI, lucide icons)
 ```
 
-No hay tests. Pantalla de desarrollo del generador de personajes: abrir `http://localhost:5173/#figuras`.
+No tests. Figure-generator dev screen: open `http://localhost:5173/#figures`.
 
-## Arquitectura
+## Architecture
 
-> Paths de esta sección relativos a `apps/web/` (la SPA vivía en la raíz hasta el 22/08). Los tipos (`types.ts`) ahora viven en `packages/protocol` y `apps/web/src/lib/types.ts` los re-exporta.
+> Paths in this section are relative to `apps/web/` (the SPA lived at the repo root until 08/22). The types (`types.ts`) now live in `packages/protocol` and `apps/web/src/lib/types.ts` re-exports them.
 
-**Sin router.** `src/App.tsx` elige pantalla por `location.hash` (`#figuras` → `FigureSheet`; si no, `ChannelScreen`) y fija el `NOW` de la demo (`2026-08-22T12:00-03:00`): los mensajes con `at > now` se filtran y las etiquetas "hoy/ayer" se calculan contra esa fecha, no contra el reloj real.
+**No router.** `src/App.tsx` picks the screen from `location.hash` (`#figures` → `FigureSheet`; otherwise `ChannelScreen`) and pins the demo `NOW` (`2026-08-22T12:00-03:00`): messages with `at > now` are filtered out and the "today/yesterday" labels are computed against that date, not the real clock.
 
-**Estado = un solo contexto.** `src/lib/community.tsx` → `CommunityProvider` / `useCommunity()`. Recibe la `Community` completa (inmutable en la demo) y expone:
+**State = a single context.** `src/lib/community.tsx` → `CommunityProvider` / `useCommunity()`. It receives the full `Community` (immutable in the demo) and exposes:
 - `activeChannelId` + `setActiveChannelId`.
-- `panels`: stack del panel contextual derecho, **máximo 2** (`{kind:"thread"}` | `{kind:"ficha"}`). `openThread` reemplaza el thread anterior; `openPage` deduplica por `pageId`; el tope del stack es `panels[0]`. `popPanel` vuelve al anterior, `closePanel` vacía (y el canal ocupa todo el ancho).
-- lookups `member/page/thread/message(id)` que **lanzan** si el id no existe: un id roto en `demo.ts` tira la pantalla entera.
-- helpers: `isNew(page, now)` (estado `nueva` y < 24 h), `isAgent`, `formatTime`, `dayLabel` (locale `es-AR`).
+- `panels`: the right contextual panel stack, **max 2** (`{kind:"thread"}` | `{kind:"card"}`). `openThread` replaces the previous thread; `openCard` dedupes by `cardId`; the top of the stack is `panels[0]`. `popPanel` goes back, `closePanel` empties it (and the channel takes the full width).
+- `member/card/thread/message(id)` lookups that **throw** if the id doesn't exist: one broken id in `demo.ts` takes the whole screen down.
+- helpers: `isNew(card, now)` (state `new` and < 24 h), `isAgent`, `formatTime`, `dayLabel` (locale `en-US`).
 
-**Modelo de dominio** en `src/lib/types.ts` (comentado contra `PRODUCT.md`). Lo no obvio:
-- Un `Message` no es texto: es `paragraphs: MessageBlock[][]`, con bloques `text | cite | code`. Un bloque `cite` apunta a una `Page` (+ sección opcional) y se renderiza como pill de cita que abre la ficha en el panel.
-- `message.fromPage` = respuesta **desde la ficha** (el momento clave de la demo: sello "ya en el fichero · hace N días"). `message.publishes` = el mensaje es la tarjeta de publicación de una ficha. `thread.publishedPageId` = ficha que cierra el thread.
-- `Page.state` (`nueva | actualizada | reemplazada | compilando`), `Page.base` (documento base del canal, no sale de la conversación), `Page.replaces`.
-- `Agent.scope` (`comunidad | personal`) es una diferencia de producto que debe verse en la UI; `Agent.figureSeed`/`figureColor` alimentan el personaje.
-- `Channel.group` (`curso | trabajo | privados`) y `Channel.work.status` (`activo | entregado | archivado`) son los "cajones" del sidebar.
+**Domain model** in `src/lib/types.ts` (commented against `PRODUCT.md`). The non-obvious parts:
+- A `Message` isn't text: it's `paragraphs: MessageBlock[][]`, with `text | cite | code` blocks. A `cite` block points to a `Card` (+ optional section) and renders as a citation pill that opens the card in the panel.
+- `message.fromCard` = an answer **composed from the card file** (the demo's key moment: the "already on file · N days ago" seal). `message.publishes` = the message is a card's publication card in the flow. `thread.publishedCardId` = the card that closes the thread.
+- `Card.state` (`new | updated | superseded | compiling`), `Card.base` (a channel base document, doesn't come from conversation), `Card.replaces`.
+- `Agent.scope` (`community | personal`) is a product distinction that must be visible in the UI; `Agent.figureSeed`/`figureColor` feed the agent's figure.
+- `Channel.group` (`course | work | private`) and `Channel.work.status` (`active | submitted | archived`) are the sidebar's "drawers".
 
-**Capas de componentes:**
-- `src/screens/` — pantallas. `Channel.tsx` arma sidebar (shadcn inset) + dos `ResizablePanel` (canal · contexto); el layout se persiste en `localStorage["ada:layout:channel"]`. El comentario de cabecera del archivo es la declaración de dirección de diseño de la pantalla.
-- `src/components/ada/` — componentes de producto. `folder` (panel con lengüetas tipo carpeta; `Folder`, `FolderTab`, `FloatingButton`), `channel` (cabecera, `FichaRow`, `Conversation`, `Composer`), `panel` (`PanelStack`: Thread y Ficha), `ficha` (pestaña plegada `Tab`, `Pill`, `PageState`, `FichaTab`, `Cite`, `FichaCard`, y los mapas `TAB_BG/INK/DOT/FILL` por `PageType`), `message` (`MessageRow`, `Inline`), `identity` (avatares: personas = círculo pastel con iniciales, agentes = `Figure`; `agentInk` da el color del nombre del agente), `markdown` (renderer mínimo propio: `##`, párrafos, listas numeradas, `**`, `*`, `` ` ``; no soporta más que eso).
-- `src/components/ui/` — primitivas generadas por shadcn. Se pueden tocar, pero preferí componer desde `components/ada`.
-- `src/lib/figure.ts` — generador **determinista por seed** de personajes de agente (silueta sólida + corona + pies + dos ojos; paleta `FIGURE_COLORS`). `figureParams(seed)` → `silhouette(p)` (SVG). Un agente nuevo = nueva seed; "tirar otra" = cambiar la seed.
+**Component layers:**
+- `src/screens/` — screens. `Channel.tsx` assembles the sidebar (shadcn inset) + two `ResizablePanel`s (channel · context); layout persists in `localStorage["ada:layout:channel"]`. The file's header comment is the screen's design-direction statement.
+- `src/components/ada/` — product components. `folder` (tabbed folder panel; `Folder`, `FolderTab`, `FloatingButton`), `channel` (header, `CardRow`, `Conversation`, `Composer`), `panel` (`PanelStack`: Thread and Card), `card` (folded tab `Tab`, `Pill`, `CardState`, `CardTab`, `Cite`, `CardMessage`, and the `TAB_BG/INK/DOT/FILL` maps per `CardType`), `message` (`MessageRow`, `Inline`), `identity` (avatars: people = pastel circle with initials, agents = `Figure`; `agentInk` gives the agent's name color), `markdown` (minimal in-house renderer: `##`, paragraphs, numbered lists, `**`, `*`, `` ` ``; supports nothing else).
+- `src/components/ui/` — shadcn-generated primitives. They can be touched, but prefer composing from `components/ada`.
+- `src/lib/figure.ts` — **deterministic, seed-based** generator of agent figures (solid silhouette + crown + feet + two eyes; `FIGURE_COLORS` palette). `figureParams(seed)` → `silhouette(p)` (SVG). A new agent = a new seed; "roll another" = change the seed.
 
-**Datos:** `src/lib/demo.ts` es la única fuente (curso "Redes Neuronales 2C 2026"; personas `martin`, `sofia`, agente `ada`, `tutor-sofia`; canal inicial `dudas`, thread `t-explota`). Todo es ficticio y se presenta como demo; no inventar cifras, testimonios ni clientes. `PAGE_TYPE_LABEL` (etiquetas de tipo) también vive ahí.
+**Data:** `src/lib/demo.ts` is the only source (course "Neural Networks 2026"; people `martin`, `sofia`, agents `ada`, `tutor-sofia`; initial channel `questions`, thread `t-explodes`). Everything is fictional and presented as a demo; don't invent figures, testimonials or customers. `CARD_TYPE_LABEL` (type labels) also lives there.
 
-## Sistema de diseño en el código
+## Design system in the code
 
-Tokens como Tailwind v4 `@theme` en `src/index.css`: colores `ground/panel/panel-2/panel-3/line/ink/ink-2..4/sol/sol-soft/sello/alerta/ok`, `tab-<tipo>` y `tab-<tipo>-ink` por tipo de ficha, `estado-<status>`; fuentes `font-sans` (Inter, UI) · `font-serif` (Literata, fichas) · `font-mono` (Geist Mono, código/versión); radios `rounded-panel/card/ficha/control/pill`; `shadow-card/pop`. Las variables semánticas de shadcn (`background`, `primary`, `sidebar-*`…) están mapeadas a estos tokens en `@theme inline`; no uses colores de Tailwind crudos ni violetas.
+Tokens as Tailwind v4 `@theme` in `src/index.css`: colors `ground/panel/panel-2/panel-3/line/ink/ink-2..4/sun/sun-soft/seal/alert/ok`, `tab-<type>` and `tab-<type>-ink` per card type, `status-<status>`; fonts `font-sans` (Inter, UI) · `font-serif` (Literata, cards) · `font-mono` (Geist Mono, code/version); radii `rounded-panel/card/card-tab/control/pill`; `shadow-card/pop`. The shadcn semantic variables (`background`, `primary`, `sidebar-*`…) are mapped to these tokens in `@theme inline`; don't use raw Tailwind colors or violets.
 
-Clases utilitarias propias: `.panel`, `.label`, `.meta`, `.pill`, `.animate-archivar`, `.animate-sellar`. Rayos X de fuentes: `html[data-xray]` atenúa los `[id^="msg-"]` salvo los `[data-xray-target]`.
+In-house utility classes: `.panel`, `.label`, `.meta`, `.pill`, `.animate-archive`, `.animate-seal`. Source x-ray: `html[data-xray]` dims `[id^="msg-"]` except `[data-xray-target]`.
 
-Reglas con nombre que afectan código (detalle en `DESIGN.md`):
-- **Tab Rule:** un color de tipo solo aparece en la pestaña plegada o en el punto de una cita. Nunca en fondos, botones ni texto.
-- **One Sun Rule:** `sol` (#ffd43b) cubre una sola superficie grande por pantalla (la ficha nueva) y los pills "ya en el fichero".
-- **Three Voices:** Literata para lo que se lee/archiva, Inter para lo que se conversa/opera, Geist Mono para código y versión. No titular fichas en Inter.
-- Agentes: solo silueta y dos ojos (sin bocas, degradados ni sombras); nunca badge "BOT". Personas: círculos.
-- Sin burbujas de chat, sin gradientes violeta, sin sparkles, sin bordes de 1 px como sistema de profundidad.
-- Animaciones solo en cambios de estado (archivar 360 ms, sellar 380 ms, rayos X 300 ms); respetar `prefers-reduced-motion`.
+Named rules that affect code (details in `DESIGN.md`):
+- **Tab Rule:** a type color appears only on the folded tab or on a citation's dot. Never on backgrounds, buttons or text.
+- **One Sun Rule:** `sun` (#ffd43b) covers one single large surface per screen (the new card) and the "already on file" pills.
+- **Three Voices:** Literata for what's read/archived, Inter for what's conversed/operated, Geist Mono for code and version. Don't title cards in Inter.
+- Agents: silhouette and two eyes only (no mouths, gradients or shadows); never a "BOT" badge. People: circles.
+- No chat bubbles, no violet gradients, no sparkles, no 1 px borders as a depth system.
+- Animations only on state changes (archive 360 ms, seal 380 ms, x-ray 300 ms); respect `prefers-reduced-motion`.
 
-## Decisiones y dudas abiertas (no resolverlas por tu cuenta)
+## Decisions and open questions (don't resolve them on your own)
 
-- **Sello «ya en el fichero · hace N días».** Puede leerse como caché («te muestro lo que ya respondí»). La semántica correcta es «compuesta desde el fichero» (ver `DECISIONS.md`, compromiso 3): respuesta nueva, armada con fichas existentes. Copy de `demo.ts`/`ficha.tsx` a revisar con el usuario antes de cambiarlo.
-- **API del MVP (de `docs/usecases-api.html` §8):** `fromPage` debería pasar a plural (`fromFichero: { pageIds[], oldestAgo }`) porque componer implica varias fichas — cambia `types.ts`, `demo.ts`, `message` y `ficha`; el id de una ficha sería su path en la wiki; el frontmatter tiene 7 tipos y la UI 5 (`dificultad` y `persona` no se publican en canales); ingest automático cada N mensajes queda apagado en el MVP. Ninguna está decidida: preguntar antes de implementar.
-- **Nombre del agente de ejemplo.** `DECISIONS.md` y `demo.ts` lo llaman "Ada"; `PRODUCT.md` dice que Ada es el producto y los agentes llevan otros nombres. Preguntar antes de renombrar.
-- Backend: Buzz fork (`just dev`) vs Plan B (Next.js + Postgres + Agent SDK). La UI y el modelo de memoria son los mismos en ambos; esta SPA es la cáscara.
-- Fuera de scope este finde (no construir): permisos, corrección de entregas, edición colaborativa, búsqueda vectorial/global, multi-curso, móvil, notificaciones, canales de trabajo más allá del diseño. Tampoco gamificación ni personalización algorítmica por alumno: eran la solución del TFG de 2024 y `PROBLEM.md` §9 explica por qué ya no son el problema.
+- **The "already on file · N days ago" seal.** It can read as a cache ("here's what I already answered"). The correct semantics is "composed from the card file" (see `DECISIONS.md`, commitment 3): a fresh answer, built from existing cards. Copy in `demo.ts`/`card.tsx` to review with the user before changing it.
+- **MVP API (from `docs/usecases-api.html` §8):** `fromCard` should become plural (`fromFile: { cardIds[], oldestAgo }`) because composing involves several cards — it changes `types.ts`, `demo.ts`, `message` and `card`; a card's id would be its path in the wiki; the frontmatter has 7 types and the UI 5 (`difficulty` and `person` aren't published to channels); automatic ingest every N messages stays off in the MVP. None of this is decided: ask before implementing.
+- **The example agent's name.** `DECISIONS.md` and `demo.ts` call it "Ada"; `PRODUCT.md` says Ada is the product and agents carry other names. Ask before renaming.
+- Backend: Buzz fork (`just dev`) vs Plan B (local server + Agent SDK-style runner). The UI and the memory model are the same in both; this SPA is the shell.
+- Out of scope this weekend (don't build): permissions, submission grading, collaborative editing, vector/global search, multi-course, mobile, notifications, work channels beyond the design. Nor gamification or per-student algorithmic personalization: `PROBLEM.md` §9 explains why they miss the problem.
 
-## Docs en HTML
+## HTML docs
 
-`docs/` tiene páginas HTML autocontenidas (sin build, se abren con doble clic) que explican el sistema a personas. Son **inspiración a futuro**: describen el producto completo, no el código de hoy, y cada una lo dice en su banner. `docs/como-funciona.html` = modelo mental (server / runner / runtime / carpeta, secuencia de una mención, aislamiento, tiers). `docs/usecases-api.html` = casos de uso y API del MVP ampliado. Si cambia `DECISIONS.md` §14-§15 o el spec de OpenSpec, se actualizan en la misma tarea.
+`docs/` holds self-contained HTML pages (no build, open by double-click) that explain the system to people. They are **future inspiration**: they describe the full product, not today's code, and each says so in its banner. `docs/how-it-works.html` = the mental model (server / runner / runtime / folder, the sequence of a mention, isolation, tiers). `docs/usecases-api.html` = use cases and the expanded MVP API. If `DECISIONS.md` §14-§15 or the OpenSpec change moves, they're updated in the same task.

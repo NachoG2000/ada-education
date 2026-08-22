@@ -1,7 +1,8 @@
-/* Generador de personajes de agente — versión plana y minimalista.
-   Silueta de color sólido, siempre del mismo tamaño, con una "corona" arriba y "pies" abajo que varían,
-   y dos ojos de punto negro. Determinista por seed → cada agente nace con una variación única.
-   Referencia: siluetas planas tipo mascota (naranja con bucles, verde con hojas). */
+/* Agent character generator — flat, minimalist version.
+   Solid-color silhouette, always the same size, with a "crown" on top and "feet" at the
+   bottom that vary, plus two black dot eyes. Deterministic by seed → every agent is born
+   with a unique variation. Reference: flat mascot-style silhouettes (orange with loops,
+   green with leaves). */
 
 export type Crown = "flat" | "bumps" | "leaves" | "ears" | "dome" | "antenna" | "horns" | "tuft"
 export type Feet = "flat" | "feet" | "round" | "notch"
@@ -12,30 +13,30 @@ export interface FigureParams {
   ink: string
   crown: Crown
   feet: Feet
-  /** cantidad de bucles/hojas cuando aplica */
+  /** number of loops/leaves when applicable */
   count: number
-  /** radio de esquina del cuerpo (0..1 relativo al ancho) */
+  /** body corner radius (0..1 relative to width) */
   corner: number
   eyes: { y: number; gap: number; r: number }
 }
 
-/** Paleta juguetona (sólida, saturada). Cada entrada: nombre, relleno, tinta legible sobre blanco. */
+/** Playful palette (solid, saturated). Each entry: name, fill, ink readable on white. */
 export const FIGURE_COLORS = [
   { name: "coral", fill: "#e8764f", ink: "#b8452a" },
-  { name: "verde", fill: "#5ec27f", ink: "#237a44" },
-  { name: "amarillo", fill: "#f6c23c", ink: "#8a6200" },
-  { name: "azul", fill: "#5b93ea", ink: "#2552b4" },
-  { name: "lila", fill: "#a587e6", ink: "#5f3fb5" },
-  { name: "rosa", fill: "#f08db3", ink: "#b43a72" },
+  { name: "green", fill: "#5ec27f", ink: "#237a44" },
+  { name: "yellow", fill: "#f6c23c", ink: "#8a6200" },
+  { name: "blue", fill: "#5b93ea", ink: "#2552b4" },
+  { name: "lilac", fill: "#a587e6", ink: "#5f3fb5" },
+  { name: "pink", fill: "#f08db3", ink: "#b43a72" },
   { name: "teal", fill: "#45bdb5", ink: "#1e7d77" },
-  { name: "naranja", fill: "#f3a03d", ink: "#a35f0c" },
-  { name: "rojo", fill: "#ef6b6b", ink: "#b73a3a" },
-  { name: "lima", fill: "#8fcf4a", ink: "#4c7f16" },
+  { name: "orange", fill: "#f3a03d", ink: "#a35f0c" },
+  { name: "red", fill: "#ef6b6b", ink: "#b73a3a" },
+  { name: "lime", fill: "#8fcf4a", ink: "#4c7f16" },
 ] as const
 
 import type { FigureColorName } from "@ada/protocol"
 export type { FigureColorName }
-// chequeo estático: los nombres de FIGURE_COLORS tienen que coincidir con el protocolo
+// static check: FIGURE_COLORS names must match the protocol
 type _Check = (typeof FIGURE_COLORS)[number]["name"] extends FigureColorName ? true : never
 const _check: _Check = true
 void _check
@@ -82,21 +83,21 @@ export function figureParams(seed: string, colorName?: FigureColorName): FigureP
   }
 }
 
-/* ---- Geometría (caja 0..100; cuerpo fijo: x 14..86, y 22..92) ---- */
+/* ---- Geometry (0..100 box; fixed body: x 14..86, y 22..92) ---- */
 
 export const BODY = { x: 14, y: 22, w: 72, h: 70 } as const
 
-/** Dibuja la silueta completa (cuerpo + corona + pies) como elementos SVG en forma de datos. */
+/** Draws the complete silhouette (body + crown + feet) as SVG elements in data form. */
 export function silhouette(p: FigureParams) {
   const { x, y, w, h } = BODY
   const rad = p.corner * w
   const shapes: Array<{ kind: "rect"; x: number; y: number; w: number; h: number; r: number } | { kind: "circle"; cx: number; cy: number; r: number } | { kind: "path"; d: string }> = []
   const cuts: Array<{ kind: "circle"; cx: number; cy: number; r: number } | { kind: "rect"; x: number; y: number; w: number; h: number; r: number }> = []
 
-  // cuerpo
+  // body
   shapes.push({ kind: "rect", x, y, w, h, r: rad })
 
-  // corona
+  // crown
   const cx = x + w / 2
   if (p.crown === "bumps") {
     const n = p.count
@@ -140,7 +141,7 @@ export function silhouette(p: FigureParams) {
     shapes.push({ kind: "path", d: `M${cx - 6} ${y + 6} Q${cx - 2} ${y - 14} ${cx + 10} ${y - 8} Q${cx + 2} ${y - 4} ${cx + 6} ${y + 6} Z` })
   }
 
-  // pies
+  // feet
   if (p.feet === "feet") {
     cuts.push({ kind: "circle", cx, cy: y + h, r: 13 })
   }

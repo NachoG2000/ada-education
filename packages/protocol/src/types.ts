@@ -1,27 +1,27 @@
-/* Modelo de dominio de Ada (ver PRODUCT.md → Operating Context).
-   Vive en @ada/protocol porque lo comparten web, server y runner. */
+/* Ada's domain model (see PRODUCT.md → Operating Context).
+   Lives in @ada/protocol because web, server, and runner all share it. */
 
-/** paleta del personaje procedural; la fuente visual (fills/inks) vive en apps/web/src/lib/figure.ts y debe mantener estos nombres */
+/** Procedural character palette; the visual source (fills/inks) lives in apps/web/src/lib/figure.ts and must keep these names */
 export type FigureColorName =
-  | "coral" | "verde" | "amarillo" | "azul" | "lila"
-  | "rosa" | "teal" | "naranja" | "rojo" | "lima"
+  | "coral" | "green" | "yellow" | "blue" | "lilac"
+  | "pink" | "teal" | "orange" | "red" | "lime"
 
-export type PageType = "apunte" | "consigna" | "decision" | "respuesta" | "entrega"
+export type CardType = "note" | "assignment" | "decision" | "answer" | "submission"
 
-export type Visibility = "canal" | "solo-yo"
+export type Visibility = "channel" | "only-me"
 
-export type WorkStatus = "activo" | "entregado" | "archivado"
+export type WorkStatus = "active" | "submitted" | "archived"
 
-export type Presence = "en-linea" | "ausente" | "pensando" | "publicando"
+export type Presence = "online" | "away" | "thinking" | "publishing"
 
 export interface Person {
   kind: "person"
   id: string
   name: string
   initials: string
-  /** color de cartulina del círculo (solo neutros/tintas suaves, nunca colores de pestaña) */
-  tone: "ficha" | "cartulina" | "sello-soft" | "rojo-soft"
-  role?: "profesor" | "alumno"
+  /** cardstock color of the circle (neutrals/soft tints only, never tab colors) */
+  tone: "card" | "cardstock" | "seal-soft" | "red-soft"
+  role?: "teacher" | "student"
   presence: Presence
 }
 
@@ -29,42 +29,42 @@ export interface Agent {
   kind: "agent"
   id: string
   name: string
-  /** quién lo creó: la comunidad (profesor) o una persona para su canal privado */
-  scope: "comunidad" | "personal"
+  /** who created it: the community (teacher) or a person for their private channel */
+  scope: "community" | "personal"
   createdBy: string
-  /** seed del personaje procedural (ver lib/figure.ts); por defecto, el id */
+  /** procedural character seed (see lib/figure.ts); defaults to the id */
   figureSeed?: string
-  /** color fijo del personaje (si no, lo decide la seed) */
+  /** fixed character color (otherwise the seed decides) */
   figureColor?: FigureColorName
   instructions: string
-  provider: { mode: "suscripcion" | "api-key"; model: string }
+  provider: { mode: "subscription" | "api-key"; model: string }
   channelIds: string[]
   presence: Presence
 }
 
 export type Member = Person | Agent
 
-export interface Page {
+export interface Card {
   id: string
   channelId: string
   title: string
-  type: PageType
+  type: CardType
   authorId: string
   version: number
   visibility: Visibility
-  /** ids de mensajes o archivos de los que salió */
-  sources: Array<{ kind: "mensaje" | "archivo"; ref: string; label: string }>
+  /** ids of the messages or files it came from */
+  sources: Array<{ kind: "message" | "file"; ref: string; label: string }>
   replaces?: string
-  /** documento base del canal (no publicado desde la conversación) */
+  /** channel base document (not published from the conversation) */
   base?: boolean
-  state?: "nueva" | "actualizada" | "reemplazada" | "compilando"
+  state?: "new" | "updated" | "superseded" | "compiling"
   publishedAt: string
   /** markdown */
   body: string
 }
 
 export interface Citation {
-  pageId: string
+  cardId: string
   section?: string
 }
 
@@ -78,12 +78,12 @@ export interface Message {
   channelId: string
   authorId: string
   at: string
-  /** párrafos; cada párrafo es una lista de bloques inline */
+  /** paragraphs; each paragraph is a list of inline blocks */
   paragraphs: MessageBlock[][]
   threadId?: string
-  /** la respuesta sale de una ficha ya existente ("desde la ficha") */
-  fromPage?: { pageId: string; ago: string }
-  /** el mensaje es la publicación de una ficha */
+  /** the answer comes from an existing card ("from the file") */
+  fromCard?: { cardId: string; ago: string }
+  /** the message is a card's publication post */
   publishes?: string
   reactions?: Array<{ emoji: string; count: number }>
 }
@@ -92,17 +92,17 @@ export interface Thread {
   id: string
   rootMessageId: string
   replyIds: string[]
-  /** ficha publicada al cierre del thread */
-  publishedPageId?: string
+  /** card published when the thread closes */
+  publishedCardId?: string
 }
 
 export interface Channel {
   id: string
   name: string
-  group: "curso" | "trabajo" | "privados"
+  group: "course" | "work" | "private"
   description?: string
   memberIds: string[]
-  /** total real cuando la lista de ids es parcial (demo) */
+  /** real total when the id list is partial (demo) */
   memberCount?: number
   work?: { status: WorkStatus; due?: string }
   unread?: boolean
@@ -115,7 +115,7 @@ export interface Community {
   initial: string
   members: Member[]
   channels: Channel[]
-  pages: Page[]
+  cards: Card[]
   messages: Message[]
   threads: Thread[]
   meId: string

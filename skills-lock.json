@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "skills": {
+    "lark-apps": {
+      "source": "open.feishu.cn",
+      "sourceUrl": "https://open.feishu.cn",
+      "sourceType": "well-known",
+      "computedHash": "955e73f8c15c2225cac280466e73b39411debb5b5eb45e0ad883dac5a9d98ced",
+      "wellKnownDigest": "sha256:7fdef29a5a1d664e092bd4593a49afbcf0fd722e7bdf77523210071f5fc848c8"
+    },
+    "lark-slides": {
+      "source": "open.feishu.cn",
+      "sourceUrl": "https://open.feishu.cn",
+      "sourceType": "well-known",
+      "computedHash": "a5240b4b1dbed8c13c29b189b1bbd25e874f8650f5c4f9ec5ca08f3fc81887e4",
+      "wellKnownDigest": "sha256:e484581251be553b6e1de99847c9ff6e89a812505f805b17ae658a4fdceb8781"
+    }
+  }
+}

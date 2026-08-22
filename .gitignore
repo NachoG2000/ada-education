@@ -34,3 +34,7 @@ dist-ssr
 # server local
 apps/server/data/
 *.tsbuildinfo
+
+# vendored agent skills (restorable via `npx skills add`; see skills-lock.json)
+.agents/skills/
+.claude/skills/lark-*

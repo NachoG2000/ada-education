@@ -1,59 +1,59 @@
-# Goal: implementar la API (`apps/server` + eventos en `@ada/protocol` + seed)
+# Goal: implement the API (`apps/server` + events in `@ada/protocol` + seed)
 
-> Prompt de goal para un agente implementador (Codex). Autoridad: las specs de este change. Si algo acá contradice una spec, manda la spec.
+> Goal prompt for an implementing agent (Codex). Authority: this change's specs. If anything here contradicts a spec, the spec wins.
 
-## Objetivo
+## Objective
 
-En este repo (monorepo npm workspaces, Node 24), implementar el servidor de la comunidad según `openspec/changes/demo-local-backend/specs/community-server/spec.md`, cubriendo las tareas **1.4b, 2.1–2.8 y 3.1** de `openspec/changes/demo-local-backend/tasks.md`. Leé antes: ese spec completo, `tasks.md`, `design.md` (decisiones 2, 3, 4, 5, 7 y la nota de pivot), `AGENTS.md` raíz, `apps/server/AGENTS.md`, `packages/protocol/AGENTS.md` y `data/AGENTS.md`.
+In this repo (npm workspaces monorepo, Node 24), implement the community server per `openspec/changes/demo-local-backend/specs/community-server/spec.md`, covering tasks **1.4b, 2.1–2.8 and 3.1** of `openspec/changes/demo-local-backend/tasks.md`. Read first: that full spec, `tasks.md`, `design.md` (decisions 2, 3, 4, 5, 7 and the pivot note), the root `AGENTS.md`, `apps/server/AGENTS.md`, `packages/protocol/AGENTS.md` and `data/AGENTS.md`.
 
-## En scope
+## In scope
 
-1. **`packages/protocol`** (tarea 1.4b): agregar `src/events.ts` con esquemas `zod` y tipos derivados, re-exportado desde `src/index.ts`. Agregar `zod` como dependencia del package. Definir exactamente:
+1. **`packages/protocol`** (task 1.4b): add `src/events.ts` with `zod` schemas and derived types, re-exported from `src/index.ts`. Add `zod` as a package dependency. Define exactly:
    - `CommunitySnapshot = Omit<Community, "meId">`.
-   - `ServerEvent` (server → clientes web): `{ type: "message.created", payload: { message: Message } }` | `{ type: "thread.created", payload: { thread: Thread } }` | `{ type: "page.published", payload: { page: Page, message: Message } }` | `{ type: "member.presence", payload: { memberId: string, presence: Presence, runtime?: string, model?: string } }`.
+   - `ServerEvent` (server → web clients): `{ type: "message.created", payload: { message: Message } }` | `{ type: "thread.created", payload: { thread: Thread } }` | `{ type: "card.published", payload: { card: Card, message: Message } }` | `{ type: "member.presence", payload: { memberId: string, presence: Presence, runtime?: string, model?: string } }`.
    - `RunnerServerMessage` (server → runner): `{ type: "agent.mention", payload: { channelId: string, threadId?: string, message: Message, from: Member, context: Message[] } }`.
-   - `RunnerClientMessage` (runner → server): `{ type: "presence", payload: { presence: Presence, runtime?: string, model?: string } }` | `{ type: "message.create", ref: string, payload: { channelId: string, threadId?: string, paragraphs: MessageBlock[][], fromPage?: { pageId: string, ago: string }, publishes?: string } }` | `{ type: "page.publish", ref: string, payload: PagePublishInput }`.
-   - `PagePublishInput = { channelId, path: string, title, type: PageType, visibility: Visibility, sources: Page["sources"], replaces?: string (path), body: string, base?: boolean }` (la `version`, `state`, `id`, `authorId` y `publishedAt` las decide el server).
-   - Respuestas a mensajes con `ref`: `{ type: "ack", ref: string, ok: true, message?: Message, page?: Page }` | `{ type: "ack", ref, ok: false, error: string }`.
-2. **`apps/server`** (tareas 2.1–2.8): Hono + `@hono/node-server` para REST, `ws` (WebSocketServer sobre el mismo http server) para `/ws` y `/ws/runner`, `node:sqlite` (`DatabaseSync`) para storage. Estructura sugerida: `src/index.ts` (arranque), `src/db.ts` (apertura + `schema.sql` + funciones por tabla), `src/api.ts` (rutas REST), `src/ws.ts` (hub de clientes + runners, broadcast), `src/mentions.ts` (detección + armado de contexto), `src/seed.ts` (script). Configuración por env: `PORT` (default **8787**), `ADA_DB` (default `apps/server/data/ada.db`), `ADA_COURSE` (default `data/redes-neuronales-2c-2026`).
-   - Tablas: `community` (una fila: id, name, subtitle, initial), `members` (personas y agentes; columnas para ambos, `kind` discrimina; agentes con `token` en texto plano, `runtime`, `model`), `channel_members`, `channels`, `messages` (paragraphs/fromPage/publishes/reactions como JSON), `threads`, `pages` (única `(author_id, path)`). Presencia: **en memoria**, no en DB; al arrancar, agentes `ausente` y personas `en-linea`.
-   - `GET /api/community` devuelve `CommunitySnapshot` con la misma forma que arma `apps/web/src/lib/demo.ts` (miralo como referencia de forma). `threads.replyIds` se deriva de `messages.thread_id` ordenado por `at`.
-   - Menciones: regex sobre bloques `kind:"text"` buscando `@<id>` donde `<id>` es id de un miembro `kind:"agent"` del canal; contexto = últimos 20 mensajes del thread (o del canal si no hay thread) en orden cronológico, sin incluir mensajes futuros. Entregar solo al runner conectado de ese agente; si no hay runner conectado, no encolar nada.
-   - `page.publish` / `POST /api/pages`: dedupe por `(authorId, path)` → si existe, `version+1` y `state:"actualizada"`; si trae `replaces` (path), resolverlo a la page del mismo autor y marcarla `state:"reemplazada"`; crear siempre el `Message` con `publishes` en el canal; emitir `page.published`.
-   - `/ws/runner?token=`: comparar token plano contra `members.token`; inválido → cerrar con código 4401. Conectado → presencia `en-linea` + broadcast; desconexión → `ausente` + broadcast. Validar que todo lo que el runner escribe use el `authorId` de su agente.
-3. **`data/redes-neuronales-2c-2026/community.json`** (tarea 3.1): curso "Redes Neuronales 2C 2026", canales `general`, `dudas`, `03-backprop` (group `curso`), personas `martin` (profesor, tone `sello-soft`), `sofia`, `ignacio` (alumnos), agente `ada` (`scope:"comunidad"`, `createdBy:"martin"`, en los tres canales, `token:"ada-demo-token"`, `figureSeed:"ada"`). Incluir `baseDocs: [{ channelId:"03-backprop", path:"martin/modulos/03-backprop/backprop.md", title:"Backpropagation — documento base", type:"apunte" }]` y crear ese archivo en `raw/` con 3–4 párrafos placeholder en español rioplatense (el contenido real es otra tarea). El seed publica los baseDocs como `Page` con `base:true` y `state` sin valor.
-4. Scripts: en `apps/server/package.json`: `dev` (`tsx watch src/index.ts`), `seed` (`tsx src/seed.ts`), `check` (`tsc --noEmit`). En el raíz: `dev:server`, `seed` delegando al workspace, y `dev` pasa a correr web+server en paralelo (agregá `concurrently` como devDep raíz). `tsx` como devDep raíz. `apps/server/tsconfig.json` propio (module nodenext, strict, igual de estricto que el resto: `noUnusedLocals`, `noUnusedParameters`, `erasableSyntaxOnly`, `verbatimModuleSyntax`).
+   - `RunnerClientMessage` (runner → server): `{ type: "presence", payload: { presence: Presence, runtime?: string, model?: string } }` | `{ type: "message.create", ref: string, payload: { channelId: string, threadId?: string, paragraphs: MessageBlock[][], fromCard?: { cardId: string, ago: string }, publishes?: string } }` | `{ type: "card.publish", ref: string, payload: CardPublishInput }`.
+   - `CardPublishInput = { channelId, path: string, title, type: CardType, visibility: Visibility, sources: Card["sources"], replaces?: string (path), body: string, base?: boolean }` (the `version`, `state`, `id`, `authorId` and `publishedAt` are decided by the server).
+   - Replies to messages with `ref`: `{ type: "ack", ref: string, ok: true, message?: Message, card?: Card }` | `{ type: "ack", ref, ok: false, error: string }`.
+2. **`apps/server`** (tasks 2.1–2.8): Hono + `@hono/node-server` for REST, `ws` (WebSocketServer over the same http server) for `/ws` and `/ws/runner`, `node:sqlite` (`DatabaseSync`) for storage. Suggested structure: `src/index.ts` (startup), `src/db.ts` (open + `schema.sql` + per-table functions), `src/api.ts` (REST routes), `src/ws.ts` (client + runner hub, broadcast), `src/mentions.ts` (detection + context assembly), `src/seed.ts` (script). Env config: `PORT` (default **8787**), `ADA_DB` (default `apps/server/data/ada.db`), `ADA_COURSE` (default `data/neural-networks-2026`).
+   - Tables: `community` (one row: id, name, subtitle, initial), `members` (people and agents; columns for both, `kind` discriminates; agents with plain-text `token`, `runtime`, `model`), `channel_members`, `channels`, `messages` (paragraphs/fromCard/publishes/reactions as JSON), `threads`, `cards` (unique `(author_id, path)`). Presence: **in memory**, not in the DB; on startup, agents `away` and people `online`.
+   - `GET /api/community` returns a `CommunitySnapshot` with the same shape `apps/web/src/lib/demo.ts` builds (use it as a shape reference). `threads.replyIds` derives from `messages.thread_id` ordered by `at`.
+   - Mentions: regex over `kind:"text"` blocks looking for `@<id>` where `<id>` is the id of a `kind:"agent"` member of the channel; context = the last 20 messages of the thread (or the channel if no thread) in chronological order, excluding future messages. Deliver only to that agent's connected runner; if no runner is connected, queue nothing.
+   - `card.publish` / `POST /api/cards`: dedupe by `(authorId, path)` → if it exists, `version+1` and `state:"updated"`; if it carries `replaces` (a path), resolve it to the same author's card and mark it `state:"superseded"`; always create the `Message` with `publishes` in the channel; emit `card.published`.
+   - `/ws/runner?token=`: compare the plain token against `members.token`; invalid → close with code 4401. Connected → `online` presence + broadcast; disconnect → `away` + broadcast. Validate that everything the runner writes uses its agent's `authorId`.
+3. **`data/neural-networks-2026/community.json`** (task 3.1): course "Neural Networks 2026", channels `general`, `questions`, `03-backprop` (group `course`), people `martin` (teacher, tone `seal-soft`), `sofia`, `ignacio` (students), agent `ada` (`scope:"community"`, `createdBy:"martin"`, in all three channels, `token:"ada-demo-token"`, `figureSeed:"ada"`). Include `baseDocs: [{ channelId:"03-backprop", path:"martin/modules/03-backprop/backprop.md", title:"Backpropagation — base document", type:"note" }]` and create that file in `raw/` with 3–4 placeholder paragraphs (the real content is another task). The seed publishes the baseDocs as `Card` with `base:true` and no `state`.
+4. Scripts: in `apps/server/package.json`: `dev` (`tsx watch src/index.ts`), `seed` (`tsx src/seed.ts`), `check` (`tsc --noEmit`). At the root: `dev:server`, `seed` delegating to the workspace, and `dev` runs web+server in parallel (add `concurrently` as a root devDep). `tsx` as a root devDep. Its own `apps/server/tsconfig.json` (module nodenext, strict, as strict as the rest: `noUnusedLocals`, `noUnusedParameters`, `erasableSyntaxOnly`, `verbatimModuleSyntax`).
 
-## Fuera de scope (NO hacer)
+## Out of scope (do NOT do)
 
-- No tocar `apps/web` ni `packages/runner` (salvo nada). No implementar el runner ni el cliente.
-- No agregar Postgres, ORMs, Docker, auth de personas, hashing de tokens, colas de menciones, ni endpoints que la spec no pida (`POST /api/agents` NO existe: `DECISIONS.md` §15).
-- El server NUNCA llama a un modelo de IA ni lee credenciales (`apps/server/AGENTS.md`, regla de oro).
-- No reformatear archivos existentes ni "mejorar" cosas fuera del scope.
+- Don't touch `apps/web` or `packages/runner` (at all). Don't implement the runner or the client.
+- Don't add Postgres, ORMs, Docker, people auth, token hashing, mention queues, or endpoints the spec doesn't ask for (`POST /api/agents` does NOT exist: `DECISIONS.md` §15).
+- The server NEVER calls an AI model or reads credentials (`apps/server/AGENTS.md`, golden rule).
+- Don't reformat existing files or "improve" things outside the scope.
 
-## Convenciones
+## Conventions
 
-- Todo en español rioplatense con voseo: comentarios, mensajes de error, logs, JSON del curso.
-- Tipos siempre desde `@ada/protocol`; no redefinir interfaces del dominio en el server.
-- Código directo y chico: funciones, no clases; sin capas de abstracción especulativas.
+- Everything in English: comments, error messages, logs, the course JSON.
+- Types always from `@ada/protocol`; don't redefine domain interfaces in the server.
+- Direct, small code: functions, not classes; no speculative abstraction layers.
 
-## Verificación (criterio de terminado)
+## Verification (definition of done)
 
-Correr en orden y pegar la salida en el reporte final:
-1. `npm install` (raíz) y `npm run check -w @ada/server` sin errores; `npm run build` (la web sigue compilando); `npm run lint` sin errores nuevos.
-2. `npm run seed` → loguea el curso creado; correrlo dos veces no duplica (idempotente: recrear DB o upsert, decidilo y documentalo).
-3. `npm run dev:server` y con curl:
-   - `curl -s localhost:8787/api/community | jq '.channels | length'` → 3; `.members | length` → 4; `.pages | length` → 1 (la base).
-   - POST de un mensaje de `sofia` a `dudas` con un bloque `text` "hola @ada" → 200 con el mensaje persistido (con `id` y `at` del server).
+Run in order and paste the output in the final report:
+1. `npm install` (root) and `npm run check -w @ada/server` with no errors; `npm run build` (the web still compiles); `npm run lint` with no new errors.
+2. `npm run seed` → logs the created course; running it twice doesn't duplicate (idempotent: recreate the DB or upsert, your call — document it).
+3. `npm run dev:server` and with curl:
+   - `curl -s localhost:8787/api/community | jq '.channels | length'` → 3; `.members | length` → 4; `.cards | length` → 1 (the base one).
+   - POST a message from `sofia` to `questions` with a `text` block "hi @ada" → 200 with the persisted message (with the server's `id` and `at`).
    - `curl -s localhost:8787/api/community | jq '.messages | length'` → 1.
-4. Smoke test WS (escribí `apps/server/scripts/smoke.ts`, corrible con `tsx`, y dejalo en el repo): abre un cliente en `/ws`, abre un runner con `?token=ada-demo-token`, verifica que (a) llega `member.presence` de `ada` en línea, (b) al postear "hola @ada" por REST el runner recibe `agent.mention` con `context`, (c) el runner manda `page.publish` + `message.create` con cite y el cliente recibe `page.published` y `message.created`, (d) token inválido cierra con 4401. El script termina con exit 0 y un resumen.
-5. Actualizar: checkboxes de `tasks.md` (1.4b, 2.1–2.8, 3.1), la sección "Hoy" de `apps/server/AGENTS.md` y de `packages/protocol/AGENTS.md`, y la tabla de estado del `README.md` raíz (server → ✅ funcionando local).
+4. WS smoke test (write `apps/server/scripts/smoke.ts`, runnable with `tsx`, and leave it in the repo): opens a client on `/ws`, opens a runner with `?token=ada-demo-token`, verifies that (a) `member.presence` for `ada` online arrives, (b) posting "hi @ada" over REST makes the runner receive `agent.mention` with `context`, (c) the runner sends `card.publish` + `message.create` with a cite and the client receives `card.published` and `message.created`, (d) an invalid token closes with 4401. The script ends with exit 0 and a summary.
+5. Update: the `tasks.md` checkboxes (1.4b, 2.1–2.8, 3.1), the "Today" section of `apps/server/AGENTS.md` and `packages/protocol/AGENTS.md`, and the status table in the root `README.md` (server → ✅ working locally).
 
-## Condiciones de corte (parar y reportar en vez de improvisar)
+## Stop conditions (stop and report instead of improvising)
 
-- Si el repo no coincide con lo que este goal describe (paths, tipos, scripts), parar y reportar la diferencia.
-- Si `node:sqlite` no está disponible en el Node instalado, reportar la versión y parar (no reemplazar por better-sqlite3 sin avisar).
-- Si un comando de verificación falla dos veces por la misma causa, parar y reportar el error exacto.
-- Reporte final: qué tareas quedaron tildadas, comandos corridos con su salida, decisiones tomadas donde la spec daba libertad, y qué quedó afuera.
+- If the repo doesn't match what this goal describes (paths, types, scripts), stop and report the difference.
+- If `node:sqlite` isn't available in the installed Node, report the version and stop (don't swap in better-sqlite3 without saying so).
+- If a verification command fails twice for the same cause, stop and report the exact error.
+- Final report: which tasks got checked, commands run with their output, decisions made where the spec left freedom, and what was left out.
 
-Al terminar: un solo commit con mensaje en español que empiece con `api: `.
+When done: a single commit whose message starts with `api: `.

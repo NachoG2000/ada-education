@@ -1,26 +1,26 @@
 import { Hono } from "hono"
 import type { Context } from "hono"
 import type { DatabaseSync } from "node:sqlite"
-import { messageBlockSchema, pagePublishInputSchema } from "@ada/protocol"
+import { messageBlockSchema, cardPublishInputSchema } from "@ada/protocol"
 import type { Message, Thread } from "@ada/protocol"
 import {
   createMessage,
   createThread,
   getCommunitySnapshot,
-  publishPage,
+  publishCard,
   type MessageInput,
-  type AuthoredPagePublishInput,
-  type PublishedPage,
+  type AuthoredCardPublishInput,
+  type PublishedCard,
 } from "./db.js"
 
 export interface ApiHooks {
   onMessageCreated?: (message: Message) => void
   onThreadCreated?: (thread: Thread) => void
-  onPagePublished?: (published: PublishedPage) => void
+  onCardPublished?: (published: PublishedCard) => void
 }
 
 export interface ApiOptions extends ApiHooks {
-  presence?: ReadonlyMap<string, "en-linea" | "ausente" | "pensando" | "publicando">
+  presence?: ReadonlyMap<string, "online" | "away" | "thinking" | "publishing">
 }
 
 export function createApi(database: DatabaseSync, options: ApiOptions = {}): Hono {
@@ -32,15 +32,15 @@ export function createApi(database: DatabaseSync, options: ApiOptions = {}): Hon
     try {
       const body = await context.req.json<unknown>()
       if (!isRecord(body) || typeof body.authorId !== "string" || !isParagraphs(body.paragraphs)) {
-        return context.json({ error: "authorId y paragraphs son obligatorios" }, 400)
+        return context.json({ error: "authorId and paragraphs are required" }, 400)
       }
       const input: MessageInput = {
         channelId: context.req.param("channelId"),
         authorId: body.authorId,
         paragraphs: body.paragraphs,
         threadId: optionalString(body.threadId),
-        fromPage: isRecord(body.fromPage) && typeof body.fromPage.pageId === "string" && typeof body.fromPage.ago === "string"
-          ? { pageId: body.fromPage.pageId, ago: body.fromPage.ago }
+        fromCard: isRecord(body.fromCard) && typeof body.fromCard.cardId === "string" && typeof body.fromCard.ago === "string"
+          ? { cardId: body.fromCard.cardId, ago: body.fromCard.ago }
           : undefined,
       }
       const message = createMessage(database, input)
@@ -55,7 +55,7 @@ export function createApi(database: DatabaseSync, options: ApiOptions = {}): Hon
     try {
       const body = await context.req.json<unknown>()
       if (!isRecord(body) || typeof body.rootMessageId !== "string") {
-        return context.json({ error: "rootMessageId es obligatorio" }, 400)
+        return context.json({ error: "rootMessageId is required" }, 400)
       }
       const thread = createThread(database, body.rootMessageId)
       options.onThreadCreated?.(thread)
@@ -65,13 +65,13 @@ export function createApi(database: DatabaseSync, options: ApiOptions = {}): Hon
     }
   })
 
-  app.post("/api/pages", async (context) => {
+  app.post("/api/cards", async (context) => {
     try {
       const body = await context.req.json<unknown>()
-      const input = pageInput(body)
-      if (!input) return context.json({ error: "faltan campos obligatorios de la ficha" }, 400)
-      const published = publishPage(database, input)
-      options.onPagePublished?.(published)
+      const input = cardInput(body)
+      if (!input) return context.json({ error: "missing required card fields" }, 400)
+      const published = publishCard(database, input)
+      options.onCardPublished?.(published)
       return context.json(published, 200)
     } catch (error) {
       return errorResponse(context, error)
@@ -83,9 +83,9 @@ export function createApi(database: DatabaseSync, options: ApiOptions = {}): Hon
 
 export const createApiApp = createApi
 
-function pageInput(value: unknown): AuthoredPagePublishInput | undefined {
+function cardInput(value: unknown): AuthoredCardPublishInput | undefined {
   if (!isRecord(value) || typeof value.authorId !== "string") return undefined
-  const parsed = pagePublishInputSchema.safeParse(value)
+  const parsed = cardPublishInputSchema.safeParse(value)
   if (!parsed.success) return undefined
   return {
     ...parsed.data,
@@ -107,7 +107,7 @@ function optionalString(value: unknown): string | undefined {
 }
 
 function errorResponse(context: Context, error: unknown): Response {
-  const message = error instanceof Error ? error.message : "Error interno"
-  const status = message.includes("no existe") || message.includes("no pertenece") ? 404 : 400
+  const message = error instanceof Error ? error.message : "Internal error"
+  const status = message.includes("does not exist") || message.includes("does not belong") ? 404 : 400
   return context.json({ error: message }, status)
 }

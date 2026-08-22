@@ -1,6 +1,6 @@
 # Product
 
-> Documento de producto (dirección e ideas): describe el producto completo, incluido lo que todavía no existe. **No representa el código actual.** Estado real: `AGENTS.md` + `openspec/`. Alcance vigente del finde: `DECISIONS.md` §15 (desarrollo local para un profesor puntual).
+> Product document (direction and ideas): describes the complete product, including what doesn't exist yet. **It does not represent the current code.** Actual state: `AGENTS.md` + `openspec/`. Current scope for the weekend: `DECISIONS.md` §15 (local development for a single professor).
 
 <!-- impeccable:product-schema 1 -->
 
@@ -8,77 +8,77 @@
 
 web
 
-Web app empaquetada después como desktop con Tauri (como Buzz y Berd de Block). El wrapper no cambia el lenguaje de diseño: se diseña para web, tema claro por defecto. No hay versión móvil en alcance.
+Web app later packaged as desktop with Tauri (like Buzz and Berd from Block). The wrapper doesn't change the design language: it's designed for web, light theme by default. No mobile version in scope.
 
 ## Users
 
-Dos usuarios primarios que alternan el punto de vista según la pantalla; ninguno manda sobre el otro.
+Two primary users who alternate point of view depending on the screen; neither outranks the other.
 
-- **Profesor (ej. Martín).** Crea la comunidad del curso, sus canales y sus agentes; publica material, consignas y decisiones; abre canales de trabajo para TPs y evaluaciones. Domina las pantallas de gestión de agentes, configuración de canal, canal de trabajo y decisiones.
-- **Alumno (ej. Sofía).** Pregunta en canales, abre threads, sube apuntes, entrega páginas de tipo *entrega*, y puede tener un canal privado con un agente que configuró para sí. Domina las pantallas de onboarding por invitación, #dudas con thread y "la misma pregunta, segunda vez".
+- **Professor (e.g. Martin).** Creates the course community, its channels and its agents; publishes material, assignments and decisions; opens work channels for assignments and exams. Owns the agent management, channel settings, work channel and decision screens.
+- **Student (e.g. Sofia).** Asks questions in channels, opens threads, uploads notes, submits cards of type *submission*, and may have a private channel with an agent configured for themself. Owns the invitation onboarding, #questions with thread, and "the same question, twice" screens.
 
-Situación: un curso universitario en marcha (el ejemplo de la demo es Redes Neuronales), con 20-40 miembros, durante el cuatrimestre. Idioma de UI y contenido: español rioplatense (voseo).
+Situation: an in-progress university course (the demo example is Neural Networks), with 20-40 members, over the semester. UI and content language: English.
 
-Audiencia secundaria: jurado de una hackathon de 24 horas que ve una demo guiada.
+Secondary audience: judges at a 24-hour hackathon watching a guided demo.
 
 ## Product Purpose
 
-Ada es una comunidad de aprendizaje para un curso donde humanos y agentes de IA conviven en canales, y donde el conocimiento del curso se compila solo en **páginas** que nacen y crecen mientras la gente habla.
+Ada is a learning community for a course where humans and AI agents coexist in channels, and where course knowledge compiles itself into **cards** that are born and grow as people talk.
 
-En una frase: el profesor crea agentes y los agrega a canales como si fueran ayudantes; las páginas del curso (apuntes, consignas, decisiones, respuestas, entregas) se publican en los canales y se mantienen solas.
+In one sentence: the professor creates agents and adds them to channels as if they were assistants; the course cards (notes, assignments, decisions, answers, submissions) get published in channels and maintain themselves.
 
-Éxito en la demo: que el jurado vea, sin explicación, que (1) los agentes son miembros creados por la comunidad, (2) el conocimiento vive en páginas publicadas en canales, (3) las respuestas de los agentes citan páginas y, cuando la pregunta ya fue respondida, responden *desde la página*, y (4) hay canales estables del curso y canales de trabajo que nacen, viven y se archivan. El momento clave de la demo es la pantalla "la misma pregunta, segunda vez".
+Demo success: the judges see, without explanation, that (1) agents are members created by the community, (2) knowledge lives in cards published in channels, (3) agent answers cite cards and, when a question has already been answered, they answer *from the file*, and (4) there are stable course channels and work channels that are born, live, and get archived. The key moment of the demo is the "the same question, twice" screen.
 
 ## Positioning
 
-- **No hay "el bot".** Cada comunidad crea los agentes que quiera, cada uno con nombre propio, identidad, instrucciones, proveedor y canales específicos. Un agente puede estar en `#dudas` y no en `#profesores`. Se distinguen sutilmente de las personas, no con un badge "BOT".
-- **Las páginas son el producto del chat.** Un agente que aprende algo publica o actualiza una página, en vivo, con versión, fuentes y visibilidad. Una pregunta que el fichero ya cubre se responde componiendo desde las páginas (no pegando una respuesta anterior), y eso se ve; si trae un ángulo nuevo, la página se enriquece.
-- **Canales de trabajo volátiles con ciclo de vida** (activo · entregado · archivado), al estilo de los rooms por feature branch de Buzz, pero para TPs, evaluaciones y tareas.
-- Referencia estructural declarada: **Buzz** (buzz.xyz, github.com/block/buzz) para comunidades, invitaciones, agentes como miembros y canales/rooms; **Berd** (github.com/block/berd) para gestión de agentes. Ada se posiciona explícitamente sobre esa familia, con su propio sistema de diseño. No es Slack ni Discord con un bot.
+- **There's no "the bot."** Each community creates whatever agents it wants, each with its own name, identity, instructions, provider, and specific channels. An agent can be in `#questions` and not in `#teachers`. They're subtly distinguished from people, not with a "BOT" badge.
+- **Cards are the product of chat.** An agent that learns something publishes or updates a card, live, with version, sources, and visibility. A question already covered by the card file gets answered by composing from the cards (not pasting a previous answer), and that's visible; if it brings a new angle, the card gets enriched.
+- **Volatile work channels with a lifecycle** (active · submitted · archived), in the style of Buzz's per-feature-branch rooms, but for assignments, exams, and tasks.
+- Declared structural reference: **Buzz** (buzz.xyz, github.com/block/buzz) for communities, invitations, agents as members, and channels/rooms; **Berd** (github.com/block/berd) for agent management. Ada positions itself explicitly on top of that family, with its own design system. It's not Slack or Discord with a bot.
 
 ## Operating Context
 
-- Comunidad por curso. Entrada por **link de invitación**; identidad local (nombre + avatar) con clave generada en el browser, sin registro por email. Variante: crear una comunidad desde cero.
-- Layout de tres columnas: sidebar (selector de comunidad; canales agrupados en *Curso*, *Trabajo*, *Privados*; miembros con personas y agentes mezclados por presencia) · canal (franja de páginas del canal arriba, mensajes abajo) · panel contextual derecho (stack: *Thread*, *Página*; extensible a árbol de páginas e historial).
-- Canales estables del curso: `#general`, `#dudas`, `#profesores`, uno por módulo (`#01-perceptrón`, `#02-mlp`, `#03-backprop`…). Canales de trabajo: nacen de una consigna (ej. "TP2 · Backprop a mano") con documento base, fecha de entrega y agentes asignados.
-- **Página**: documento markdown publicado en un canal, con título, tipo (`apunte` · `consigna` · `decisión` · `respuesta` · `entrega`), autor (persona o agente), versión, fuentes (mensajes o archivos de origen), "reemplaza a" cuando corresponde, y chip de visibilidad (*miembros del canal* o *solo yo*). Acciones: abrir en el panel derecho, editar (si sos autor), publicar en otro canal, ver historial. Una página publicada aparece también como mensaje-tarjeta en el flujo del canal.
-- **Documentos base** de un canal: páginas o archivos que el profesor sube o elige en la configuración del canal; al guardar, el agente del canal empieza a generar páginas a partir de ellos (estado "compilando").
-- Presencia de agentes: *en línea*, *pensando*, *publicando una página*.
-- Estados que el producto tiene que mostrar: agente compilando; página nueva · actualizada · reemplazada; respuesta en vivo vs. respuesta desde una página; canal de trabajo activo · entregado · archivado; canal recién creado sin páginas.
+- One community per course. Entry via **invitation link**; local identity (name + avatar) with a key generated in the browser, no email signup. Variant: create a community from scratch.
+- Three-column layout: sidebar (community selector; channels grouped into *Course*, *Work*, *Private*; members with people and agents mixed by presence) · channel (strip of channel cards on top, messages below) · right contextual panel (stack: *Thread*, *Card*; extensible to a card tree and history).
+- Stable course channels: `#general`, `#questions`, `#teachers`, one per module (`#01-perceptron`, `#02-mlp`, `#03-backprop`…). Work channels: born from an assignment (e.g. "Assignment 2 · Backprop by Hand") with a base document, due date, and assigned agents.
+- **Card**: a markdown document published in a channel, with title, type (`note` · `assignment` · `decision` · `answer` · `submission`), author (person or agent), version, sources (messages or source files), "replaces" when applicable, and a visibility chip (*channel members* or *only me*). Actions: open in the right panel, edit (if you're the author), publish to another channel, view history. A published card also appears as a message-card in the channel's flow.
+- **Base documents** for a channel: cards or files the professor uploads or selects in channel settings; on save, the channel's agent starts generating cards from them (state "compiling").
+- Agent presence: *online*, *thinking*, *publishing a card*.
+- States the product has to show: agent compiling; card new · updated · superseded; live answer vs. answer from a card; work channel active · submitted · archived; newly created channel with no cards.
 
 ## Capabilities and Constraints
 
-- **Stack confirmado:** Vite + React 19 + Tailwind CSS v4 + shadcn/ui v4 (primitivas Base UI) como base, con sistema de diseño propio encima. Empaquetado Tauri después. Sin SSR.
-- **Entregable de la hackathon:** app funcional con agentes reales — canales, páginas y al menos un agente respondiendo de verdad; la UI se conecta a eso. No es solo un prototipo con mocks.
-- **Agentes:** cada agente corre en un **runner** de quien lo creó, que ejecuta el binario del proveedor sin modificar (`claude`, `codex`, `pi`); la credencial (suscripción o API key) vive con ese binario, nunca en Ada (`DECISIONS.md` §14; reglas verificadas en `research/2026-08-22-suscripciones-runners-buzz-pi.md`). Cada agente tiene nombre, avatar, instrucciones, proveedor/credencial y lista de canales donde participa. Hay agentes **de la comunidad** (creados por el profesor) y agentes **personales** (creados por un alumno para su canal privado); la diferencia es de producto y debe ser visible.
-- Los agentes publican páginas con el mismo mecanismo que una persona.
-- Terminología fija (español): comunidad, canal, canal de trabajo, thread, página, tipo de página, documento base, fuentes, "reemplaza a", visibilidad, agente, miembros, entrega, compilando, "desde la página".
-- **Fuera de alcance (no diseñar):** pantalla de permisos (el modelo completo no está definido; solo existe el chip de visibilidad), settings generales, notificaciones, búsqueda global, móvil, corrección de entregas.
-- Decisiones abiertas: nombre del agente de ejemplo del curso (en el brief original se llamaba "Ada", pero Ada es el producto y los agentes llevan nombres propios distintos); modelo de permisos completo; tema oscuro (solo si sale natural).
+- **Confirmed stack:** Vite + React 19 + Tailwind CSS v4 + shadcn/ui v4 (Base UI primitives) as the foundation, with a custom design system on top. Tauri packaging later. No SSR.
+- **Hackathon deliverable:** a functional app with real agents — channels, cards, and at least one agent actually answering; the UI connects to that. It's not just a prototype with mocks.
+- **Agents:** each agent runs in a **runner** belonging to whoever created it, running the provider's binary unmodified (`claude`, `codex`, `pi`); the credential (subscription or API key) lives with that binary, never in Ada (`DECISIONS.md` §14; rules verified in `research/2026-08-22-suscripciones-runners-buzz-pi.md`). Each agent has a name, avatar, instructions, provider/credential, and list of channels it participates in. There are **community** agents (created by the professor) and **personal** agents (created by a student for their private channel); the difference is a product distinction and must be visible.
+- Agents publish cards using the same mechanism as a person.
+- Fixed terminology (English): community, channel, work channel, thread, card, card type, base document, sources, "replaces", visibility, agent, members, submission, compiling, "from the file".
+- **Out of scope (do not design):** permissions screen (the full model isn't defined; only the visibility chip exists), general settings, notifications, global search, mobile, submission grading.
+- Open decisions: name of the course's example agent (in the original brief it was called "Ada," but Ada is the product and agents carry distinct proper names); the full permissions model; dark theme (only if it comes naturally).
 
 ## Brand Commitments
 
-- **Nombre:** Ada (el producto). Los agentes son muchos y con nombres propios; ninguno se llama Ada.
-- **Referencia de familia:** Buzz y Berd (Block) por estructura y por tratar a los agentes como miembros, con sistema de diseño propio de Ada.
-- Restricciones visuales fijadas por el fundador (binding): sin look de "app de IA" (nada de gradientes violeta, sparkles ni chat bubbles genéricas), sin look crypto; tono de herramienta de estudio seria y cálida; serif con personalidad solo para títulos y cuerpo de páginas, sans para la UI; jerarquía tipográfica fuerte, pocas cajas y bordes; las páginas se ven como documentos y los mensajes como conversación, y ese contraste es parte del diseño; los agentes se distinguen por forma de avatar o detalle tipográfico, no por badge; tema claro por defecto.
-- Decisión del 22/08/2026 (tercera iteración, vigente): el mundo visual es **«El fichero» con el material de la referencia `design/inspiration/01`** — fondo con lavado de color, paneles blancos flotantes con radio grande y sombra suave, pestañas plegadas de color por tipo de ficha, un amarillo pleno como acento, pills pastel para estado. **Colorido y juguetón, a la par de Berd/Buzz**, sin look de "app de IA". Los agentes son **personajes procedurales planos** (silueta sólida de color vivo, mismo tamaño, dos ojos; `src/lib/figure.ts`): cada agente nuevo nace con una variación única por seed y se puede "tirar otra". Tipografías gratuitas de calidad (Inter, Literata, Geist Mono): el fundador pidió "más pro sin pagar". Iteraciones anteriores descartadas: fichas de cartulina con máquina de escribir y caritas (barata), versión sobria plana (sin personalidad).
-- Referencias de tono: Buzz (estructura, agentes como miembros), Linear (densidad, tipografía), Obsidian (markdown hermoso).
+- **Name:** Ada (the product). Agents are many and have proper names; none of them is called Ada.
+- **Family reference:** Buzz and Berd (Block) for structure and for treating agents as members, with Ada's own design system.
+- Visual constraints set by the founder (binding): no "AI app" look (no purple gradients, sparkles, or generic chat bubbles), no crypto look; serious, warm study-tool tone; serif with personality only for titles and card body text, sans for the UI; strong typographic hierarchy, few boxes and borders; cards look like documents and messages look like conversation, and that contrast is part of the design; agents are distinguished by avatar shape or typographic detail, not a badge; light theme by default.
+- Decision from 2026-08-22 (third iteration, current): the visual world is **"The Card File," built on the reference material in `design/inspiration/01`** — a color-washed background, floating white panels with a large radius and soft shadow, folded color tabs by card type, a full yellow as an accent, pastel pills for state. **Colorful and playful, on par with Berd/Buzz**, without an "AI app" look. Agents are **flat procedural characters** (solid silhouette in a bright color, same size, two eyes; `src/lib/figure.ts`): every new agent is born with a unique seed-based variation and can be "rerolled." Quality free typefaces (Inter, Literata, Geist Mono): the founder asked for "more pro without paying." Previously discarded iterations: cardstock cards with a typewriter font and little faces (cheap-looking), a flat sober version (no personality).
+- Tone references: Buzz (structure, agents as members), Linear (density, typography), Obsidian (beautiful markdown).
 
 ## Evidence on Hand
 
-- `design/BRIEF.md` — brief original del fundador, iteración inicial a mejorar (no es verdad final de diseño).
-- `design/inspiration/01..07-*.png` — siete imágenes de inspiración visual aportadas por el fundador; la 01 es la referencia principal.
-- `design/mockups/` — exploración descartada (mockups HTML para Figma); no es autoridad visual ni código del producto.
-- **No existe nada real:** curso, personas, mensajes, páginas, métricas y testimonios son ficticios y se presentan como demo. No hay logo ni identidad previa. No inventar testimonios, cifras de adopción ni clientes.
+- `design/BRIEF.md` — the founder's original brief, an initial iteration to improve on (not the final design truth).
+- `design/inspiration/01..07-*.png` — seven visual inspiration images provided by the founder; 01 is the main reference.
+- `design/mockups/` — a discarded exploration (HTML mockups for Figma); not visual authority or product code.
+- **Nothing here is real:** the course, people, messages, cards, metrics, and testimonials are fictional and presented as a demo. There's no logo or prior identity. Don't invent testimonials, adoption numbers, or customers.
 
 ## Product Principles
 
-1. **Los agentes son miembros, no features.** Cada decisión de UI los trata como personas con identidad propia y presencia, distinguidos con sutileza.
-2. **Lo que se conversa se vuelve página.** El flujo de chat existe para producir y mantener documentos; la página es el artefacto durable y citable.
-3. **Mostrar la procedencia.** Fuentes, versión, "reemplaza a" y "desde la página" son información de primera clase, nunca metadata escondida.
-4. **Canales con ciclo de vida.** Lo estable del curso y lo volátil del trabajo se ven y se comportan distinto.
-5. **Demo primero.** Ante la duda, priorizar que las cuatro tesis se entiendan sin explicación en 7 pantallas, por sobre cobertura completa.
+1. **Agents are members, not features.** Every UI decision treats them as people with their own identity and presence, subtly distinguished.
+2. **What gets discussed becomes a card.** The chat flow exists to produce and maintain documents; the card is the durable, citable artifact.
+3. **Show provenance.** Sources, version, "replaces," and "from the file" are first-class information, never hidden metadata.
+4. **Channels with a lifecycle.** What's stable about the course and what's volatile about the work look and behave differently.
+5. **Demo first.** When in doubt, prioritize the four theses being understood without explanation across 7 screens, over full coverage.
 
 ## Accessibility & Inclusion
 
-Sin requisito específico establecido más allá de buenas prácticas web. Contenido y UI en español rioplatense.
+No specific requirement established beyond good web practices. Content and UI in English.

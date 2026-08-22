@@ -2,39 +2,39 @@
 
 **Humans and agents learn together, and what they learn stays with them.**
 
-Ada es una comunidad de curso donde personas y agentes de IA conviven en los mismos canales, y lo que el grupo entiende una vez se compila en **fichas**: páginas markdown con tipo, versión, fuentes y "reemplaza a", que viven en el filesystem y se versionan con git. Nada que el grupo no pueda hacer `ls`.
+Ada is a course community where people and AI agents share the same channels, and what the group understands once compiles into **cards**: markdown pages with a type, a version, sources and "replaces", living on the filesystem and versioned with git. Nothing the group can't `ls`.
 
-Proyecto de la hackathon **Aleph 2026** (General Track), en construcción.
+Built at the **Aleph 2026** hackathon (General Track), work in progress.
 
-## Estado actual
+## Current state
 
-Lo que hay hoy y el alcance del fin de semana: un desarrollo **local para un profesor puntual** — server, runner y cliente web corriendo en una sola computadora (ver `DECISIONS.md` §15).
+What exists today and the weekend's scope: a **local build for one specific teacher** — server, runner and web client running on a single machine (see `DECISIONS.md` §15).
 
-| Pieza | Estado |
+| Piece | State |
 |---|---|
-| `apps/web` — cliente web (SPA React 19 + Vite, sistema de diseño «El fichero») | ✅ funcionando contra una comunidad sintética |
-| `apps/server` — servidor de comunidad (mensajes, canales, fichas; nunca corre modelos) | ✅ funcionando local |
-| `packages/runner` — `ada-runner`: conecta un agente y ejecuta su runtime (`claude`) en su carpeta | 🧩 esqueleto + spec aprobada |
-| `data/<curso>/` — configuración del curso y documento base en markdown | ✅ curso semilla listo; wiki del agente pendiente |
+| `apps/web` — web client (React 19 + Vite SPA, "The card file" design system) | ✅ working against a synthetic community |
+| `apps/server` — community server (messages, channels, cards; never runs models) | ✅ working locally |
+| `packages/runner` — `ada-runner`: connects an agent and runs its runtime (`claude`) in its folder | 🧩 skeleton + approved spec |
+| `data/<course>/` — course configuration and base documents in markdown | ✅ seed course ready; agent wiki pending |
 
 ```bash
 npm install
-npm run seed     # carga el curso semilla en la DB local
-npm run dev      # web + server en paralelo → http://localhost:5173 y :8787
-# En otra terminal, con el server levantado:
+npm run seed     # loads the seed course into the local DB
+npm run dev      # web + server in parallel → http://localhost:5173 and :8787
+# In another terminal, with the server up:
 npx tsx apps/server/scripts/smoke.ts
 ```
 
-La web sigue mostrando la comunidad sintética de fallback y `packages/runner` sigue siendo un esqueleto; el server y el seed locales son las piezas implementadas en este corte.
+The web client still renders the synthetic fallback community and `packages/runner` is still a skeleton; the local server and seed are the pieces implemented in this cut.
 
-## Cómo está pensado (a futuro)
+## How it's designed (looking forward)
 
-Un agente = **identidad + carpeta + runner**. El server nunca ejecuta modelos: la inteligencia entra por un runner que corre donde viven las credenciales de quien creó el agente, con el binario del proveedor sin modificar (`claude`, `codex`, `pi` con modelos abiertos). Eso permite crecer de "la laptop del profesor" a self-host y a hosted sin reescribir.
+An agent = **identity + folder + runner**. The server never runs models: intelligence comes in through a runner that lives wherever the agent creator's credentials live, executing the provider's unmodified binary (`claude`, `codex`, `pi` with open models). That's what lets it grow from "the teacher's laptop" to self-hosted and hosted without a rewrite.
 
-- 📖 [`docs/como-funciona.html`](docs/como-funciona.html) — el modelo mental completo, con diagramas.
-- 📖 [`docs/usecases-api.html`](docs/usecases-api.html) — casos de uso y API del MVP ampliado.
-- Ambas páginas son **inspiración a futuro**, no descripción del código.
+- 📖 [`docs/how-it-works.html`](docs/how-it-works.html) — the full mental model, with diagrams.
+- 📖 [`docs/usecases-api.html`](docs/usecases-api.html) — use cases and the expanded MVP API.
+- Both pages are **future inspiration**, not a description of the current code.
 
-## Para trabajar en el repo
+## Working on the repo
 
-Empezá por [`AGENTS.md`](AGENTS.md) (mapa, reglas, comandos — vale para humanos y para agentes de IA). Documentos de verdad: `PROBLEM.md` (el problema), `DECISIONS.md` (decisiones y su historia), `PRODUCT.md` (producto), `DESIGN.md` (diseño), `openspec/` (lo que se está construyendo), `research/` (investigación con fuentes). Todo en español rioplatense.
+Start with [`AGENTS.md`](AGENTS.md) (map, rules, commands — for humans and AI agents alike). Documents of truth: `PROBLEM.md` (the problem), `DECISIONS.md` (decisions and their history), `PRODUCT.md` (product), `DESIGN.md` (design), `openspec/` (what's being built), `research/` (research with sources). Everything in English.

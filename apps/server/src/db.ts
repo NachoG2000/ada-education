@@ -5,19 +5,19 @@ import { randomUUID } from "node:crypto"
 import { DatabaseSync } from "node:sqlite"
 import type {
   Agent,
+  Card,
+  CardType,
   Channel,
   CommunitySnapshot,
   Member,
   Message,
   MessageBlock,
-  Page,
-  PageType,
   Person,
   Presence,
   Thread,
   Visibility,
 } from "@ada/protocol"
-import type { PagePublishInput as ProtocolPagePublishInput } from "@ada/protocol"
+import type { CardPublishInput as ProtocolCardPublishInput } from "@ada/protocol"
 
 export type PresenceMap = ReadonlyMap<string, Presence>
 
@@ -28,14 +28,14 @@ export interface MessageInput {
   authorId: string
   paragraphs: MessageBlock[][]
   threadId?: string
-  fromPage?: { pageId: string; ago: string }
+  fromCard?: { cardId: string; ago: string }
   publishes?: string
 }
 
-export type AuthoredPagePublishInput = ProtocolPagePublishInput & { authorId: string }
+export type AuthoredCardPublishInput = ProtocolCardPublishInput & { authorId: string }
 
-export interface PublishedPage {
-  page: Page
+export interface PublishedCard {
+  card: Card
   message: Message
 }
 
@@ -110,7 +110,7 @@ export function upsertPerson(database: DatabaseSync, person: SeedPerson): void {
 }
 
 export function upsertAgent(database: DatabaseSync, agent: SeedAgent): void {
-  const provider = agent.provider ?? { mode: "suscripcion", model: "" }
+  const provider = agent.provider ?? { mode: "subscription", model: "" }
   database.prepare(`
     INSERT INTO members (id, kind, name, scope, created_by, figure_seed, figure_color, instructions,
       provider_mode, provider_model, runtime, model, token)
@@ -156,7 +156,7 @@ export function listMembers(database: DatabaseSync, presence: PresenceMap = new 
   const rows = database.prepare("SELECT * FROM members ORDER BY rowid").all() as Row[]
   return rows.map((row) => {
     const id = asString(row.id) ?? ""
-    const currentPresence = presence.get(id) ?? (row.kind === "agent" ? "ausente" : "en-linea")
+    const currentPresence = presence.get(id) ?? (row.kind === "agent" ? "away" : "online")
     if (row.kind === "agent") {
       const channelIds = (database.prepare("SELECT channel_id FROM channel_members WHERE member_id = ? ORDER BY channel_id")
         .all(id) as Row[]).map((item) => asString(item.channel_id) ?? "")
@@ -164,13 +164,13 @@ export function listMembers(database: DatabaseSync, presence: PresenceMap = new 
         kind: "agent",
         id,
         name: asString(row.name) ?? id,
-        scope: (asString(row.scope) ?? "comunidad") as Agent["scope"],
+        scope: (asString(row.scope) ?? "community") as Agent["scope"],
         createdBy: asString(row.created_by) ?? "",
         figureSeed: asString(row.figure_seed),
         figureColor: asString(row.figure_color) as Agent["figureColor"],
         instructions: asString(row.instructions) ?? "",
         provider: {
-          mode: (asString(row.provider_mode) ?? "suscripcion") as Agent["provider"]["mode"],
+          mode: (asString(row.provider_mode) ?? "subscription") as Agent["provider"]["mode"],
           model: asString(row.provider_model) ?? "",
         },
         channelIds,
@@ -182,7 +182,7 @@ export function listMembers(database: DatabaseSync, presence: PresenceMap = new 
       id,
       name: asString(row.name) ?? id,
       initials: asString(row.initials) ?? "",
-      tone: (asString(row.tone) ?? "ficha") as Person["tone"],
+      tone: (asString(row.tone) ?? "card") as Person["tone"],
       role: asString(row.role) as Person["role"],
       presence: currentPresence as Presence,
     } satisfies Person
@@ -223,7 +223,7 @@ export function listChannels(database: DatabaseSync): Channel[] {
     return {
       id,
       name: asString(row.name) ?? id,
-      group: (asString(row.group_name) ?? "curso") as Channel["group"],
+      group: (asString(row.group_name) ?? "course") as Channel["group"],
       description: asString(row.description),
       memberIds,
       memberCount: asNumber(row.member_count) ?? undefined,
@@ -233,7 +233,7 @@ export function listChannels(database: DatabaseSync): Channel[] {
   })
 }
 
-/** Alias chicos para que el hub WS pueda inyectar este almacenamiento sin conocer SQL. */
+/** Small aliases so the WS hub can inject this storage without knowing SQL. */
 export function members(database: DatabaseSync, presence: PresenceMap = new Map()): Member[] {
   return listMembers(database, presence)
 }
@@ -283,9 +283,9 @@ export function createMessage(database: DatabaseSync, input: MessageInput): Mess
   assertChannelMember(database, input.channelId, input.authorId)
   if (input.threadId) {
     const thread = getThread(database, input.threadId)
-    if (!thread) throw new Error("El thread no existe")
+    if (!thread) throw new Error("Thread does not exist")
     const root = getMessage(database, thread.rootMessageId)
-    if (!root || root.channelId !== input.channelId) throw new Error("El thread no pertenece al canal")
+    if (!root || root.channelId !== input.channelId) throw new Error("Thread does not belong to the channel")
   }
   const message: Message = {
     id: randomUUID(),
@@ -294,21 +294,21 @@ export function createMessage(database: DatabaseSync, input: MessageInput): Mess
     at: new Date().toISOString(),
     paragraphs: input.paragraphs,
     threadId: input.threadId,
-    fromPage: input.fromPage,
+    fromCard: input.fromCard,
     publishes: input.publishes,
   }
   database.prepare(`
-    INSERT INTO messages (id, channel_id, author_id, at, paragraphs, thread_id, from_page, publishes, reactions)
+    INSERT INTO messages (id, channel_id, author_id, at, paragraphs, thread_id, from_card, publishes, reactions)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(message.id, message.channelId, message.authorId, message.at, JSON.stringify(message.paragraphs),
-    message.threadId ?? null, message.fromPage ? JSON.stringify(message.fromPage) : null,
+    message.threadId ?? null, message.fromCard ? JSON.stringify(message.fromCard) : null,
     message.publishes ?? null, null)
   return message
 }
 
 export function createThread(database: DatabaseSync, rootMessageId: string): Thread {
   const message = getMessage(database, rootMessageId)
-  if (!message) throw new Error("El mensaje raíz no existe")
+  if (!message) throw new Error("Root message does not exist")
   const existing = database.prepare("SELECT id FROM threads WHERE root_message_id = ?").get(rootMessageId) as Row | undefined
   if (existing) return getThread(database, asString(existing.id) ?? "") as Thread
   const thread: Thread = { id: randomUUID(), rootMessageId, replyIds: [] }
@@ -326,7 +326,7 @@ export function getThread(database: DatabaseSync, threadId: string): Thread | un
     id,
     rootMessageId: asString(row.root_message_id) ?? "",
     replyIds: replies,
-    publishedPageId: asString(row.published_page_id),
+    publishedCardId: asString(row.published_card_id),
   }
 }
 
@@ -336,18 +336,18 @@ export function listThreads(database: DatabaseSync): Thread[] {
     .filter((thread): thread is Thread => Boolean(thread))
 }
 
-export function listPages(database: DatabaseSync): Page[] {
-  return (database.prepare("SELECT * FROM pages ORDER BY published_at").all() as Row[]).map(pageFromRow)
+export function listCards(database: DatabaseSync): Card[] {
+  return (database.prepare("SELECT * FROM cards ORDER BY published_at").all() as Row[]).map(cardFromRow)
 }
 
-export function getPageByPath(database: DatabaseSync, authorId: string, path: string): Page | undefined {
-  const row = database.prepare("SELECT * FROM pages WHERE author_id = ? AND path = ?").get(authorId, path) as Row | undefined
-  return row ? pageFromRow(row) : undefined
+export function getCardByPath(database: DatabaseSync, authorId: string, path: string): Card | undefined {
+  const row = database.prepare("SELECT * FROM cards WHERE author_id = ? AND path = ?").get(authorId, path) as Row | undefined
+  return row ? cardFromRow(row) : undefined
 }
 
 export function getCommunitySnapshot(database: DatabaseSync, presence: PresenceMap = new Map()): CommunitySnapshot {
   const communityRow = database.prepare("SELECT * FROM community LIMIT 1").get() as Row | undefined
-  if (!communityRow) throw new Error("La comunidad no está inicializada; corré el seed")
+  if (!communityRow) throw new Error("Community is not initialized; run the seed")
   return {
     id: asString(communityRow.id) ?? "",
     name: asString(communityRow.name) ?? "",
@@ -355,30 +355,30 @@ export function getCommunitySnapshot(database: DatabaseSync, presence: PresenceM
     initial: asString(communityRow.initial) ?? "",
     members: listMembers(database, presence),
     channels: listChannels(database),
-    pages: listPages(database),
+    cards: listCards(database),
     messages: listMessages(database),
     threads: listThreads(database),
   }
 }
 
-export function publishPage(database: DatabaseSync, input: AuthoredPagePublishInput): PublishedPage {
+export function publishCard(database: DatabaseSync, input: AuthoredCardPublishInput): PublishedCard {
   database.exec("BEGIN IMMEDIATE")
   try {
     assertChannelMember(database, input.channelId, input.authorId)
-    const existingRow = database.prepare("SELECT * FROM pages WHERE author_id = ? AND path = ?")
+    const existingRow = database.prepare("SELECT * FROM cards WHERE author_id = ? AND path = ?")
       .get(input.authorId, input.path) as Row | undefined
-    const previous = existingRow ? pageFromRow(existingRow) : undefined
+    const previous = existingRow ? cardFromRow(existingRow) : undefined
     const version = previous ? previous.version + 1 : 1
-    const pageId = previous?.id ?? randomUUID()
-    const replacedPage = input.replaces
-      ? database.prepare("SELECT * FROM pages WHERE author_id = ? AND path = ?")
+    const cardId = previous?.id ?? randomUUID()
+    const replacedCard = input.replaces
+      ? database.prepare("SELECT * FROM cards WHERE author_id = ? AND path = ?")
         .get(input.authorId, input.replaces) as Row | undefined
       : undefined
-    if (input.replaces && !replacedPage) throw new Error("La ficha a reemplazar no existe")
-    const replacedId = replacedPage ? asString(replacedPage.id) : undefined
-    if (replacedId) database.prepare("UPDATE pages SET state = 'reemplazada' WHERE id = ?").run(replacedId)
-    const page: Page = {
-      id: pageId,
+    if (input.replaces && !replacedCard) throw new Error("Card to replace does not exist")
+    const replacedId = replacedCard ? asString(replacedCard.id) : undefined
+    if (replacedId) database.prepare("UPDATE cards SET state = 'superseded' WHERE id = ?").run(replacedId)
+    const card: Card = {
+      id: cardId,
       channelId: input.channelId,
       title: input.title,
       type: input.type,
@@ -388,42 +388,42 @@ export function publishPage(database: DatabaseSync, input: AuthoredPagePublishIn
       sources: input.sources,
       replaces: replacedId,
       base: input.base,
-      state: input.base ? undefined : (previous ? "actualizada" : "nueva"),
+      state: input.base ? undefined : (previous ? "updated" : "new"),
       publishedAt: new Date().toISOString(),
       body: input.body,
     }
     database.prepare(`
-      INSERT INTO pages (id, channel_id, title, type, author_id, path, version, visibility, sources, replaces,
+      INSERT INTO cards (id, channel_id, title, type, author_id, path, version, visibility, sources, replaces,
         base, state, published_at, body)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(author_id, path) DO UPDATE SET channel_id = excluded.channel_id, title = excluded.title,
         type = excluded.type, version = excluded.version, visibility = excluded.visibility, sources = excluded.sources,
         replaces = excluded.replaces, base = excluded.base, state = excluded.state, published_at = excluded.published_at,
         body = excluded.body
-    `).run(page.id, page.channelId, page.title, page.type, page.authorId, input.path, page.version,
-      page.visibility, JSON.stringify(page.sources), page.replaces ?? null, page.base ? 1 : null,
-      page.state ?? null, page.publishedAt, page.body)
+    `).run(card.id, card.channelId, card.title, card.type, card.authorId, input.path, card.version,
+      card.visibility, JSON.stringify(card.sources), card.replaces ?? null, card.base ? 1 : null,
+      card.state ?? null, card.publishedAt, card.body)
     const message = createMessage(database, {
       channelId: input.channelId,
       authorId: input.authorId,
-      paragraphs: [[{ kind: "text", text: `Publicó «${input.title}».` }]],
-      publishes: page.id,
+      paragraphs: [[{ kind: "text", text: `Published "${input.title}".` }]],
+      publishes: card.id,
     })
     database.exec("COMMIT")
-    return { page, message }
+    return { card, message }
   } catch (error) {
     database.exec("ROLLBACK")
     throw error
   }
 }
 
-/** Inserta o actualiza una ficha base del curso. Las fichas base no son mensajes de conversación. */
-export function upsertBasePage(database: DatabaseSync, input: AuthoredPagePublishInput): Page {
+/** Inserts or updates a base card of the course. Base cards are not conversation messages. */
+export function upsertBaseCard(database: DatabaseSync, input: AuthoredCardPublishInput): Card {
   assertChannelMember(database, input.channelId, input.authorId)
-  const existing = database.prepare("SELECT * FROM pages WHERE author_id = ? AND path = ?")
+  const existing = database.prepare("SELECT * FROM cards WHERE author_id = ? AND path = ?")
     .get(input.authorId, input.path) as Row | undefined
-  const previous = existing ? pageFromRow(existing) : undefined
-  const page: Page = {
+  const previous = existing ? cardFromRow(existing) : undefined
+  const card: Card = {
     id: previous?.id ?? randomUUID(),
     channelId: input.channelId,
     title: input.title,
@@ -438,22 +438,22 @@ export function upsertBasePage(database: DatabaseSync, input: AuthoredPagePublis
     body: input.body,
   }
   database.prepare(`
-    INSERT INTO pages (id, channel_id, title, type, author_id, path, version, visibility, sources,
+    INSERT INTO cards (id, channel_id, title, type, author_id, path, version, visibility, sources,
       base, published_at, body)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
     ON CONFLICT(author_id, path) DO UPDATE SET channel_id = excluded.channel_id, title = excluded.title,
       type = excluded.type, version = excluded.version, visibility = excluded.visibility, sources = excluded.sources,
       base = 1, state = NULL, published_at = excluded.published_at, body = excluded.body
-  `).run(page.id, page.channelId, page.title, page.type, page.authorId, input.path, page.version,
-    page.visibility, JSON.stringify(page.sources), page.publishedAt, page.body)
-  return page
+  `).run(card.id, card.channelId, card.title, card.type, card.authorId, input.path, card.version,
+    card.visibility, JSON.stringify(card.sources), card.publishedAt, card.body)
+  return card
 }
 
 export function assertChannelMember(database: DatabaseSync, channelId: string, memberId: string): void {
-  if (!database.prepare("SELECT 1 FROM channels WHERE id = ?").get(channelId)) throw new Error("El canal no existe")
-  if (!database.prepare("SELECT 1 FROM members WHERE id = ?").get(memberId)) throw new Error("El miembro no existe")
+  if (!database.prepare("SELECT 1 FROM channels WHERE id = ?").get(channelId)) throw new Error("Channel does not exist")
+  if (!database.prepare("SELECT 1 FROM members WHERE id = ?").get(memberId)) throw new Error("Member does not exist")
   if (!database.prepare("SELECT 1 FROM channel_members WHERE channel_id = ? AND member_id = ?").get(channelId, memberId)) {
-    throw new Error("El miembro no pertenece al canal")
+    throw new Error("Member does not belong to the channel")
   }
 }
 
@@ -465,25 +465,25 @@ function messageFromRow(row: Row): Message {
     at: asString(row.at) ?? "",
     paragraphs: parseJson<MessageBlock[][]>(row.paragraphs, []),
     threadId: asString(row.thread_id),
-    fromPage: parseJson<Message["fromPage"]>(row.from_page, undefined),
+    fromCard: parseJson<Message["fromCard"]>(row.from_card, undefined),
     publishes: asString(row.publishes),
     reactions: parseJson<Message["reactions"]>(row.reactions, undefined),
   }
 }
 
-function pageFromRow(row: Row): Page {
+function cardFromRow(row: Row): Card {
   return {
     id: asString(row.id) ?? "",
     channelId: asString(row.channel_id) ?? "",
     title: asString(row.title) ?? "",
-    type: (asString(row.type) ?? "apunte") as PageType,
+    type: (asString(row.type) ?? "note") as CardType,
     authorId: asString(row.author_id) ?? "",
     version: asNumber(row.version) ?? 1,
-    visibility: (asString(row.visibility) ?? "canal") as Visibility,
-    sources: parseJson<Page["sources"]>(row.sources, []),
+    visibility: (asString(row.visibility) ?? "channel") as Visibility,
+    sources: parseJson<Card["sources"]>(row.sources, []),
     replaces: asString(row.replaces),
     base: row.base === 1 ? true : undefined,
-    state: asString(row.state) as Page["state"],
+    state: asString(row.state) as Card["state"],
     publishedAt: asString(row.published_at) ?? "",
     body: asString(row.body) ?? "",
   }

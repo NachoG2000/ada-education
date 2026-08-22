@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS messages (
   at TEXT NOT NULL,
   paragraphs TEXT NOT NULL,
   thread_id TEXT,
-  from_page TEXT,
+  from_card TEXT,
   publishes TEXT,
   reactions TEXT
 );
@@ -61,10 +61,10 @@ CREATE INDEX IF NOT EXISTS messages_thread_at ON messages(thread_id, at);
 CREATE TABLE IF NOT EXISTS threads (
   id TEXT PRIMARY KEY,
   root_message_id TEXT NOT NULL UNIQUE REFERENCES messages(id),
-  published_page_id TEXT
+  published_card_id TEXT
 );
 
-CREATE TABLE IF NOT EXISTS pages (
+CREATE TABLE IF NOT EXISTS cards (
   id TEXT PRIMARY KEY,
   channel_id TEXT NOT NULL REFERENCES channels(id),
   title TEXT NOT NULL,
