@@ -3,11 +3,15 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "bin": { "ada-runner": "./src/cli.ts" },
+  "bin": {
+    "ada-runner": "./src/cli.ts"
+  },
   "scripts": {
-    "dev": "echo 'not implemented yet: see openspec/changes/demo-local-backend (group 4)' && exit 1"
+    "dev": "tsx src/cli.ts",
+    "check": "tsc --noEmit"
   },
   "dependencies": {
-    "@ada/protocol": "*"
+    "@ada/protocol": "*",
+    "ws": "^8.18.0"
   }
 }

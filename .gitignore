@@ -38,3 +38,6 @@ apps/server/data/
 # vendored agent skills (restorable via `npx skills add`; see skills-lock.json)
 .agents/skills/
 .claude/skills/lark-*
+
+# ada-runner local state (card id map); the wiki itself is versioned
+data/**/agents/*/.ada/
