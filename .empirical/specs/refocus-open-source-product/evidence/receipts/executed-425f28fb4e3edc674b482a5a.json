@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "id": "executed-425f28fb4e3edc674b482a5a",
+  "criteria": [
+    "AC-1",
+    "AC-2",
+    "AC-3",
+    "AC-4",
+    "AC-5",
+    "AC-6",
+    "AC-7"
+  ],
+  "evidenceKinds": [
+    "test"
+  ],
+  "summary": "Doc invariants: DECISIONS has dated §19 with Apache-2.0 and the §15 supersede annotation; README names Apache-2.0 and the cohort-based audience and matches no hackathon/aleph/weekend; AGENTS.md points at §19 and says Out of scope for now; PRODUCT.md names the cohort-based audience; pitch/AGENTS.md is kept-as-history with §19; PROBLEM.md speaks of the demo in past tense; slide1.png exists under pitch/ and not at the root. Repo-wide search for specific organization names returned nothing (term not written into any file).",
+  "passed": true,
+  "startedAt": "2026-08-23T22:47:23.351Z",
+  "completedAt": "2026-08-23T22:47:23.396Z",
+  "provenance": {
+    "repositoryId": "sha256:5ec6f3c476f2e40bbacdcf2c39af35f7b9a3ba3e39dcaea1b038f04ae0131813",
+    "feature": "refocus-open-source-product",
+    "specRevision": 2,
+    "specDigest": "sha256:7ef588020fa59ec0edad8335f376961b914a6ef6c39736baef403ab2bac5600a",
+    "treeDigest": "sha256:3026956e2014d7de4ea0d6ce66646ae341af734f26e7c6e6d313143f2059681f",
+    "policyDigest": "sha256:53243be7dc345556f59cb85c27c56e13ba4595b5060496a432140caf2419dd98"
+  },
+  "digest": "sha256:2760bc738e7760211395aa776a14e6964cd5d946c5b363ffaebfc3cf712cc04b",
+  "kind": "executed",
+  "command": {
+    "argv": [
+      "node",
+      "scripts/docs-check.mjs"
+    ],
+    "cwd": ".",
+    "timeoutMs": 60000,
+    "maxOutputBytes": 262144,
+    "environmentKeys": [
+      "PATH",
+      "TMPDIR"
+    ]
+  },
+  "result": {
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "stdoutDigest": "sha256:977d91cf94a5f386a20c8611b246f25f44b569def06252c79a7fc5843e73c0cd",
+    "stderrDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdoutTail": "Docs OK (13 files)\n",
+    "stderrTail": "",
+    "stdoutTruncated": false,
+    "stderrTruncated": false
+  }
+}

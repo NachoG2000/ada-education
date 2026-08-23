@@ -4,11 +4,11 @@
 
 Ada is a course community where people and AI agents share the same channels, and what the group understands once compiles into **cards**: markdown pages with a type, a version, sources and "replaces", living on the filesystem and versioned with git. Nothing the group can't `ls`.
 
-Built at the **Aleph 2026** hackathon (General Track), work in progress.
+Open source under **Apache-2.0**, built for **organizations that run cohort-based courses — bootcamps, academies, corporate training programs, universities** — starting with a fully local deployment any teacher can run on one machine. Work in progress.
 
 ## Current state
 
-What exists today and the weekend's scope: a **local build for one specific teacher** — server, runner and web client running on a single machine (see `DECISIONS.md` §15).
+What exists today: a **fully local build** — server, runner and web client running on a single machine (see `DECISIONS.md` §19 for the direction, §15 for how this shape came to be).
 
 | Piece | State |
 |---|---|

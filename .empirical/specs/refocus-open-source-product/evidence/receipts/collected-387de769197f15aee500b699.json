@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "id": "collected-387de769197f15aee500b699",
+  "criteria": [
+    "AC-1",
+    "AC-2",
+    "AC-3",
+    "AC-4",
+    "AC-5",
+    "AC-6",
+    "AC-7"
+  ],
+  "evidenceKinds": [
+    "review"
+  ],
+  "summary": "Independent review: all 7 ACs pass with file/line evidence; no contradictions with D-001..D-004; audience phrase identical across the four documents; docs-check negative logic verified against a simulated regression. Medium finding (leftover this-weekend framing in per-area AGENTS.md, three code comments, docs/*.html banners) fixed and re-verified; low finding (stale known-warnings note) fixed. Report at evidence/review.md.",
+  "passed": true,
+  "startedAt": "2026-08-23T22:55:18.221Z",
+  "completedAt": "2026-08-23T22:55:18.221Z",
+  "provenance": {
+    "repositoryId": "sha256:5ec6f3c476f2e40bbacdcf2c39af35f7b9a3ba3e39dcaea1b038f04ae0131813",
+    "feature": "refocus-open-source-product",
+    "specRevision": 2,
+    "specDigest": "sha256:7ef588020fa59ec0edad8335f376961b914a6ef6c39736baef403ab2bac5600a",
+    "treeDigest": "sha256:66ad110da7f7183b449fc62187441944e895bb6243a3ceb2b57bfc51153b612c",
+    "policyDigest": "sha256:53243be7dc345556f59cb85c27c56e13ba4595b5060496a432140caf2419dd98"
+  },
+  "digest": "sha256:78804d240d7aa060d89320c3ac9b24a01f196aee3dcebad222a2de57d7114f97",
+  "kind": "collected",
+  "collector": "Independent reviewer agent (no shared context) + orchestrating-agent verification pass",
+  "artifacts": [
+    {
+      "path": ".empirical/specs/refocus-open-source-product/evidence/review.md",
+      "mediaType": "text/markdown",
+      "bytes": 2258,
+      "digest": "sha256:b11e6fb1ddb9b420f3d4f8ea6da2da2d47a1d2439329f09d711505da17614731"
+    }
+  ]
+}

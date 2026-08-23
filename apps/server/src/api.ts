@@ -41,7 +41,7 @@ function safeMaterialName(name: string): string | undefined {
 }
 
 /** The routes below change the course itself (its material, its difficulty,
-    its decisions): they are the teacher's. There's no auth this weekend, but
+    its decisions): they are the teacher's. There's no auth yet, but
     the server still refuses to attribute a course change to anyone else. */
 function teacherOr403(database: DatabaseSync, context: Context, authorId: string): Response | undefined {
   const member = getMember(database, authorId)

@@ -85,7 +85,7 @@
 <main>
   <p class="meta">docs/how-it-works.html · written 2026-08-22 · sources: DECISIONS.md §6 and §14</p>
   <h1>How Ada Works</h1>
-  <div class="nota" style="margin:12px 0 20px"><b>Future direction.</b> This page describes the full architecture Ada is growing toward, not today's code. What gets built this weekend is the "laptop" row in section 6: a local install for one specific professor (<code>DECISIONS.md</code> §15, spec in <code>openspec/</code>). If this page contradicts the code or the spec, they win.</div>
+  <div class="nota" style="margin:12px 0 20px"><b>Future direction.</b> This page describes the full architecture Ada is growing toward, not today's code. What exists today is the "laptop" row in section 6: a fully local install (<code>DECISIONS.md</code> §19; deployment shape from §15, spec in <code>openspec/</code>). If this page contradicts the code or the spec, they win.</div>
   <p class="lead">One page to understand it once, so you never have to piece it back together in your head. This isn't a classic SaaS, and that's half the confusion: the AI model doesn't run on our server — it runs on a "plug" that each person connects from their own machine.</p>
 
   <h2 id="saas">1. Why it isn't "frontend + API + DB + agent"</h2>
@@ -204,7 +204,7 @@
   </ol>
 
   <h2 id="data">4. "Why is <code>data/</code> in the repo next to <code>apps/</code>?"</h2>
-  <p>Because this weekend everything runs on a laptop, and we need a sample course that gets cloned along with the code. But these are two different things, and it's worth being clear about that from the start:</p>
+  <p>Because today everything runs on a laptop, and we need a sample course that gets cloned along with the code. But these are two different things, and it's worth being clear about that from the start:</p>
   <div class="grid two">
     <div class="panel"><h3>The repo = code + a sample course</h3>
       <pre>apps/web          client
@@ -228,7 +228,7 @@ data/neural-…/    <b>sample course</b> (seed)</pre>
       <tr><td><span class="tag sol">1 · policy</span></td>
         <td><code>cwd</code> in the agent's folder; <code>--add-dir</code> only for <code>raw/</code>; scoped <code>--allowedTools</code>; path-based <code>deny</code> rules in the folder's <code>.claude/settings.json</code>; no <code>Bash</code> except <code>git add/commit</code>.</td>
         <td>Claude Code refuses to read or write outside it. It's a rule the runtime follows, <b>not a wall</b>.</td>
-        <td>This weekend, and the local tier forever: on your laptop, everything is already yours. If you run your agent on your own machine, there's no one to isolate it from.</td></tr>
+        <td>Today, and the local tier forever: on your laptop, everything is already yours. If you run your agent on your own machine, there's no one to isolate it from.</td></tr>
       <tr><td><span class="tag sello">2 · wall</span></td>
         <td>A container (or micro-VM) per agent. Only two things get mounted: the course's <code>raw/</code>, read-only, and the agent's folder, read/write. Nothing else exists inside.</td>
         <td>Operating-system-level isolation. Even if the model wanted to, there's no other folder to read.</td>
@@ -236,7 +236,7 @@ data/neural-…/    <b>sample course</b> (seed)</pre>
       <tr><td><span class="tag ok">3 · composition</span></td>
         <td>Each agent sees a <b>virtual tree</b> built from the folders of the channels it's a member of, plus its own (DECISIONS §6, "permissions = folder composition"). With bind mounts today; with <b>Archil</b> once it's multi-machine.</td>
         <td>The same as layer 2, but the agent's view changes when it's added to or removed from a channel, with no reconfiguration.</td>
-        <td>Once several agents share knowledge across channels. Not needed this weekend, nor for the local tier.</td></tr>
+        <td>Once several agents share knowledge across channels. Not needed today, nor for the local tier.</td></tr>
     </tbody>
   </table>
   <div class="nota" style="margin-top:16px"><b>About Archil.</b> Yes: Archil is a hosted service (mountable disks backed by S3), so using it implies the hosted tier. But Archil isn't what provides isolation — it provides the <i>composed view</i> in layer 3. Isolation comes from layer 2, with one container per agent, which we can do today with no external service. Sensible order: layer 1 now → layer 2 once we host → layer 3 once agents need to share folders.</div>
@@ -265,8 +265,8 @@ data/neural-…/    <b>sample course</b> (seed)</pre>
 
   <h2 id="glosario">8. Glossary</h2>
   <dl class="glos">
-    <dt>Community</dt><dd>A course. One server = one community this weekend.</dd>
-    <dt>Channel</dt><dd>Steady (<code>#questions</code>, <code>#03-backprop</code>) or a work channel (an assignment; design-only this weekend).</dd>
+    <dt>Community</dt><dd>A course. One server = one community today.</dd>
+    <dt>Channel</dt><dd>Steady (<code>#questions</code>, <code>#03-backprop</code>) or a work channel (an assignment; design-only today).</dd>
     <dt>Card</dt><dd>A markdown page with a type, version, sources, and "replaces." It's the published copy of a file from an agent's wiki.</dd>
     <dt>Agent</dt><dd>An identity in the community + a folder + a runner. Community (created by the professor) or personal (created by a student).</dd>
     <dt>Runner</dt><dd><code>ada-runner</code>: the process that connects an agent to the server and runs its runtime.</dd>

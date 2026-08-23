@@ -5,13 +5,13 @@ Maintained from repository evidence. Source of truth for rules: `AGENTS.md` (imp
 ## Purpose
 
 - **Ada** is a course community where humans and AI agents share channels and course knowledge compiles itself into **cards** (markdown documents with a type, a version, sources and "replaces"). See `AGENTS.md` "What this repo is" and `PRODUCT.md` "Product Purpose".
-- Users: a **teacher** (seed: Martin) who creates channels/agents and publishes material, and **students** (seed: Sofia, Ignacio) who ask, open threads and submit. Secondary audience: hackathon judges watching a guided demo (`PRODUCT.md` "Users").
-- Aleph Hackathon 2026, General Track. Code cutoff: Sunday 2026-08-23 04:00 (`AGENTS.md`).
+- Users: a **teacher** (seed: Martin) who creates channels/agents and publishes material, and **students** (seed: Sofia, Ignacio) who ask, open threads and submit. Secondary audience: organizations that run cohort-based courses, described only generically (`PRODUCT.md` "Users").
+- Open source (Apache-2.0) for course-running organizations; the Aleph 2026 hackathon phase closed on 2026-08-23 and is kept as history (`DECISIONS.md` §19).
 
 ## Boundaries
 
-- Current scope (`DECISIONS.md` §15): a custom deployment for **one teacher, fully local** on their machine. Remote runners, hosting, tiers and multi-course are future direction, not code.
-- Explicitly out of scope this weekend (`AGENTS.md` "Decisions and open questions"): permissions, submission grading, collaborative editing, vector/global search, multi-course, mobile, notifications, work channels beyond the design, gamification, per-student algorithmic personalization (`PROBLEM.md` §9).
+- Current scope (`DECISIONS.md` §19): the open-source product for course-running organizations; the code today is a **fully local deployment on one machine** (the shape §15 set). Remote runners, hosting, tiers and multi-course are future direction, not code.
+- Explicitly out of scope for now (`AGENTS.md` "Decisions and open questions"): permissions, submission grading, collaborative editing, vector/global search, multi-course, mobile, notifications, work channels beyond the design, gamification, per-student algorithmic personalization (`PROBLEM.md` §9).
 - Open questions not to be resolved unilaterally: the "already on file" seal semantics, the plural `fromFile` API, the example agent's name ("Ada" vs the product name).
 - Language: everything (UI, content, comments, docs, names) in **English**.
 

@@ -4,7 +4,7 @@
    One agent = one identity (the token) + one folder (`--cwd`, with CLAUDE.md,
    wiki/ and log.md) + this runner. It connects OUTBOUND to the community
    server with the agent's token, receives `agent.mention`, runs the provider's
-   unmodified binary (`claude -p` this weekend) with cwd in the agent's folder,
+   unmodified binary (`claude -p` today) with cwd in the agent's folder,
    publishes whatever changed in wiki/ as cards, converts `[[path]]` citations
    into cite blocks, and posts the answer. The server never runs a model; this
    process never handles credentials (they live with the binary).
@@ -50,7 +50,7 @@ if (!existsSync(cwd) || !statSync(cwd).isDirectory()) {
   process.exit(2)
 }
 if (runtime !== "claude" && runtime !== "scripted") {
-  // codex / pi adapters share this interface but aren't wired this weekend (design.md §8).
+  // codex / pi adapters share this interface but aren't wired yet (design.md §8).
   console.error(`ada-runner: runtime "${runtime}" isn't implemented yet; only "claude" and "scripted" are.`)
   process.exit(2)
 }

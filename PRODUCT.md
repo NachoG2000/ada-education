@@ -1,6 +1,6 @@
 # Product
 
-> Product document (direction and ideas): describes the complete product, including what doesn't exist yet. **It does not represent the current code.** Actual state: `AGENTS.md` + `openspec/`. Current scope for the weekend: `DECISIONS.md` §15 (local development for a single professor).
+> Product document (direction and ideas): describes the complete product, including what doesn't exist yet. **It does not represent the current code.** Actual state: `AGENTS.md` + `openspec/`. Current scope: `DECISIONS.md` §19 (open-source product for course-running organizations; the code today runs fully local).
 
 <!-- impeccable:product-schema 1 -->
 
@@ -19,7 +19,7 @@ Two primary users who alternate point of view depending on the screen; neither o
 
 Situation: an in-progress university course (the demo example is Neural Networks), with 20-40 members, over the semester. UI and content language: English.
 
-Secondary audience: judges at a 24-hour hackathon watching a guided demo.
+Secondary audience: organizations that run cohort-based courses — bootcamps, academies, corporate training programs, universities — evaluating Ada for their own courses.
 
 ## Product Purpose
 
@@ -27,7 +27,7 @@ Ada is a learning community for a course where humans and AI agents coexist in c
 
 In one sentence: the professor creates agents and adds them to channels as if they were assistants; the course cards (notes, assignments, decisions, answers, submissions) get published in channels and maintain themselves.
 
-Demo success: the judges see, without explanation, that (1) agents are members created by the community, (2) knowledge lives in cards published in channels, (3) agent answers cite cards and, when a question has already been answered, they answer *from the file*, and (4) there are stable course channels and work channels that are born, live, and get archived. The key moment of the demo is the "the same question, twice" screen.
+Demo success: a first-time viewer sees, without explanation, that (1) agents are members created by the community, (2) knowledge lives in cards published in channels, (3) agent answers cite cards and, when a question has already been answered, they answer *from the file*, and (4) there are stable course channels and work channels that are born, live, and get archived. The key moment of the demo is the "the same question, twice" screen.
 
 ## Positioning
 
@@ -51,7 +51,7 @@ Demo success: the judges see, without explanation, that (1) agents are members c
 ## Capabilities and Constraints
 
 - **Confirmed stack:** Vite + React 19 + Tailwind CSS v4 + shadcn/ui v4 (Base UI primitives) as the foundation, with a custom design system on top. Tauri packaging later. No SSR.
-- **Hackathon deliverable:** a functional app with real agents — channels, cards, and at least one agent actually answering; the UI connects to that. It's not just a prototype with mocks.
+- **Deliverable:** a functional app with real agents — channels, cards, and at least one agent actually answering; the UI connects to that. It's not just a prototype with mocks.
 - **Agents:** each agent runs in a **runner** belonging to whoever created it, running the provider's binary unmodified (`claude`, `codex`, `pi`); the credential (subscription or API key) lives with that binary, never in Ada (`DECISIONS.md` §14; rules verified in `research/2026-08-22-suscripciones-runners-buzz-pi.md`). Each agent has a name, avatar, instructions, provider/credential, and list of channels it participates in. There are **community** agents (created by the professor) and **personal** agents (created by a student for their private channel); the difference is a product distinction and must be visible.
 - Agents publish cards using the same mechanism as a person.
 - Fixed terminology (English): community, channel, work channel, thread, card, card type, base document, sources, "replaces", visibility, agent, members, submission, compiling, "from the file", module, material, difficulty (intro · core · advanced), feedback, report, reconcile, "Modules" (teacher view), "My study" (student view).

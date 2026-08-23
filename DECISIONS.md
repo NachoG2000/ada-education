@@ -1,8 +1,8 @@
 # DECISIONS.md — Ada Education
 
-Full project context. Read it whole before touching code. Updated Saturday 08/22 (Aleph Hackathon 2026, General Track only).
+Full project context. Read it whole before touching code. Updated Sunday 08/23.
 
-> **What this file is:** direction and ideas, with their history (superseded sections stay marked, never deleted). **It does not describe the current code.** The actual state of the code lives in `AGENTS.md` (repo map) and `openspec/` (spec of what's being built). The weekend's current scope is **§15**; §14 is the future architecture.
+> **What this file is:** direction and ideas, with their history (superseded sections stay marked, never deleted). **It does not describe the current code.** The actual state of the code lives in `AGENTS.md` (repo map) and `openspec/` (spec of what's being built). The current scope is **§19** (open-source product for course-running organizations); §15 keeps the deployment shape it superseded; §14 is the future architecture.
 
 ---
 
@@ -235,7 +235,7 @@ Don't do: have the server call models "for convenience"; ask for Claude tokens i
 
 **Plan B in concrete terms (this weekend):** `apps/server` (Node 24 + Hono + `node:sqlite` + WS), `packages/runner` (CLI, `claude -p` runtime), `packages/protocol` (types + events), `apps/web` (the current SPA), `data/<course>/` (wiki). All local on one laptop. Details in the OpenSpec change.
 
-## 15. Scope pivot: a custom build for one specific teacher (08/22, afternoon)
+## 15. Scope pivot: a custom build for one specific teacher (08/22, afternoon — superseded by §19)
 
 Mentor's advice, adopted: *"I'd rather have a narrow system — like a custom build for one particular teacher, running on their machine — than a complete, scalable one."*
 
@@ -301,3 +301,17 @@ Request by Ignacio for the demo flow: the teacher loads modules and study materi
 **Out of scope, still:** grading, permissions, notifications beyond the `#teachers` message and the report list, PDF parsing (a PDF uploads as a placeholder; markdown is read), per-student personalization of content.
 
 ~~**Next, decided but not built (08/23, morning):** the demo language flips to **Spanish (rioplatense, voseo)** as the default — UI strings, seeded course content and the scripted runtime's templates — with English behind a query parameter (`?english=true`).~~ **Superseded the same morning:** Ignacio dropped the Spanish localization; the product stays in English (§17). Nothing was implemented.
+
+## 19. Product focus: open source for course-running organizations (08/23)
+
+The Aleph 2026 hackathon phase closed on 08/23: the code cutoff passed and the demo flow of §18 was built and verified. The `demo` branch was merged into `main` and deleted; from here the repository is the product, not a demo.
+
+**Direction:** Ada is an **open-source product** for **organizations that run cohort-based courses — bootcamps, academies, corporate training programs, universities**. This extends §16 from pitch positioning to product direction: the open-source route — contributors, teacher-by-teacher and organization-by-organization adoption, hosting as the later commercial engine — is now how the product is built, not just how it was pitched.
+
+**Named targets: none, on purpose.** No specific organization is named anywhere in the repository; the audience is always described in the generic terms above. Conversations with any particular organization live outside the repo until they become a decision recorded here.
+
+**License:** Apache-2.0, reaffirming §4 — the `LICENSE` file ships at the root.
+
+**What §15 keeps:** the deployment shape. The code today still runs fully local on one machine (server + runner + web client), and local-first remains the free tier of §14/§16. What changes is the frame: it stops being "a custom build for one specific teacher this weekend" and becomes the open-source product any of these organizations can run.
+
+Backing: `research/2026-08-22-open-source-vs-premium.md` (open source vs premium evidence), §4 (license), §16 (positioning line and counterexamples).

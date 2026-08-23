@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "sequence": 8,
+  "previousDigest": "sha256:9cc50624bd8b8a5ed1cdeab783a876f339ae6d1124967d15c3983b2b99f115d7",
+  "actor": "agent",
+  "type": "transition",
+  "summary": "Review content passed (all 7 ACs, no decision contradictions), but the reviewer's findings were remediated after Verify, so the attached verification receipts have a stale tree digest; routing back to re-verify the final tree.",
+  "createdAt": "2026-08-23T22:57:05.369Z",
+  "stateBeforeDigest": "sha256:cd03f041d8590802fc4169289288d72fd76246a5f317098f24a37752f2786db8",
+  "stateAfterDigest": "sha256:a2ffb5f3c382ee8e7c087a6482fa32a2cca1a8e7b08c16f26e7652eca68780d0",
+  "state": {
+    "schemaVersion": 5,
+    "revision": 8,
+    "activeFeature": "refocus-open-source-product",
+    "request": "Refocus the repository from the hackathon demo to the open-source product. Close the demo era in the documents of truth and reposition Ada as an open-source course-community product aimed at organizations that run cohort-based courses (bootcamps, academies, corporate training programs), without naming any specific organization anywhere. Concretely: (1) DECISIONS.md gains a dated decision that supersedes the 08/22 hackathon scope (one teacher, fully local, demo): the hackathon phase closed on 2026-08-23 and the project's direction is now an open-source product for course-running organizations; license choice is recorded as an open question, not decided. (2) README.md drops the hackathon/Aleph framing and leads with what Ada is, who it is for (course-running organizations, described generically), the open-source vision, and how to run it. (3) AGENTS.md 'What this repo is' reflects the new scope so agents stop treating the demo as the current goal. (4) PRODUCT.md names the audience in the same generic terms. (5) The stray slide1.png at the repo root moves under pitch/, and pitch/ is marked as history of the hackathon, not current direction. No code behavior changes; demo mode (npm run dev:demo) and the scripted runtime stay as they are.",
+    "profile": "complex",
+    "workflow": "complex",
+    "mode": "normal",
+    "phase": "implement",
+    "status": "waiting",
+    "repairAttempts": 1,
+    "message": "Review content passed (all 7 ACs, no decision contradictions), but the reviewer's findings were remediated after Verify, so the attached verification receipts have a stale tree digest; routing back to re-verify the final tree.",
+    "implementationActor": "agent",
+    "specDigest": "sha256:7ef588020fa59ec0edad8335f376961b914a6ef6c39736baef403ab2bac5600a",
+    "approvedSpecRevision": 2,
+    "capabilityArchiveRequired": true,
+    "capabilityDeltaDigest": "sha256:fcd6ae2b01094b057ebe945e5e68d86b2cf62b969df45ee3dad9192a860bbf29",
+    "impactDigest": "sha256:13927b22fda2a62d6d6cefe9f56220bf999f36cf99be8b4c4ac9bca3a6c03198",
+    "capabilityClaimId": "refocus-open-source-product-3e0a805bd26d",
+    "authorizationDigest": null,
+    "evidence": [],
+    "evidenceReceiptIds": [],
+    "legacyEvidenceCount": 0,
+    "completion": {
+      "implemented": true,
+      "verified": false,
+      "integrated": false,
+      "delivered": false,
+      "published": false,
+      "highest": "implemented",
+      "reasons": {
+        "verified": "verified has not been proven by a durable receipt.",
+        "integrated": "integrated has not been proven by a durable receipt.",
+        "delivered": "delivered has not been proven by a durable receipt.",
+        "published": "published has not been proven by a durable receipt."
+      }
+    },
+    "updatedAt": "2026-08-23T22:57:05.369Z"
+  },
+  "digest": "sha256:61a11fa8781ff5bd39c8bbe78db749612bd04d8db9a316991726fd092d8fe0fa"
+}

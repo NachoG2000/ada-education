@@ -498,7 +498,7 @@ export function useConnectedCommunity(server: string): ConnectionState {
   const [attempt, setAttempt] = useState(0)
 
   // Bootstrap: GET first, WS only after. Events that land in between are
-  // lost; for this weekend's local scope that's good enough (see AGENTS.md
+  // lost; for the current local scope that's good enough (see AGENTS.md
   // §decisions).
   useEffect(() => {
     let isActive = true

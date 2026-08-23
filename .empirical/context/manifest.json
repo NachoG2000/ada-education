@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "generator": "empirical-0.27.0",
-  "sourceDigest": "sha256:04eda51716ed00b53dbd3018bd39604f02752e13cdf777690c3f817c58de2693",
+  "sourceDigest": "sha256:11e5cc5f538b1b14b42f67e2d54c5ade72c840615bbb4d8cf1637cf11a2abe32",
   "files": [
     {
       "path": ".agents/skills/.openspec-target",
@@ -135,8 +135,8 @@
     },
     {
       "path": "AGENTS.md",
-      "size": 15353,
-      "digest": "sha256:b0a96780d85f9552739da7a7d324b7602db95c6e5e84aa2de6fb6cc7f68d4674"
+      "size": 15631,
+      "digest": "sha256:b4a349688528d2bcd53a7c936d3ccfda2e252ef82d67836725b914accd08cd6e"
     },
     {
       "path": "CLAUDE.md",
@@ -145,8 +145,8 @@
     },
     {
       "path": "DECISIONS.md",
-      "size": 29577,
-      "digest": "sha256:e392ad3b1e7247d2cc132bc964b783846f85f6ffd5366217e677c4d1af76d621"
+      "size": 31657,
+      "digest": "sha256:5f5f383c30fd05a0ca9604bfa3c6f8fb287f524816b22b557eaa7723a71a8784"
     },
     {
       "path": "DESIGN.md",
@@ -165,23 +165,23 @@
     },
     {
       "path": "PROBLEM.md",
-      "size": 20157,
-      "digest": "sha256:8c448719f93c004a12d0aaaa1446d442d06cb4aa69ea573ef59290b446b9c1aa"
+      "size": 20222,
+      "digest": "sha256:ded9098cae5adef39e24afd1e0cae333845c176065efbcbd49fda1baa7e25df4"
     },
     {
       "path": "PRODUCT.md",
-      "size": 11432,
-      "digest": "sha256:1e4e543becf8bbe8c78d09134e323009a91e357d561687b3af5b87c56c8f0548"
+      "size": 11561,
+      "digest": "sha256:a43a7626dd998d09ad56fef89131463a0ef8755b06bd2778d2a0ff0776633047"
     },
     {
       "path": "README.md",
-      "size": 2697,
-      "digest": "sha256:64d148838ab99a2a49305c96928dcd822d3b7dce5e176bc82de91022597ea8e3"
+      "size": 4424,
+      "digest": "sha256:4cb7e30d3dcc5b383647d5a00bcc6ccae9d922d0be04b5602c0c06b2fd51a765"
     },
     {
       "path": "apps/server/AGENTS.md",
-      "size": 7829,
-      "digest": "sha256:9f18627300caa1aceaa4efd66c40cb1e2b2d88ee9abfc463bd1d9c27a5e1943a"
+      "size": 7845,
+      "digest": "sha256:8497aa6b78a7feb6593575e2e84cc84d2e2dd2f3002064b7145f6d1123553cf7"
     },
     {
       "path": "apps/server/package.json",
@@ -215,8 +215,8 @@
     },
     {
       "path": "apps/server/src/api.ts",
-      "size": 13242,
-      "digest": "sha256:bfb8c0e6bb354efbffdb9fa643bf66075506ec6612769bfa4be090705f4b764d"
+      "size": 13233,
+      "digest": "sha256:36acc52e2c98bea8c4cb3fc82386f9e5770fabd8784eb41954b62202c59b00d7"
     },
     {
       "path": "apps/server/src/db.ts",
@@ -465,8 +465,8 @@
     },
     {
       "path": "apps/web/src/lib/community.tsx",
-      "size": 27439,
-      "digest": "sha256:0e71d8bb2e0df7eef83dab43684e84b6f5bd8673a7fcbcf8f189a09eba60d23d"
+      "size": 27436,
+      "digest": "sha256:9843dd7853b207c714f9ea8a3b7f3a920aa174fde5cf964941f8779612596fb0"
     },
     {
       "path": "apps/web/src/lib/demo.ts",
@@ -710,18 +710,18 @@
     },
     {
       "path": "docs/AGENTS.md",
-      "size": 1089,
-      "digest": "sha256:7bb2c52be98c15dcebda02757bd2ec91e1050843d7ae9e9bdaa319035b2cb0c2"
+      "size": 1079,
+      "digest": "sha256:56765c049ab21602d5fbe0d87e2c582d480da42a3f863cee9d6d74f7a0920345"
     },
     {
       "path": "docs/how-it-works.html",
-      "size": 28420,
-      "digest": "sha256:df5a4f097f8fb7205cfdc6265057f789159ccb289326129bb0ff2bd3d2407fd3"
+      "size": 28381,
+      "digest": "sha256:11f8e850d6bada02557e6310217df89b0159d7e0e97a37f1b270e4a80fed4d63"
     },
     {
       "path": "docs/usecases-api.html",
-      "size": 61360,
-      "digest": "sha256:dae36bd3016a7cc45af3862788fd9612e1c4f27ab2e5d40926f7249a19e02d57"
+      "size": 61350,
+      "digest": "sha256:c0c0b200685be4197a3e7a6586b796ca237d65c2db4dc3b04e846672755a3564"
     },
     {
       "path": "openspec/changes/demo-local-backend/.openspec.yaml",
@@ -745,8 +745,8 @@
     },
     {
       "path": "openspec/changes/demo-local-backend/specs/agent-runner/spec.md",
-      "size": 6577,
-      "digest": "sha256:d44ff4a1f35e02d02ad2e834873537e5f8682b0f6143f294bab3b36a7b9500a7"
+      "size": 7218,
+      "digest": "sha256:247d6574c505c88b4baab0f865e4112afd783343384425d05a88e3b450477a76"
     },
     {
       "path": "openspec/changes/demo-local-backend/specs/agent-wiki/spec.md",
@@ -810,8 +810,8 @@
     },
     {
       "path": "packages/runner/AGENTS.md",
-      "size": 4361,
-      "digest": "sha256:ecdd8b64713678944b8379e300a2fb03dcb15497538e5cb42c79d6fd60d00f2d"
+      "size": 4354,
+      "digest": "sha256:a43d82114f863ce1dbf2be368cb24e1f96105caa4efde54fda635b074c81e87b"
     },
     {
       "path": "packages/runner/package.json",
@@ -825,8 +825,8 @@
     },
     {
       "path": "packages/runner/src/cli.ts",
-      "size": 23316,
-      "digest": "sha256:22864f6fdd237f06252bc639c20d1ad8d8f4dcd203113dad147557110bd07ee5"
+      "size": 23300,
+      "digest": "sha256:228714597d6ca84c87f8317344b4ce638895451f1fa8400c7d58c1f5f028464b"
     },
     {
       "path": "packages/runner/src/runtimes/scripted.ts",
@@ -840,13 +840,18 @@
     },
     {
       "path": "pitch/AGENTS.md",
-      "size": 1800,
-      "digest": "sha256:f9930c0e13b7343b9fd8078b38090b1d33fe2223a0bf798029a01a51251230cb"
+      "size": 2035,
+      "digest": "sha256:c35b96b0e0f6ee9d47da64cd615fc6f854325b20a4071841ac3e1d0e69f93f68"
+    },
+    {
+      "path": "pitch/DEMO-RUNBOOK.md",
+      "size": 4175,
+      "digest": "sha256:6c9f081137e5c435ebc3b13732ccccbb876cb6ecc6a3c9b95866c6f356a5a21a"
     },
     {
       "path": "pitch/SCRIPT.md",
-      "size": 6437,
-      "digest": "sha256:f6e7b87b6f39d9950500cd5389fdfc80d9532ed0f4689ed3a4e7666b1fac1680"
+      "size": 5622,
+      "digest": "sha256:7d332f54784fcc88feb84da7ab7c32af735070492c30096a0955c8da9950e1e3"
     },
     {
       "path": "pitch/deck-stage.js",
@@ -855,8 +860,8 @@
     },
     {
       "path": "pitch/index.html",
-      "size": 29272,
-      "digest": "sha256:a80010697f11b5d1dfb048641e45c2f930bd70c747fba99144a9cadd5cb86027"
+      "size": 15997,
+      "digest": "sha256:b397454fb31e9021d5b96c7c93ee5601125dccbc78bf599f370277c75d3e0a8f"
     },
     {
       "path": "research/2026-08-22-aleph-submission-and-pitch.md",
@@ -900,8 +905,13 @@
     },
     {
       "path": "scripts/docs-check.mjs",
-      "size": 1178,
-      "digest": "sha256:2bf399bab0fa968ec92d35828271b185ffa86865354518a68a39dc9d6a4bff7b"
+      "size": 2269,
+      "digest": "sha256:27a3e6b96c3861f61dc847b452d047a605c4f2cac70451f9b3caa1a27d241de6"
+    },
+    {
+      "path": "scripts/reset-demo.sh",
+      "size": 3059,
+      "digest": "sha256:343c219d47d181bf395802de98fb7b12aa8d0336682ad0ff5ad1505d9fe69a4a"
     },
     {
       "path": "skills-lock.json",
@@ -1083,6 +1093,7 @@
         "packages/runner/src/runtimes/scripted.ts",
         "packages/runner/tsconfig.json",
         "pitch/AGENTS.md",
+        "pitch/DEMO-RUNBOOK.md",
         "pitch/SCRIPT.md",
         "pitch/deck-stage.js",
         "pitch/index.html",
@@ -1095,10 +1106,11 @@
         "research/2026-08-22-why-now.md",
         "research/README.md",
         "scripts/docs-check.mjs",
+        "scripts/reset-demo.sh",
         "skills-lock.json"
       ],
-      "sourceDigest": "sha256:04eda51716ed00b53dbd3018bd39604f02752e13cdf777690c3f817c58de2693",
-      "digest": "sha256:d8975d14a42600851de5d76ecae7debb6c697e30c4247f43e87b9d20ef746906",
+      "sourceDigest": "sha256:11e5cc5f538b1b14b42f67e2d54c5ade72c840615bbb4d8cf1637cf11a2abe32",
+      "digest": "sha256:bf3dfbcf73ead170c64f0f26a0562684d1fa8da61e6e5d0016e71044cad274de",
       "freshness": "fresh"
     },
     {
@@ -1117,8 +1129,8 @@
         "packages/runner/package.json",
         "research/README.md"
       ],
-      "sourceDigest": "sha256:d11055ded62eae90da01856a8f4a47a79d085268eef5abb224b9ee6b5367d677",
-      "digest": "sha256:128a1351781f75ccece0c1f48edadd79f2981f511485f06c8f9bdd757c78ad2d",
+      "sourceDigest": "sha256:6d420969def942058ef5b5ab1087ab740fd11b8bd98f133599df67d7ff2bb60d",
+      "digest": "sha256:b35278ef956b0260b9381fb1f9861dc7df5f8e4192ab92cb92f3363c4f5b1f90",
       "freshness": "fresh"
     },
     {
@@ -1143,7 +1155,7 @@
         "packages/runner/src/runtimes/scripted.ts",
         "packages/runner/tsconfig.json"
       ],
-      "sourceDigest": "sha256:ff7ac161c334a5a5647034534373598ce32c900db740cde6ead73623c7fb9ecb",
+      "sourceDigest": "sha256:f1c6c88f232b7ba5a16c2ae580056660eed8f62d9d14d5976637c12f1997c4c7",
       "digest": "sha256:ab48810d2cee3e04ac52e9f03585d3340603c0a66c60f887c6b87bc40891f07f",
       "freshness": "fresh"
     },
@@ -1157,9 +1169,10 @@
         "package.json",
         "packages/protocol/package.json",
         "packages/runner/package.json",
-        "scripts/docs-check.mjs"
+        "scripts/docs-check.mjs",
+        "scripts/reset-demo.sh"
       ],
-      "sourceDigest": "sha256:4ca52b45a8bab7c526627babeabb691669708664e4e5b8043e693625885fe610",
+      "sourceDigest": "sha256:8ca6668ac8fbacab8ffec4feac75bcd00c7241e07cd3795c0a994de9d68664a2",
       "digest": "sha256:cd0a962b8161fb81ba0e4308dc7a4794a41bd61a9bbc7b1ad37dc4f8d4b32586",
       "freshness": "fresh"
     },
@@ -1183,11 +1196,11 @@
         "packages/runner/tsconfig.json",
         "pitch/AGENTS.md"
       ],
-      "sourceDigest": "sha256:647a2d5844972be1744ea3cad45e3d71065d282e30029243612737a5d1b36caa",
+      "sourceDigest": "sha256:767c27ace169a000b07ad23db58690340cf3023c023acbf24a11de31d3c307e3",
       "digest": "sha256:bcaf300e45ae8e7ae9f2a50cdebdc6e133bf03e06c42636e0e24866f727c1c07",
       "freshness": "fresh"
     }
   ],
   "truncated": false,
-  "digest": "sha256:0f86dda14baa917bb6f5673498b88006ae0f37e6ac70e79cc72b43954b262ec3"
+  "digest": "sha256:1fc9e1c2ff2b1aa77d1f952cada752d492b78595ad0cdb8e7d5ac5e7a1a8b0fe"
 }

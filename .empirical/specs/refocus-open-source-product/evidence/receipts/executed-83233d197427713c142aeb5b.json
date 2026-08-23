@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "id": "executed-83233d197427713c142aeb5b",
+  "criteria": [
+    "AC-7"
+  ],
+  "evidenceKinds": [
+    "test"
+  ],
+  "summary": "tsc --noEmit @ada/runner passes on the final tree.",
+  "passed": true,
+  "startedAt": "2026-08-23T22:55:51.134Z",
+  "completedAt": "2026-08-23T22:55:51.789Z",
+  "provenance": {
+    "repositoryId": "sha256:5ec6f3c476f2e40bbacdcf2c39af35f7b9a3ba3e39dcaea1b038f04ae0131813",
+    "feature": "refocus-open-source-product",
+    "specRevision": 2,
+    "specDigest": "sha256:7ef588020fa59ec0edad8335f376961b914a6ef6c39736baef403ab2bac5600a",
+    "treeDigest": "sha256:66ad110da7f7183b449fc62187441944e895bb6243a3ceb2b57bfc51153b612c",
+    "policyDigest": "sha256:53243be7dc345556f59cb85c27c56e13ba4595b5060496a432140caf2419dd98"
+  },
+  "digest": "sha256:832a6a4db16367bff86b78a50bf3e6b28adc2bafa04a437ef47c3039fa8d802a",
+  "kind": "executed",
+  "command": {
+    "argv": [
+      "npm",
+      "run",
+      "check",
+      "-w",
+      "@ada/runner"
+    ],
+    "cwd": ".",
+    "timeoutMs": 300000,
+    "maxOutputBytes": 262144,
+    "environmentKeys": [
+      "PATH",
+      "TMPDIR"
+    ]
+  },
+  "result": {
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "stdoutDigest": "sha256:30a4effe76cc51dda47edb031c79d7e52ed331c4255fa8805efa54a567c4b9af",
+    "stderrDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdoutTail": "\n> @ada/runner@0.0.0 check\n> tsc --noEmit\n\n",
+    "stderrTail": "",
+    "stdoutTruncated": false,
+    "stderrTruncated": false
+  }
+}

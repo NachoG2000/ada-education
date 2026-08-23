@@ -23,7 +23,6 @@
           "test"
         ],
         "criteria": [
-          "AC-6",
           "AC-7"
         ]
       },
@@ -78,7 +77,7 @@
           "test"
         ],
         "criteria": [
-          "AC-1"
+          "AC-7"
         ]
       },
       {
@@ -96,7 +95,7 @@
           "test"
         ],
         "criteria": [
-          "AC-5"
+          "AC-7"
         ]
       },
       {
@@ -144,9 +143,6 @@
           "test"
         ],
         "criteria": [
-          "AC-2",
-          "AC-3",
-          "AC-4",
           "AC-7"
         ]
       },
@@ -165,11 +161,7 @@
           "test"
         ],
         "criteria": [
-          "AC-UI-1",
-          "AC-UI-2",
-          "AC-UI-3",
-          "AC-UI-4",
-          "AC-UI-5"
+          "AC-7"
         ]
       },
       {
@@ -184,7 +176,13 @@
           "test"
         ],
         "criteria": [
-          "AC-8"
+          "AC-1",
+          "AC-2",
+          "AC-3",
+          "AC-4",
+          "AC-5",
+          "AC-6",
+          "AC-7"
         ]
       }
     ]

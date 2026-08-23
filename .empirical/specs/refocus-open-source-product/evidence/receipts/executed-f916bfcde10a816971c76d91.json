@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "id": "executed-f916bfcde10a816971c76d91",
+  "criteria": [
+    "AC-1",
+    "AC-2",
+    "AC-3",
+    "AC-4",
+    "AC-5",
+    "AC-6",
+    "AC-7"
+  ],
+  "evidenceKinds": [
+    "test"
+  ],
+  "summary": "Doc invariants on the final tree: dated §19 with Apache-2.0 and §15 supersede; README clean of hackathon framing, names Apache-2.0 and the cohort-based audience; AGENTS.md points at §19; PRODUCT.md generic audience; pitch kept-as-history; PROBLEM past tense; slide1.png under pitch/ only. Repo-wide search for specific organization names returned nothing.",
+  "passed": true,
+  "startedAt": "2026-08-23T22:55:46.856Z",
+  "completedAt": "2026-08-23T22:55:46.897Z",
+  "provenance": {
+    "repositoryId": "sha256:5ec6f3c476f2e40bbacdcf2c39af35f7b9a3ba3e39dcaea1b038f04ae0131813",
+    "feature": "refocus-open-source-product",
+    "specRevision": 2,
+    "specDigest": "sha256:7ef588020fa59ec0edad8335f376961b914a6ef6c39736baef403ab2bac5600a",
+    "treeDigest": "sha256:66ad110da7f7183b449fc62187441944e895bb6243a3ceb2b57bfc51153b612c",
+    "policyDigest": "sha256:53243be7dc345556f59cb85c27c56e13ba4595b5060496a432140caf2419dd98"
+  },
+  "digest": "sha256:1879219a9005485d4d163a35b1bf6620745f6766b602b2616014e7259535e6ec",
+  "kind": "executed",
+  "command": {
+    "argv": [
+      "node",
+      "scripts/docs-check.mjs"
+    ],
+    "cwd": ".",
+    "timeoutMs": 60000,
+    "maxOutputBytes": 262144,
+    "environmentKeys": [
+      "PATH",
+      "TMPDIR"
+    ]
+  },
+  "result": {
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "stdoutDigest": "sha256:977d91cf94a5f386a20c8611b246f25f44b569def06252c79a7fc5843e73c0cd",
+    "stderrDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdoutTail": "Docs OK (13 files)\n",
+    "stderrTail": "",
+    "stdoutTruncated": false,
+    "stderrTruncated": false
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "sequence": 1,
+  "previousDigest": "sha256:c316f1b34d1cf2fb8b5eac6d983249e3c18d9166d66a81105da6fc9e78bee81a",
+  "actor": "empirical-start",
+  "type": "transition",
+  "summary": "Started refocus-open-source-product",
+  "createdAt": "2026-08-23T22:36:22.522Z",
+  "stateBeforeDigest": "sha256:74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+  "stateAfterDigest": "sha256:3a747078b2d135e4f908f6102c967262210dd9679ca1ad30d6b3d74f550ae22e",
+  "state": {
+    "schemaVersion": 5,
+    "revision": 1,
+    "activeFeature": "refocus-open-source-product",
+    "request": "Refocus the repository from the hackathon demo to the open-source product. Close the demo era in the documents of truth and reposition Ada as an open-source course-community product aimed at organizations that run cohort-based courses (bootcamps, academies, corporate training programs), without naming any specific organization anywhere. Concretely: (1) DECISIONS.md gains a dated decision that supersedes the 08/22 hackathon scope (one teacher, fully local, demo): the hackathon phase closed on 2026-08-23 and the project's direction is now an open-source product for course-running organizations; license choice is recorded as an open question, not decided. (2) README.md drops the hackathon/Aleph framing and leads with what Ada is, who it is for (course-running organizations, described generically), the open-source vision, and how to run it. (3) AGENTS.md 'What this repo is' reflects the new scope so agents stop treating the demo as the current goal. (4) PRODUCT.md names the audience in the same generic terms. (5) The stray slide1.png at the repo root moves under pitch/, and pitch/ is marked as history of the hackathon, not current direction. No code behavior changes; demo mode (npm run dev:demo) and the scripted runtime stay as they are.",
+    "profile": "complex",
+    "workflow": "complex",
+    "mode": "normal",
+    "phase": "specify",
+    "status": "waiting",
+    "repairAttempts": 0,
+    "message": null,
+    "implementationActor": null,
+    "specDigest": "sha256:7d550facc2225ccf04727978599f159fdbfbc164001e9d000aca027a44bd5992",
+    "approvedSpecRevision": null,
+    "capabilityArchiveRequired": true,
+    "capabilityDeltaDigest": null,
+    "impactDigest": null,
+    "capabilityClaimId": null,
+    "authorizationDigest": null,
+    "evidence": [],
+    "evidenceReceiptIds": [],
+    "legacyEvidenceCount": 0,
+    "completion": {
+      "implemented": false,
+      "verified": false,
+      "integrated": false,
+      "delivered": false,
+      "published": false,
+      "highest": "none",
+      "reasons": {
+        "implemented": "implemented has not been proven by a durable receipt.",
+        "verified": "verified has not been proven by a durable receipt.",
+        "integrated": "integrated has not been proven by a durable receipt.",
+        "delivered": "delivered has not been proven by a durable receipt.",
+        "published": "published has not been proven by a durable receipt."
+      }
+    },
+    "updatedAt": "2026-08-23T22:36:22.522Z"
+  },
+  "digest": "sha256:6b6e0a4504f24c9eaff261a9dc730465c24916e53f2f1c5928eda01ffbb4576c"
+}

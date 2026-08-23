@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "sequence": 2,
+  "previousDigest": "sha256:6b6e0a4504f24c9eaff261a9dc730465c24916e53f2f1c5928eda01ffbb4576c",
+  "actor": "agent",
+  "type": "transition",
+  "summary": "Specify: contract with 7 observable ACs (DECISIONS §19 closing the hackathon phase and superseding §15, README/AGENTS/PRODUCT repositioned to the open-source product for course-running organizations in generic terms, no specific organization named, slide1.png into pitch/, docs-check extended); refined the request to reaffirm the already-decided Apache-2.0 license instead of reopening it; one delta: project-positioning (ADDED).",
+  "createdAt": "2026-08-23T22:39:07.612Z",
+  "stateBeforeDigest": "sha256:3a747078b2d135e4f908f6102c967262210dd9679ca1ad30d6b3d74f550ae22e",
+  "stateAfterDigest": "sha256:fab96afb83fa22c139d563082989b0dc2dc0b5de961f7760769f8257063b20e9",
+  "state": {
+    "schemaVersion": 5,
+    "revision": 2,
+    "activeFeature": "refocus-open-source-product",
+    "request": "Refocus the repository from the hackathon demo to the open-source product. Close the demo era in the documents of truth and reposition Ada as an open-source course-community product aimed at organizations that run cohort-based courses (bootcamps, academies, corporate training programs), without naming any specific organization anywhere. Concretely: (1) DECISIONS.md gains a dated decision that supersedes the 08/22 hackathon scope (one teacher, fully local, demo): the hackathon phase closed on 2026-08-23 and the project's direction is now an open-source product for course-running organizations; license choice is recorded as an open question, not decided. (2) README.md drops the hackathon/Aleph framing and leads with what Ada is, who it is for (course-running organizations, described generically), the open-source vision, and how to run it. (3) AGENTS.md 'What this repo is' reflects the new scope so agents stop treating the demo as the current goal. (4) PRODUCT.md names the audience in the same generic terms. (5) The stray slide1.png at the repo root moves under pitch/, and pitch/ is marked as history of the hackathon, not current direction. No code behavior changes; demo mode (npm run dev:demo) and the scripted runtime stay as they are.",
+    "profile": "complex",
+    "workflow": "complex",
+    "mode": "normal",
+    "phase": "design",
+    "status": "waiting",
+    "repairAttempts": 0,
+    "message": "Specify: contract with 7 observable ACs (DECISIONS §19 closing the hackathon phase and superseding §15, README/AGENTS/PRODUCT repositioned to the open-source product for course-running organizations in generic terms, no specific organization named, slide1.png into pitch/, docs-check extended); refined the request to reaffirm the already-decided Apache-2.0 license instead of reopening it; one delta: project-positioning (ADDED).",
+    "implementationActor": null,
+    "specDigest": "sha256:7ef588020fa59ec0edad8335f376961b914a6ef6c39736baef403ab2bac5600a",
+    "approvedSpecRevision": 2,
+    "capabilityArchiveRequired": true,
+    "capabilityDeltaDigest": "sha256:fcd6ae2b01094b057ebe945e5e68d86b2cf62b969df45ee3dad9192a860bbf29",
+    "impactDigest": "sha256:13927b22fda2a62d6d6cefe9f56220bf999f36cf99be8b4c4ac9bca3a6c03198",
+    "capabilityClaimId": "refocus-open-source-product-3e0a805bd26d",
+    "authorizationDigest": null,
+    "evidence": [],
+    "evidenceReceiptIds": [],
+    "legacyEvidenceCount": 0,
+    "completion": {
+      "implemented": false,
+      "verified": false,
+      "integrated": false,
+      "delivered": false,
+      "published": false,
+      "highest": "none",
+      "reasons": {
+        "implemented": "implemented has not been proven by a durable receipt.",
+        "verified": "verified has not been proven by a durable receipt.",
+        "integrated": "integrated has not been proven by a durable receipt.",
+        "delivered": "delivered has not been proven by a durable receipt.",
+        "published": "published has not been proven by a durable receipt."
+      }
+    },
+    "updatedAt": "2026-08-23T22:39:07.612Z"
+  },
+  "digest": "sha256:453dbaf4a58e9aeb499b37198be60f38e3a39c39bdd59c16873c3fad522a1565"
+}
