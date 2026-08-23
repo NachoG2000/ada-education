@@ -12,20 +12,37 @@ What exists today and the weekend's scope: a **local build for one specific teac
 
 | Piece | State |
 |---|---|
-| `apps/web` — web client (React 19 + Vite SPA, "The card file" design system) | ✅ working against the local server (demo mode opt-in) |
+| `apps/web` — web client (React 19 + Vite SPA, "The card file" design system) | ✅ working against the local server |
 | `apps/server` — community server (messages, channels, cards; never runs models) | ✅ working locally |
-| `packages/runner` — `ada-runner`: connects an agent and runs its runtime (`claude`) in its folder | ✅ working local (`claude` runtime) |
-| `data/<course>/` — course configuration and base documents in markdown | ✅ seed course ready; agent wiki pending |
+| `packages/runner` — `ada-runner`: connects an agent and runs its runtime in its folder | ✅ two runtimes: `claude` (real) and `scripted` (deterministic, fills from live state) |
+| `data/<course>/` — the course on the filesystem: config, base documents, the agent's wiki | ✅ seed course with 11 compiled cards, modules, an assignment, feedback and a report |
+
+## What it does end to end
+
+The teacher and the student see two views of the same community, gated by role:
+
+- **The teacher** (`#modules`) drops study material on a module. The agent's runner ingests it, publishes one card per section into the module's channel, and proposes a difficulty (intro · core · advanced) with a rationale and cohort evidence — the teacher's hand-set level always wins.
+- **The student** (`#home`) reads the feedback on their last assignment: score, what went well, where it slipped and in which module, next steps with citation pills that open the card. Asking the agent "how do I get ahead in 03-backprop?" returns a plan built from that module's cards and their own feedback gap.
+- **The loop closes**: the agent files for the teacher what it advised — its own summary and recommendations for the module, never the student's messages — and the student's plan says so on screen. The teacher accepts the recommendations they want, and that lands as a `decision` card in the module's channel that anyone in the course can read.
+
+Every card is a markdown file in the agent's folder, versioned with git. `ls` is the audit interface.
 
 ```bash
 npm install
-npm run seed     # loads the seed course into the local DB
-npm run dev      # seed + web + server → http://localhost:5173 (API proxied to :8787)
-# In another terminal, with the server up:
-npx tsx apps/server/scripts/smoke.ts
+npm run dev      # seeds, then web + server + Ada's runner → http://localhost:5173
 ```
 
-The web client runs against the local server by default (`npm run dev:demo` keeps the synthetic community as a demo); `npm run dev` also starts Ada's runner, so `@ada` answers for real if `claude` is installed and logged in on this machine.
+`npm run dev` uses the `scripted` runtime; `ADA_RUNTIME=claude npm run dev` runs the real one (needs `claude` installed and logged in). `npm run dev:demo` runs the SPA alone against a synthetic community, no server.
+
+Verify the whole flow without a browser — it drives a real server and a real runner process against a throwaway copy of the course, and asserts the four steps above at the API:
+
+```bash
+npm run check:e2e -w @ada/server   # 15 checks
+npm run check:seed -w @ada/server  # the seeded course the screens render
+npm run smoke                      # WS/REST smoke test
+```
+
+`./scripts/reset-demo.sh` puts the course back to a clean state between runs.
 
 ## How it's designed (looking forward)
 
