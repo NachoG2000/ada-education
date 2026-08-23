@@ -8,7 +8,7 @@ Repo rules for any agent working here (Claude Code, Codex, Cursor, whichever). `
 
 **Current scope (08/22 pivot, `DECISIONS.md` §15):** this weekend Ada is built as a custom deployment for **one specific teacher, fully local on their machine**. The full architecture (remote runners, hosted, tiers) is future direction, not code.
 
-**Actual state of the code today:** a Vite + React 19 SPA (`apps/web/`) that runs by default against the local server (`apps/web/.env` sets `VITE_ADA_SERVER=/`, proxied by Vite; the synthetic community in `apps/web/src/lib/demo.ts` is the opt-in demo mode via `npm run dev:demo`), a local server implemented in `apps/server/`, shared types/events in `packages/protocol/`, the example seed in `data/neural-networks-2026/` (with `agents/ada/CLAUDE.md`, the agent's rules) and `packages/runner/` (working `claude` runtime: mentions → `claude -p` in the agent's folder → cards + answer). The plan to fork Buzz was discarded (`DECISIONS.md` §7 → §14). Read `DECISIONS.md` §14-§15 before touching architecture, agent memory or scope.
+**Actual state of the code today:** a Vite + React 19 SPA (`apps/web/`) with three views in one shell — the channel, the teacher's **Modules** (`#modules`) and the student's **My study** (`#home`), gated by `Person.role` (`DECISIONS.md` §18) — that runs by default against the local server (`apps/web/.env` sets `VITE_ADA_SERVER=/`, proxied by Vite; the synthetic community in `apps/web/src/lib/demo.ts` is the opt-in demo mode via `npm run dev:demo`), a local server implemented in `apps/server/`, shared types/events in `packages/protocol/`, the example seed in `data/neural-networks-2026/` (with `agents/ada/CLAUDE.md`, the agent's rules) and `packages/runner/` (two runtimes: `claude` — mentions → `claude -p` in the agent's folder → cards + answer — and `scripted`, the demo default, which fills its answers from the live community state and publishes cards through the same pipeline). The plan to fork Buzz was discarded (`DECISIONS.md` §7 → §14). Read `DECISIONS.md` §14-§15 before touching architecture, agent memory or scope.
 
 **Every area of the repo has its own short `AGENTS.md`** with what it is today and how it grows tomorrow (`apps/web/`, `docs/`, and every new workspace must bring its own). If you touch an area, keep its file up to date.
 
@@ -49,13 +49,14 @@ Monorepo with **npm workspaces** (no Turborepo): `apps/web` (SPA), `apps/server`
 ```bash
 npm install            # once, at the root (installs all workspaces)
 npm run seed           # loads data/neural-networks-2026 into the local DB
-npm run dev            # seed (idempotent) + web + server + ada's runner → http://localhost:5173 (proxied to :8787)
-npm run runner         # ada's runner alone (needs `claude` installed and logged in; see packages/runner/AGENTS.md)
+npm run dev            # seed (idempotent) + web + server + ada's runner (scripted runtime by default) → http://localhost:5173 (proxied to :8787)
+ADA_RUNTIME=claude npm run dev   # same, with the real `claude` runtime (needs `claude` installed and logged in)
+npm run runner         # ada's runner alone (`ADA_RUNTIME=scripted|claude`; see packages/runner/AGENTS.md)
 npm run dev:demo       # SPA only against the synthetic demo community (no server)
 npm run dev:web        # SPA only, with HMR → http://localhost:5173
 npm run dev:server     # server only → http://localhost:8787
 npm run check -w @ada/server # server typecheck
-npx tsx apps/server/scripts/smoke.ts # WS/REST smoke test, with the server up
+npm run smoke          # WS/REST smoke test against a throwaway copy of the course (seeds a temp DB, spare port; never touches the demo DB)
 npm run build          # tsc -b && vite build of apps/web → apps/web/dist/
 npm run lint           # oxlint over apps and packages; only-export-components warnings in card.tsx and ui/sidebar.tsx are known
 npm run typecheck      # tsc -b apps/web (noUnusedLocals/Parameters active: one unused variable breaks the build)
@@ -116,3 +117,20 @@ Named rules that affect code (details in `DESIGN.md`):
 ## HTML docs
 
 `docs/` holds self-contained HTML pages (no build, open by double-click) that explain the system to people. They are **future inspiration**: they describe the full product, not today's code, and each says so in its banner. `docs/how-it-works.html` = the mental model (server / runner / runtime / folder, the sequence of a mention, isolation, tiers). `docs/usecases-api.html` = use cases and the expanded MVP API. If `DECISIONS.md` §14-§15 or the OpenSpec change moves, they're updated in the same task.
+
+<!-- empirical-sdd:start -->
+## Empirical repository workflow
+
+When `.empirical/config.json` has `schemaVersion: 5` and
+`setupComplete: true`, automatically use the repository-local Empirical
+workflow for requests to build, add, implement, change, fix, refactor, remove,
+migrate, upgrade, change tests, or continue repository work. The user does not
+need to mention Empirical. Read-only explanation and inspection stay outside
+the workflow.
+
+Read `.agents/skills/empirical/SKILL.md` (or the native project copy) for the
+full contract. Use Empirical MCP operations first and private
+`empirical __internal` fallbacks only when MCP is unavailable. If the config
+is missing, invalid, or incomplete, do not initialize implicitly; tell the user
+to invoke `empirical-init` explicitly.
+<!-- empirical-sdd:end -->

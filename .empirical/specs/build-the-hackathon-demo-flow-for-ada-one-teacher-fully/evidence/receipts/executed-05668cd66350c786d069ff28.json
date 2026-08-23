@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "id": "executed-05668cd66350c786d069ff28",
+  "criteria": [
+    "AC-UI-1",
+    "AC-UI-2",
+    "AC-UI-3",
+    "AC-UI-4",
+    "AC-UI-5"
+  ],
+  "evidenceKinds": [
+    "test"
+  ],
+  "summary": "E2E on a throwaway stack with the real scripted runner: 15 assertions covering both screens data, upload-compiling-cards-suggested difficulty, plan with thinking/citations/gap/sharing line, report with the agent summary only, #teachers note, reconcile-decision card-revision line.",
+  "passed": true,
+  "startedAt": "2026-08-23T08:29:49.645Z",
+  "completedAt": "2026-08-23T08:29:56.265Z",
+  "provenance": {
+    "repositoryId": "sha256:5ec6f3c476f2e40bbacdcf2c39af35f7b9a3ba3e39dcaea1b038f04ae0131813",
+    "feature": "build-the-hackathon-demo-flow-for-ada-one-teacher-fully",
+    "specRevision": 2,
+    "specDigest": "sha256:e715bb9f81378d19838d16870686eebead495c581dc9c26e76432ff7b33c31d2",
+    "treeDigest": "sha256:29d857e0205d94b496fe590cd5408b9b3bb6378f54c3f0a4c41b99745ef418aa",
+    "policyDigest": "sha256:39a64c33840d3b872a0572551571da16de6c692805bfd2aa7d488fbd2ee8a471"
+  },
+  "digest": "sha256:8dbecf7f358fb931a2970f5a3d5742a5836a1fad01f2f763df33d932dacd424f",
+  "kind": "executed",
+  "command": {
+    "argv": [
+      "npm",
+      "run",
+      "check:e2e",
+      "-w",
+      "@ada/server"
+    ],
+    "cwd": ".",
+    "timeoutMs": 300000,
+    "maxOutputBytes": 262144,
+    "environmentKeys": [
+      "PATH",
+      "TMPDIR"
+    ]
+  },
+  "result": {
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "stdoutDigest": "sha256:238e54b61ec8064eeba95480ca18025524a14e7c6382e81c32165755939eae33",
+    "stderrDigest": "sha256:4e2769a48fa74cf81f0cda7d05d120599c6a96e2f70958032fb515b0bd416e37",
+    "stdoutTail": "\n> @ada/server@0.0.0 check:e2e\n> tsx scripts/e2e-flow.ts\n\nok  Modules screen data: 03-backprop ready, cards, difficulty rationale + cohort evidence\nok  Study screen data: Sofia's 6/10 feedback with gap card and next-step citations\nok  seeded history in sofia-ada and #teachers\nok  upload: material listed and module compiling\nok  ingest: Ada suggested a difficulty with a rationale naming the material\nok  ingest: answer in the channel cites the three new cards\nok  plan: Ada showed thinking before answering\nok  plan: cites at least two cards\nok  plan: names Sofia's feedback gap\nok  report: filed for the teacher with three recommendations\nok  report: carries Ada's summary, not the student's message\nok  report: #teachers note cites the plan card\nok  reconcile: report marked reconciled with the accepted items\nok  reconcile: decision card by the teacher in the module channel with the note\nok  reconcile: module shows the revision line\n\nE2E flow OK\n",
+    "stderrTail": "(node:25251) ExperimentalWarning: SQLite is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:25253) ExperimentalWarning: SQLite is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:25255) ExperimentalWarning: SQLite is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n",
+    "stdoutTruncated": false,
+    "stderrTruncated": false
+  }
+}

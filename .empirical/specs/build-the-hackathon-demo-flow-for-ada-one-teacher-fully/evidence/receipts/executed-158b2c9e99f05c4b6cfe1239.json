@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "id": "executed-158b2c9e99f05c4b6cfe1239",
+  "criteria": [
+    "AC-7"
+  ],
+  "evidenceKinds": [
+    "test"
+  ],
+  "summary": "tsc --noEmit for @ada/server clean.",
+  "passed": true,
+  "startedAt": "2026-08-23T08:24:31.131Z",
+  "completedAt": "2026-08-23T08:24:31.869Z",
+  "provenance": {
+    "repositoryId": "sha256:5ec6f3c476f2e40bbacdcf2c39af35f7b9a3ba3e39dcaea1b038f04ae0131813",
+    "feature": "build-the-hackathon-demo-flow-for-ada-one-teacher-fully",
+    "specRevision": 2,
+    "specDigest": "sha256:e715bb9f81378d19838d16870686eebead495c581dc9c26e76432ff7b33c31d2",
+    "treeDigest": "sha256:f474d8fde2c510ce48f33fe1f64320f9c644e58bc98b486440abbcd4d826bb89",
+    "policyDigest": "sha256:f515cf05b640a24f87801b5d69dad60a6dd8e1dd143596192e3b26804f50956b"
+  },
+  "digest": "sha256:f6ef1d4239ce5bcd969dbd5a34fda6ed2dfd8e2e557d0434174fa3bca419f5a9",
+  "kind": "executed",
+  "command": {
+    "argv": [
+      "npm",
+      "run",
+      "check",
+      "-w",
+      "@ada/server"
+    ],
+    "cwd": ".",
+    "timeoutMs": 300000,
+    "maxOutputBytes": 262144,
+    "environmentKeys": [
+      "PATH",
+      "TMPDIR"
+    ]
+  },
+  "result": {
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "stdoutDigest": "sha256:3f520cf80d651b8510696f89fe5920eda644c61176e8818621ca53a07cd82a4d",
+    "stderrDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdoutTail": "\n> @ada/server@0.0.0 check\n> tsc --noEmit\n\n",
+    "stderrTail": "",
+    "stdoutTruncated": false,
+    "stderrTruncated": false
+  }
+}

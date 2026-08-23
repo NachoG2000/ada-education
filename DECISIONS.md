@@ -283,3 +283,21 @@ What changed with this decision:
 - The §16 note that the on-screen product stayed in Spanish is superseded: the product is in English too.
 
 The repo rule lives in `AGENTS.md` ("Language"). Fixed English terminology in `PRODUCT.md`.
+
+## 18. Modules, study material, feedback and agent reports for the teacher/student demo (08/23, early morning)
+
+Request by Ignacio for the demo flow: the teacher loads modules and study material on a dedicated page with a difficulty adapted to the course and its students; the student sees the agent's feedback on the last assignment, learns the module that slipped and asks the agent how to get ahead; the agent tells the teacher what it advised; the teacher reconciles it into the subject. Everything mocked, but "the agent really answers and it doesn't feel hardcoded". Contract, design, plan and decisions: `.empirical/specs/build-the-hackathon-demo-flow-for-ada-one-teacher-fully/`.
+
+**Decisions:**
+
+1. **The mock is a runner runtime, not a UI trick.** `ada-runner --runtime scripted` speaks the same `/ws/runner` protocol as the `claude` runtime, writes cards into the agent's `wiki/` and publishes them through the same diff → `card.publish` path, announces the same presence, and fills its answers from the live community snapshot (module titles, material headings, the student's feedback gaps, the difficulty the teacher set). What it can't fill from state it says it can't. `npm run dev` starts it by default; `ADA_RUNTIME=claude npm run dev` runs the real one. The UI and the server do not know which runtime answered — which is the point of §14.
+2. **A per-student report, transparent to the student.** `docs/usecases-api.html` UC8 and `PROBLEM.md` §7.5/§9 keep teacher-facing difficulty signals aggregate. This flow needs the teacher to see what the agent advised one student, so it can be reconciled into the module. The rule that makes that acceptable: the report is **the agent's own writing** (its summary and its recommendation for the module) — never the student's messages — and the plan the student receives ends with a visible line that a summary was shared with the teacher. §6 already grants the creator of an agent what the agent writes. This partially supersedes UC8's "no student ids" for the teacher's own course agent; the aggregate `difficulties/` view stays the right shape for anything beyond one teacher's course.
+3. **Difficulty is the teacher's; the agent suggests.** A module carries `difficulty {level: intro · core · advanced, rationale, evidence}`. After compiling material the agent proposes a level with a rationale and cohort evidence ("2 of 3 students slipped on σ′ in Assignment 2"); the teacher's hand-set level always wins. This is the honest version of "adapted to the course and the students": the adaptation is visible and reviewable, not an invisible per-student personalization (`PROBLEM.md` §9 still stands).
+4. **Reconciliation lands as a `decision` card in the module's channel**, authored by the teacher, listing the accepted recommendations and the teacher's note — so "improving the subject" is a card anyone in the course can read, and the module shows a one-line `revision`.
+5. **Views, not screens.** `#modules` (teacher) and `#home` (student) are views of the same shell (sidebar + channel panel + context panel); `Person.role` gates them; "Switch person" in the sidebar footer returns to the picker. No router was added.
+
+**New fixed terminology (English):** module · material · difficulty (intro · core · advanced) · feedback · report · reconcile · "My study" (the student's view) · "Modules" (the teacher's view).
+
+**Out of scope, still:** grading, permissions, notifications beyond the `#teachers` message and the report list, PDF parsing (a PDF uploads as a placeholder; markdown is read), per-student personalization of content.
+
+~~**Next, decided but not built (08/23, morning):** the demo language flips to **Spanish (rioplatense, voseo)** as the default — UI strings, seeded course content and the scripted runtime's templates — with English behind a query parameter (`?english=true`).~~ **Superseded the same morning:** Ignacio dropped the Spanish localization; the product stays in English (§17). Nothing was implemented.

@@ -11,8 +11,10 @@
 
    Usage:
      ada-runner --cwd data/<course>/agents/<agent> --token <token>
-                [--server http://localhost:8787] [--runtime claude]
+                [--server http://localhost:8787] [--runtime claude|scripted]
                 [--model <id>] [--timeout 180]
+   `scripted` answers from templates filled with live community state and
+   needs no model (the demo default; see runtimes/scripted.ts).
    Env fallbacks: ADA_SERVER, ADA_AGENT_TOKEN, ADA_AGENT_CWD, ADA_RUNTIME, ADA_MODEL. */
 
 import { spawn } from "node:child_process"
@@ -20,7 +22,8 @@ import { createHash, randomUUID } from "node:crypto"
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs"
 import { basename, join, relative, resolve } from "node:path"
 import WebSocket from "ws"
-import type { Card, CardType, Member, Message, MessageBlock, Presence, RunnerClientMessage } from "@ada/protocol"
+import type { Card, CardType, CommunitySnapshot, Member, Message, MessageBlock, Presence, Report, RunnerClientMessage } from "@ada/protocol"
+import { runScripted, thinkingDelay, type Mention, type ScriptedResult } from "./runtimes/scripted.js"
 
 /* ---- Arguments ------------------------------------------------------------- */
 
@@ -46,9 +49,9 @@ if (!existsSync(cwd) || !statSync(cwd).isDirectory()) {
   console.error(`ada-runner: --cwd ${cwd} isn't a directory.`)
   process.exit(2)
 }
-if (runtime !== "claude") {
+if (runtime !== "claude" && runtime !== "scripted") {
   // codex / pi adapters share this interface but aren't wired this weekend (design.md §8).
-  console.error(`ada-runner: runtime "${runtime}" isn't implemented yet; only "claude" is.`)
+  console.error(`ada-runner: runtime "${runtime}" isn't implemented yet; only "claude" and "scripted" are.`)
   process.exit(2)
 }
 const agentName = basename(cwd)
@@ -107,7 +110,7 @@ const CARD_TYPES: Record<string, CardType> = {
   decision: "decision", assignment: "assignment", submission: "submission",
 }
 
-function parseCard(path: string): { title: string; type: CardType; visibility: "channel" | "only-me"; sources: string[]; supersedes?: string; body: string } {
+function parseCard(path: string): { title: string; type: CardType; visibility: "channel" | "only-me"; sources: string[]; supersedes?: string; channel?: string; body: string } {
   const text = readFileSync(join(wikiDir, path), "utf8")
   const m = /^---\n([\s\S]*?)\n---\n?/.exec(text)
   const meta: Record<string, string | string[]> = {}
@@ -143,7 +146,10 @@ function parseCard(path: string): { title: string; type: CardType; visibility: "
   const visibility = meta.visibility === "only-me" ? "only-me" : "channel"
   const sources = Array.isArray(meta.sources) ? meta.sources : typeof meta.sources === "string" ? [meta.sources] : []
   const supersedes = typeof meta.supersedes === "string" ? meta.supersedes : undefined
-  return { title, type, visibility, sources, supersedes, body }
+  // `channel:` in the frontmatter says where the card belongs (a module's
+  // channel, for material ingested from #teachers); otherwise the mention's.
+  const channel = typeof meta.channel === "string" && meta.channel ? meta.channel : undefined
+  return { title, type, visibility, sources, supersedes, channel, body }
 }
 
 /* ---- Answer text → message blocks ------------------------------------------- */
@@ -275,15 +281,34 @@ function runClaude(prompt: string): Promise<string> {
 
 /* ---- git: one commit per run (the wiki's version history) ------------------- */
 
-function git(argsList: string[]): Promise<void> {
+function git(argsList: string[]): Promise<{ code: number | null; out: string }> {
   return new Promise((resolvePromise) => {
-    const child = spawn("git", argsList, { cwd, stdio: "ignore" })
-    child.on("error", () => resolvePromise())
-    child.on("close", () => resolvePromise())
+    const child = spawn("git", argsList, { cwd, stdio: ["ignore", "pipe", "ignore"] })
+    let out = ""
+    child.stdout.on("data", (d) => (out += d))
+    child.on("error", () => resolvePromise({ code: null, out }))
+    child.on("close", (code) => resolvePromise({ code, out: out.trim() }))
   })
 }
+/* The wiki's history: one commit per run. A standalone agent folder (the
+   teacher's machine) gets its own repository; a folder that already lives
+   inside a repository (this monorepo's data/) is versioned by that one — a
+   nested .git there would hide the seeded cards from the outer repo. */
+let commitMode: "own" | "enclosing" | "init" | null = null
 async function commitRun(summary: string) {
-  if (!existsSync(join(cwd, ".git"))) await git(["init", "-q"])
+  if (commitMode === null) {
+    if (existsSync(join(cwd, ".git"))) commitMode = "own"
+    else {
+      const inside = await git(["rev-parse", "--is-inside-work-tree"])
+      commitMode = inside.code === 0 && inside.out === "true" ? "enclosing" : "init"
+      if (commitMode === "enclosing") log("the folder is inside a repository: runs aren't committed separately")
+    }
+  }
+  if (commitMode === "enclosing") return
+  if (commitMode === "init") {
+    await git(["init", "-q"])
+    commitMode = "own"
+  }
   await git(["add", "-A", "wiki", "log.md"])
   await git(["commit", "-q", "-m", summary])
 }
@@ -293,10 +318,12 @@ async function commitRun(summary: string) {
 const wsUrl = `${server.replace(/^http/, "ws")}/ws/runner?token=${encodeURIComponent(token)}`
 let ws: WebSocket | null = null
 let attempts = 0
-const pending = new Map<string, { resolve: (ack: { ok: true; card?: Card; message?: Message }) => void; reject: (e: Error) => void }>()
+const pending = new Map<string, { resolve: (ack: { ok: true; card?: Card; message?: Message; report?: Report }) => void; reject: (e: Error) => void }>()
 const queue: Array<() => Promise<void>> = []
 let busy = false
 let members = new Map<string, string>()
+/** The last snapshot the server handed us: what the scripted runtime fills its templates from. */
+let snapshot: CommunitySnapshot | null = null
 
 function send(msg: RunnerClientMessage) {
   if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg))
@@ -304,7 +331,7 @@ function send(msg: RunnerClientMessage) {
 function presence(p: Presence) {
   send({ type: "presence", payload: { presence: p, runtime, ...(model ? { model } : {}) } })
 }
-function request(msg: Exclude<RunnerClientMessage, { type: "presence" }>): Promise<{ ok: true; card?: Card; message?: Message }> {
+function request(msg: Exclude<RunnerClientMessage, { type: "presence" }>): Promise<{ ok: true; card?: Card; message?: Message; report?: Report }> {
   return new Promise((resolvePromise, reject) => {
     pending.set(msg.ref, { resolve: resolvePromise, reject })
     send(msg)
@@ -314,23 +341,48 @@ function request(msg: Exclude<RunnerClientMessage, { type: "presence" }>): Promi
   })
 }
 
-async function refreshMembers() {
+async function refreshSnapshot() {
   try {
     const res = await fetch(`${server}/api/community`)
-    const data = (await res.json()) as { members: Member[] }
+    const data = (await res.json()) as CommunitySnapshot
     members = new Map(data.members.map((m) => [m.id, m.name]))
+    snapshot = {
+      ...data,
+      modules: data.modules ?? [],
+      assignments: data.assignments ?? [],
+      feedback: data.feedback ?? [],
+      reports: data.reports ?? [],
+    }
+    // Seeded cards carry their wiki path: a `[[path]]` in an answer resolves
+    // to them even though this process never published them.
+    for (const c of data.cards) {
+      if (c.authorId === agentName && c.path && !cardMap[c.path]) cardMap[c.path] = { cardId: c.id, title: c.title, publishedAt: c.publishedAt }
+    }
   } catch {
-    /* names fall back to ids */
+    /* names fall back to ids; the scripted runtime answers from what it has */
   }
 }
 
-async function handleMention(payload: { channelId: string; threadId?: string; message: Message; from: Member; context: Message[] }) {
-  log(`mention from ${payload.from.name} in #${payload.channelId}`)
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
+
+async function handleMention(payload: Mention) {
+  log(`mention from ${payload.from.name} in #${payload.channelId}${payload.intent ? ` (${payload.intent}${payload.moduleId ? ` ${payload.moduleId}` : ""})` : ""}`)
   presence("thinking")
   const before = listWiki()
   let answer: string
+  let followUp: ScriptedResult["after"] | null = null
   try {
-    answer = await runClaude(buildPrompt(payload, members))
+    if (runtime === "scripted") {
+      if (!snapshot) throw new Error("no community snapshot yet")
+      // The pause is the only "thinking" there is: long enough to read as work.
+      await sleep(thinkingDelay(payload.message.id))
+      const result = runScripted({ mention: payload, snapshot, agentId: agentName, agentName: members.get(agentName) ?? agentName, wikiDir, rawDir, now: new Date() })
+      log(`scripted intent: ${result.intent}${result.wrote.length ? ` (+${result.wrote.length} cards)` : ""}`)
+      answer = result.answer
+      followUp = result.after
+    } else {
+      answer = await runClaude(buildPrompt(payload, members))
+    }
   } catch (e) {
     log("run failed:", (e as Error).message)
     await request({
@@ -346,6 +398,7 @@ async function handleMention(payload: { channelId: string; threadId?: string; me
   const after = listWiki()
   const changed = [...after.keys()].filter((p) => before.get(p) !== after.get(p)).sort()
   if (changed.length) presence("publishing")
+  const published: Record<string, string> = {}
   for (const path of changed) {
     try {
       const card = parseCard(path)
@@ -353,7 +406,7 @@ async function handleMention(payload: { channelId: string; threadId?: string; me
         type: "card.publish",
         ref: randomUUID(),
         payload: {
-          channelId: payload.channelId,
+          channelId: card.channel ?? payload.channelId,
           path,
           title: card.title,
           type: card.type,
@@ -365,6 +418,7 @@ async function handleMention(payload: { channelId: string; threadId?: string; me
       })
       if (ack.card) {
         cardMap[path] = { cardId: ack.card.id, title: ack.card.title, publishedAt: ack.card.publishedAt }
+        published[path] = ack.card.id
         log(`published ${path} → ${ack.card.id} (v${ack.card.version})`)
       }
     } catch (e) {
@@ -391,6 +445,25 @@ async function handleMention(payload: { channelId: string; threadId?: string; me
     log(`answered (${paragraphs.length} paragraphs, ${cited.length} citations${fromCard ? ", from the file" : ""})`)
   } catch (e) {
     log("couldn't post the answer:", (e as Error).message)
+  }
+  // What the runtime wants done once the answer is on the server: a difficulty
+  // suggestion for the module it compiled, a report to the teacher, a note in
+  // #teachers. Each is its own request; one failing doesn't stop the others.
+  for (const action of followUp ? followUp(published) : []) {
+    try {
+      if (action.type === "module.suggest") {
+        await request({ type: "module.suggest", ref: randomUUID(), payload: action.payload })
+        log(`suggested ${action.payload.difficulty.level} for ${action.payload.moduleId}`)
+      } else if (action.type === "report.create") {
+        const ack = await request({ type: "report.create", ref: randomUUID(), payload: action.payload })
+        log(`filed a report about ${action.payload.studentId} on ${action.payload.moduleId}${ack.report ? ` (${ack.report.id})` : ""}`)
+      } else {
+        await request({ type: "message.create", ref: randomUUID(), payload: { channelId: action.channelId, paragraphs: toParagraphs(action.text) } })
+        log(`posted in #${action.channelId}`)
+      }
+    } catch (e) {
+      log(`after-action ${action.type} failed:`, (e as Error).message)
+    }
   }
   await commitRun(`${agentName}: answer in #${payload.channelId}${changed.length ? ` (+${changed.length} cards)` : ""}`)
   presence("online")
@@ -419,7 +492,7 @@ function connect() {
     attempts = 0
     log(`connected to ${server} as runtime ${runtime}${model ? ` (${model})` : ""}; folder ${cwd}`)
     presence("online")
-    void refreshMembers()
+    void refreshSnapshot()
   })
   ws.on("message", (raw) => {
     let data: unknown
@@ -446,8 +519,10 @@ function connect() {
         log("ignoring a mention in my own message")
         return
       }
-      void refreshMembers()
-      enqueue(() => handleMention(payload))
+      enqueue(async () => {
+        await refreshSnapshot()
+        await handleMention(payload)
+      })
     }
   })
   ws.on("close", (code) => {

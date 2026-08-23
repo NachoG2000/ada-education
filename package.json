@@ -3,9 +3,12 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "workspaces": ["apps/*", "packages/*"],
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "npm run seed && concurrently -n web,server,runner \"npm run dev:web\" \"npm run dev:server\" \"npm run runner\"",
+    "dev": "npm run seed && concurrently -n web,server,runner \"npm run dev:web\" \"npm run dev:server\" \"ADA_RUNTIME=${ADA_RUNTIME:-scripted} npm run runner\"",
     "dev:demo": "npm run dev:demo -w @ada/web",
     "dev:web": "npm run dev -w @ada/web",
     "dev:server": "npm run dev -w @ada/server",
@@ -13,7 +16,8 @@
     "seed": "npm run seed -w @ada/server",
     "build": "npm run build -w @ada/web",
     "lint": "oxlint apps packages",
-    "typecheck": "tsc -b apps/web"
+    "typecheck": "tsc -b apps/web",
+    "smoke": "npm run smoke -w @ada/server"
   },
   "devDependencies": {
     "concurrently": "^10.0.5",

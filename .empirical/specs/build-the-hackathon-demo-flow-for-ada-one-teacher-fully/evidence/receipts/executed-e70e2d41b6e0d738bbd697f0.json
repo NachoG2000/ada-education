@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "id": "executed-e70e2d41b6e0d738bbd697f0",
+  "criteria": [
+    "AC-2",
+    "AC-3",
+    "AC-4"
+  ],
+  "evidenceKinds": [
+    "test"
+  ],
+  "summary": "WS/REST smoke on a throwaway course: PATCH difficulty broadcast as module.updated; material upload writes the file, appends the material, sets compiling and fires the ingest mention with the hint; a report filed over the runner socket reconciles into a decision card with report.updated.",
+  "passed": true,
+  "startedAt": "2026-08-23T08:28:28.096Z",
+  "completedAt": "2026-08-23T08:28:29.167Z",
+  "provenance": {
+    "repositoryId": "sha256:5ec6f3c476f2e40bbacdcf2c39af35f7b9a3ba3e39dcaea1b038f04ae0131813",
+    "feature": "build-the-hackathon-demo-flow-for-ada-one-teacher-fully",
+    "specRevision": 2,
+    "specDigest": "sha256:e715bb9f81378d19838d16870686eebead495c581dc9c26e76432ff7b33c31d2",
+    "treeDigest": "sha256:29d857e0205d94b496fe590cd5408b9b3bb6378f54c3f0a4c41b99745ef418aa",
+    "policyDigest": "sha256:39a64c33840d3b872a0572551571da16de6c692805bfd2aa7d488fbd2ee8a471"
+  },
+  "digest": "sha256:fb4d27cc415c6a3d3213cd65b7185a1e9d468ebbbcaac4af3390d387aa7f9444",
+  "kind": "executed",
+  "command": {
+    "argv": [
+      "npm",
+      "run",
+      "smoke"
+    ],
+    "cwd": ".",
+    "timeoutMs": 600000,
+    "maxOutputBytes": 262144,
+    "environmentKeys": [
+      "PATH",
+      "TMPDIR"
+    ]
+  },
+  "result": {
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "stdoutDigest": "sha256:64a97972230801e8efb9f1cdf80f4ddd377db91f2b770122741bb9a7f4333159",
+    "stderrDigest": "sha256:f8d8f1d2a9985bcf1b0a6f2c62647eed5a6f2da0b2553d9468416b8fffe36f6d",
+    "stdoutTail": "\n> ada@0.0.0 smoke\n> npm run smoke -w @ada/server\n\n\n> @ada/server@0.0.0 smoke\n> tsx scripts/smoke-run.ts\n\nSeed complete: Neural Networks 2026 (11 channels, 5 members). Repeatable without duplicating.\nAda server listening on http://localhost:8799\nSmoke OK (modules/reports): PATCH difficulty, material upload with ingest mention, and report reconcile with a decision card.\nSmoke OK: presence, mention with context, card.publish, message.create with cite, and invalid token (4401).\nReceived SIGTERM; shutting down Ada server...\nAda server closed.\n",
+    "stderrTail": "(node:22008) ExperimentalWarning: SQLite is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:22014) ExperimentalWarning: SQLite is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:22016) ExperimentalWarning: SQLite is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n",
+    "stdoutTruncated": false,
+    "stderrTruncated": false
+  }
+}

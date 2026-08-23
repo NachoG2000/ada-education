@@ -61,6 +61,8 @@ export interface Card {
   publishedAt: string
   /** markdown */
   body: string
+  /** wiki path the author published it from (lets a runtime cite seeded cards by path) */
+  path?: string
 }
 
 export interface Citation {
@@ -108,6 +110,101 @@ export interface Channel {
   unread?: boolean
 }
 
+/* ---- Modules, assignments, feedback and reports ---------------------------
+   Added 2026-08-23 for the teacher/student demo flow (DECISIONS.md §18).
+   A module is a unit of the course with its own channel, study material the
+   teacher uploads, a difficulty the teacher sets (the agent only suggests), and
+   the cards the agent compiled from the material. */
+
+export type DifficultyLevel = "intro" | "core" | "advanced"
+
+export type ModuleStatus = "empty" | "compiling" | "ready"
+
+export interface Material {
+  id: string
+  name: string
+  kind: "markdown" | "pdf" | "slides" | "link"
+  /** bytes, when known */
+  size?: number
+  /** path under data/<course>/raw/ */
+  path: string
+  uploadedAt: string
+}
+
+export interface Difficulty {
+  level: DifficultyLevel
+  /** the agent's (or the teacher's) one-paragraph reason */
+  rationale?: string
+  /** cohort signals the level rests on ("2 of 3 students slipped on σ′ in Assignment 2") */
+  evidence?: string[]
+  /** agent id that proposed the current rationale/evidence */
+  suggestedBy?: string
+  /** person id that set the level by hand; while empty, an agent's suggestion may set it */
+  setBy?: string
+}
+
+export interface Module {
+  /** "03-backprop": the module's channel carries the same id */
+  id: string
+  index: number
+  slug: string
+  title: string
+  summary: string
+  channelId: string
+  objectives: string[]
+  difficulty: Difficulty
+  status: ModuleStatus
+  materials: Material[]
+  /** computed by the server: cards published in the module's channel, oldest first */
+  cardIds: string[]
+  /** one line set when the teacher reconciles a report into the module */
+  revision?: string
+}
+
+export interface Assignment {
+  id: string
+  moduleId: string
+  /** the work channel it lives in */
+  channelId: string
+  title: string
+  due: string
+  status: WorkStatus
+}
+
+/** The agent's feedback to one student on one assignment. Shown only to that student. */
+export interface Feedback {
+  id: string
+  assignmentId: string
+  studentId: string
+  agentId: string
+  at: string
+  score: { got: number; of: number }
+  summary: string
+  strengths: string[]
+  /** where it slipped, per module, optionally pointing at the card to reread */
+  gaps: Array<{ moduleId: string; note: string; cardId?: string }>
+  nextSteps: Array<{ text: string; cardId?: string }>
+}
+
+/** What the agent files to the teacher after advising a student: its own
+    summary and a recommendation for the module — never the student's words.
+    The student sees on her screen that a summary was shared (DECISIONS.md §18). */
+export interface Report {
+  id: string
+  agentId: string
+  studentId: string
+  moduleId: string
+  assignmentId?: string
+  at: string
+  /** what the agent advised, in one paragraph */
+  told: string
+  recommendations: Array<{ id: string; text: string }>
+  /** cards the advice rests on (the plan card, the cited cards) */
+  cardIds: string[]
+  status: "new" | "reconciled"
+  reconciled?: { at: string; by: string; accepted: string[]; note: string; cardId: string }
+}
+
 export interface Community {
   id: string
   name: string
@@ -118,5 +215,9 @@ export interface Community {
   cards: Card[]
   messages: Message[]
   threads: Thread[]
+  modules: Module[]
+  assignments: Assignment[]
+  feedback: Feedback[]
+  reports: Report[]
   meId: string
 }

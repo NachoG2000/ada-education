@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "id": "executed-1522873e72c93055a5d09e30",
+  "criteria": [
+    "AC-7"
+  ],
+  "evidenceKinds": [
+    "test"
+  ],
+  "summary": "oxlint: 20 pre-existing warnings only, none in files added or changed by this feature.",
+  "passed": true,
+  "startedAt": "2026-08-23T08:28:35.380Z",
+  "completedAt": "2026-08-23T08:28:35.609Z",
+  "provenance": {
+    "repositoryId": "sha256:5ec6f3c476f2e40bbacdcf2c39af35f7b9a3ba3e39dcaea1b038f04ae0131813",
+    "feature": "build-the-hackathon-demo-flow-for-ada-one-teacher-fully",
+    "specRevision": 2,
+    "specDigest": "sha256:e715bb9f81378d19838d16870686eebead495c581dc9c26e76432ff7b33c31d2",
+    "treeDigest": "sha256:29d857e0205d94b496fe590cd5408b9b3bb6378f54c3f0a4c41b99745ef418aa",
+    "policyDigest": "sha256:39a64c33840d3b872a0572551571da16de6c692805bfd2aa7d488fbd2ee8a471"
+  },
+  "digest": "sha256:1c2b42a8e1382844fad9cdb0a2b4194a1a432c9508c002ae4cb31c0b0b73c0cf",
+  "kind": "executed",
+  "command": {
+    "argv": [
+      "npm",
+      "run",
+      "lint"
+    ],
+    "cwd": ".",
+    "timeoutMs": 300000,
+    "maxOutputBytes": 262144,
+    "environmentKeys": [
+      "PATH",
+      "TMPDIR"
+    ]
+  },
+  "result": {
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "stdoutDigest": "sha256:388f78224bddf8123a5f26b74ad552f257ef0ecfcb3035c6bd32462d5280841d",
+    "stderrDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdoutTail": "s.tsx:80:52]\n 79 | \n 80 | export { Tabs, TabsList, TabsTrigger, TabsContent, tabsListVariants }\n    :                                                    ^^^^^^^^^^^^^^^^\n    `----\n\n  ! react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.\n    ,-[apps/web/src/components/ada/identity.tsx:40:14]\n 39 | \n 40 | export const PRESENCE_LABEL: Record<Presence, string> = {\n    :              ^^^^^^^^^^^^^^\n 41 |   online: \"online\",\n    `----\n\n  ! react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.\n    ,-[apps/web/src/components/ada/identity.tsx:48:17]\n 47 | /** How each presence reads depending on whose it is: for an agent, \"away\" means its runner isn't running. */\n 48 | export function presenceLabel(member: Member) {\n    :                 ^^^^^^^^^^^^^\n 49 |   if (member.kind === \"agent\" && member.presence === \"away\") return \"disconnected\"\n    `----\n\n  ! react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.\n     ,-[apps/web/src/components/ada/identity.tsx:192:17]\n 191 | /** Agent ink: the readable version of its color, for its name. */\n 192 | export function agentInk(agent: Agent) {\n     :                 ^^^^^^^^\n 193 |   return figureParams(agent.figureSeed ?? agent.id, agent.figureColor).ink\n     `----\n\n  ! react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.\n   ,-[apps/web/src/components/ada/card.tsx:8:14]\n 7 | \n 8 | export const TAB_BG: Record<CardType, string> = {\n   :              ^^^^^^\n 9 |   note: \"bg-tab-note\",\n   `----\n\n  ! react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.\n    ,-[apps/web/src/components/ada/card.tsx:15:14]\n 14 | }\n 15 | export const TAB_INK: Record<CardType, string> = {\n    :              ^^^^^^^\n 16 |   note: \"text-tab-note-ink\",\n    `----\n\n  ! react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.\n    ,-[apps/web/src/components/ada/card.tsx:22:14]\n 21 | }\n 22 | export const TAB_DOT: Record<CardType, string> = {\n    :              ^^^^^^^\n 23 |   note: \"bg-tab-note-ink\",\n    `----\n\n  ! react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.\n    ,-[apps/web/src/components/ada/card.tsx:30:14]\n 29 | \n 30 | export const TAB_FILL: Record<CardType, string> = {\n    :              ^^^^^^^^\n 31 |   note: \"fill-tab-note\",\n    `----\n\n  ! react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.\n     ,-[apps/web/src/components/ui/sidebar.tsx:722:3]\n 721 |   SidebarTrigger,\n 722 |   useSidebar,\n     :   ^^^^^^^^^^\n 723 | }\n     `----\n\n  ! react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.\n    ,-[apps/web/src/lib/community.tsx:46:17]\n 45 | /** What a panel is, in one string: its React key and what the screen announces against. */\n 46 | export function panelKey(p: Panel): string {\n    :                 ^^^^^^^^\n 47 |   return p.kind === \"thread\" ? `thread:${p.threadId}` : p.kind === \"card\" ? `card:${p.cardId}` : `agent:${p.agentId}`\n    `----\n\n  ! react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.\n     ,-[apps/web/src/lib/community.tsx:380:17]\n 379 | \n 380 | export function useCommunity() {\n     :                 ^^^^^^^^^^^^\n 381 |   const v = useContext(Ctx)\n     `----\n\n  ! react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.\n     ,-[apps/web/src/lib/community.tsx:399:17]\n 398 | }\n 399 | export function storeChannel(id: string) {\n     :                 ^^^^^^^^^^^^\n 400 |   try {\n     `----\n\n  ! react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.\n     ,-[apps/web/src/lib/community.tsx:493:17]\n 492 |     with the reducer, and resolves the local identity (localStorage[\"ada:me\"]). */\n 493 | export function useConnectedCommunity(server: string): ConnectionState {\n     :                 ^^^^^^^^^^^^^^^^^^^^^\n 494 |   const [loadState, setLoadState] = useState<{ phase: \"loading\" } | { phase: \"error\"; detail: string } | { phase: \"ready\" }>({\n     `----\n\n  ! react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.\n     ,-[apps/web/src/lib/community.tsx:684:17]\n 683 | /** A card is \"new\" during the first 24 h since it was published. */\n 684 | export function isNew(card: Card, now: Date) {\n     :                 ^^^^^\n 685 |   return card.state === \"new\" && now.getTime() - new Date(card.publishedAt).getTime() < 24 * 3600 * 1000\n     `----\n\n  ! react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.\n     ,-[apps/web/src/lib/community.tsx:688:17]\n 687 | \n 688 | export function isAgent(m: Member): m is Agent {\n     :                 ^^^^^^^\n 689 |   return m.kind === \"agent\"\n     `----\n\n  ! react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.\n     ,-[apps/web/src/lib/community.tsx:692:17]\n 691 | \n 692 | export function formatTime(iso: string) {\n     :                 ^^^^^^^^^^\n 693 |   const d = new Date(iso)\n     `----\n\n  ! react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.\n     ,-[apps/web/src/lib/community.tsx:697:17]\n 696 | \n 697 | export function dayLabel(iso: string, now: Date) {\n     :                 ^^^^^^^^\n 698 |   const d = new Date(iso)\n     `----\n\n  ! react(set-state-in-effect): Calling setState synchronously within an effect can trigger cascading renders\n     ,-[apps/web/src/lib/community.tsx:174:21]\n 161 |   const seenIds = useRef<Set<string> | null>(null)\n 162 |   useEffect(() => {\n     :   ^^^^|^^^^\n     :       `-- This is the containing effect\n 163 |     if (seenIds.current === null) {\n 164 |       seenIds.current = new Set(community.messages.map((m) => m.id))\n 165 |       return\n 166 |     }\n 167 |     const seen = seenIds.current\n 168 |     const fresh = new Set<string>()\n 169 |     for (const m of community.messages) {\n 170 |       if (seen.has(m.id)) continue\n 171 |       seen.add(m.id)\n 172 |       if (m.channelId !== activeChannelId && m.authorId !== community.meId) fresh.add(m.channelId)\n 173 |     }\n 174 |     if (fresh.size) setUnread((prev) => new Set([...prev, ...fresh]))\n     :                     ^^^^|^^^^\n     :                         `-- Avoid calling setState() directly within an effect\n 175 |   }, [community.messages, community.meId, activeChannelId])\n     `----\n  help: Effects should synchronize React with external systems. Calling setState synchronously inside an effect starts another render and is usually unnecessary. Derive the value during render, initialize state directly, or update it from the event that caused the change. Use an effect only when synchronizing with an external system.\n  note: React Compiler skipped optimizing this component or hook. Additional guidance: https://react.dev/reference/eslint-plugin-react-hooks/lints/set-state-in-effect\n\nFound 20 warnings and 0 errors.\nFinished in 32ms on 63 files with 116 rules using 10 threads.\n",
+    "stderrTail": "",
+    "stdoutTruncated": false,
+    "stderrTruncated": false
+  }
+}

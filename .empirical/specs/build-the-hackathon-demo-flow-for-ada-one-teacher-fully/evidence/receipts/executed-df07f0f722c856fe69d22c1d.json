@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "id": "executed-df07f0f722c856fe69d22c1d",
+  "criteria": [
+    "AC-8"
+  ],
+  "evidenceKinds": [
+    "test"
+  ],
+  "summary": "Docs check: DECISIONS.md dated section, PRODUCT.md terminology/views/report rule, root and area AGENTS.md updated.",
+  "passed": true,
+  "startedAt": "2026-08-23T08:29:56.987Z",
+  "completedAt": "2026-08-23T08:29:57.027Z",
+  "provenance": {
+    "repositoryId": "sha256:5ec6f3c476f2e40bbacdcf2c39af35f7b9a3ba3e39dcaea1b038f04ae0131813",
+    "feature": "build-the-hackathon-demo-flow-for-ada-one-teacher-fully",
+    "specRevision": 2,
+    "specDigest": "sha256:e715bb9f81378d19838d16870686eebead495c581dc9c26e76432ff7b33c31d2",
+    "treeDigest": "sha256:29d857e0205d94b496fe590cd5408b9b3bb6378f54c3f0a4c41b99745ef418aa",
+    "policyDigest": "sha256:39a64c33840d3b872a0572551571da16de6c692805bfd2aa7d488fbd2ee8a471"
+  },
+  "digest": "sha256:39a4fc412b8bd1131a70a91f7bd5915e4a5b11dfd81593989ea6ef6f6815db85",
+  "kind": "executed",
+  "command": {
+    "argv": [
+      "node",
+      "scripts/docs-check.mjs"
+    ],
+    "cwd": ".",
+    "timeoutMs": 60000,
+    "maxOutputBytes": 262144,
+    "environmentKeys": [
+      "PATH",
+      "TMPDIR"
+    ]
+  },
+  "result": {
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "stdoutDigest": "sha256:55798bccdecf7488e6027d912c0be37c883f9ab3287137ea2e5c3bd922b9afd3",
+    "stderrDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdoutTail": "Docs OK (7 files)\n",
+    "stderrTail": "",
+    "stdoutTruncated": false,
+    "stderrTruncated": false
+  }
+}

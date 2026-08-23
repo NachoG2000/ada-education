@@ -273,9 +273,25 @@ function toParagraphs(text: string): MessageBlock[][] {
     .map((p): MessageBlock[] => [{ kind: "text", text: p }])
 }
 
-export function Composer({ placeholder, compact = false, threadId }: { placeholder: string; compact?: boolean; threadId?: string }) {
+export function Composer({
+  placeholder,
+  compact = false,
+  threadId,
+  channelId,
+  suggestions,
+  autoFocus = false,
+}: {
+  placeholder: string
+  compact?: boolean
+  threadId?: string
+  /** the channel to post into; defaults to the active one */
+  channelId?: string
+  /** quick-fill chips shown above the field; clicking one fills it and focuses */
+  suggestions?: string[]
+  autoFocus?: boolean
+}) {
   const { community, activeChannelId, panels, mode, connected, sendMessage } = useCommunity()
-  const channel = community.channels.find((c) => c.id === activeChannelId)
+  const channel = community.channels.find((c) => c.id === (channelId ?? activeChannelId))
 
   // The compact composer lives inside the thread panel; until panel.tsx passes
   // the id down, it takes it from the top of the stack, which is that thread.
@@ -335,6 +351,20 @@ export function Composer({ placeholder, compact = false, threadId }: { placehold
     ta.focus()
     ta.setSelectionRange(pos, pos)
   })
+
+  // Focuses once, on mount — e.g. the study screen's "Ada, your conversation" panel.
+  useEffect(() => {
+    if (autoFocus) field.current?.focus()
+  }, [autoFocus])
+
+  /** A suggestion chip fills the field with its text and puts the caret (and
+      focus) at the end, the same way choosing a mention does. */
+  const fillSuggestion = (text: string) => {
+    setText(text)
+    setMention(null)
+    setMuted(null)
+    pendingCaret.current = text.length
+  }
 
   /** Recomputes the mentions menu from the field's real state. */
   const sync = () => {
@@ -458,6 +488,21 @@ export function Composer({ placeholder, compact = false, threadId }: { placehold
               </li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {suggestions && suggestions.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 px-3 pt-3">
+          {suggestions.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => fillSuggestion(s)}
+              className="rounded-pill bg-panel px-3 py-1 font-sans text-[12.5px] text-ink-2 shadow-card outline-none transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-seal"
+            >
+              {s}
+            </button>
+          ))}
         </div>
       )}
 

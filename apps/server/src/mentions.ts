@@ -13,6 +13,12 @@ export function mentionedAgentIds(message: Message, channel: Channel, members: M
       .map((member) => member.id),
   )
   const result = new Set<string>()
+  // A private channel is a conversation with the agent: everything a person
+  // writes there is addressed to it, with or without an "@".
+  const author = members.find((member) => member.id === message.authorId)
+  if (channel.group === "private" && author?.kind === "person") {
+    for (const id of agents) result.add(id)
+  }
   for (const paragraph of message.paragraphs) {
     for (const block of paragraph) {
       if (block.kind !== "text") continue

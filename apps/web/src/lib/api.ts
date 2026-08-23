@@ -11,7 +11,7 @@
    keeps its text); only what can't be drawn at all is dropped. Always with a
    console.warn, because it means the server sent something inconsistent. */
 
-import type { Card, Community, Message, MessageBlock, Presence, Thread } from "./types"
+import type { Card, Community, DifficultyLevel, Feedback, Material, Message, MessageBlock, Module, Presence, Report, Thread } from "./types"
 
 /* ---- Contract mirror types ----------------------------------------- */
 
@@ -24,6 +24,9 @@ export type ServerEvent =
   | { type: "thread.created"; payload: { thread: Thread } }
   | { type: "card.published"; payload: { card: Card; message: Message } }
   | { type: "member.presence"; payload: { memberId: string; presence: Presence; runtime?: string; model?: string } }
+  | { type: "module.updated"; payload: { module: Module } }
+  | { type: "feedback.created"; payload: { feedback: Feedback } }
+  | { type: "report.updated"; payload: { report: Report } }
 
 /** What an agent's runner reports (arrives in `member.presence`). */
 export interface RunnerInfo {
@@ -120,9 +123,94 @@ export async function createThread(server: string, rootMessageId: string): Promi
   return thread
 }
 
+/** Reads `{error}` off a non-2xx JSON body, falling back to a generic message
+    when the body isn't there or isn't JSON. */
+async function throwForStatus(res: Response, fallback: string): Promise<never> {
+  let message = fallback
+  try {
+    const body = (await res.json()) as { error?: unknown }
+    if (typeof body.error === "string" && body.error) message = body.error
+  } catch {
+    // no JSON body: stick with the fallback
+  }
+  throw new Error(message)
+}
+
+/** POST /api/modules/:id/materials — uploads one material to a module; the
+    module comes back `compiling` and the ingest mention is on its way (the
+    resulting `module.updated` and the mention's answer arrive over WS). */
+export async function uploadMaterial(
+  server: string,
+  moduleId: string,
+  input: { name: string; kind: Material["kind"]; size?: number; text?: string; authorId: string },
+): Promise<Module> {
+  let res: Response
+  try {
+    res = await fetch(`${server}/api/modules/${encodeURIComponent(moduleId)}/materials`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(input),
+    })
+  } catch {
+    throw new Error(unreachable(server))
+  }
+  if (!res.ok) await throwForStatus(res, `The server rejected the upload (${res.status}).`)
+  return (await res.json()) as Module
+}
+
+/** PATCH /api/modules/:id — sets the module's difficulty (by hand, so it wins
+    over an agent's suggestion) and/or its objectives. */
+export async function patchModule(
+  server: string,
+  moduleId: string,
+  input: { difficulty?: { level: DifficultyLevel; rationale?: string }; objectives?: string[]; authorId: string },
+): Promise<Module> {
+  let res: Response
+  try {
+    res = await fetch(`${server}/api/modules/${encodeURIComponent(moduleId)}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(input),
+    })
+  } catch {
+    throw new Error(unreachable(server))
+  }
+  if (!res.ok) await throwForStatus(res, `The server rejected the change (${res.status}).`)
+  return (await res.json()) as Module
+}
+
+/** POST /api/reports/:id/reconcile — accepts a subset of an agent's report
+    recommendations into the module, publishing the decision card. */
+export async function reconcileReport(
+  server: string,
+  reportId: string,
+  input: { accepted: string[]; note: string; authorId: string },
+): Promise<Report> {
+  let res: Response
+  try {
+    res = await fetch(`${server}/api/reports/${encodeURIComponent(reportId)}/reconcile`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(input),
+    })
+  } catch {
+    throw new Error(unreachable(server))
+  }
+  if (!res.ok) await throwForStatus(res, `The server rejected the reconciliation (${res.status}).`)
+  return (await res.json()) as Report
+}
+
 /* ---- WS: defensive parsing ------------------------------------------------ */
 
-const EVENT_TYPES = new Set(["message.created", "thread.created", "card.published", "member.presence"])
+const EVENT_TYPES = new Set([
+  "message.created",
+  "thread.created",
+  "card.published",
+  "member.presence",
+  "module.updated",
+  "feedback.created",
+  "report.updated",
+])
 
 /** Turns whatever arrived over WS into a `ServerEvent`, or `null` if it isn't
     recognized. Never throws: a broken event is logged and ignored. */
@@ -160,7 +248,10 @@ export function parseEvent(raw: unknown): ServerEvent | null {
     (ev.type === "message.created" && isObjectWithId(p.message)) ||
     (ev.type === "thread.created" && isObjectWithId(p.thread)) ||
     (ev.type === "card.published" && isObjectWithId(p.card) && isObjectWithId(p.message)) ||
-    (ev.type === "member.presence" && typeof p.memberId === "string" && typeof p.presence === "string")
+    (ev.type === "member.presence" && typeof p.memberId === "string" && typeof p.presence === "string") ||
+    (ev.type === "module.updated" && isObjectWithId(p.module)) ||
+    (ev.type === "feedback.created" && isObjectWithId(p.feedback)) ||
+    (ev.type === "report.updated" && isObjectWithId(p.report))
   if (!valid) {
     console.warn(`ada: event "${ev.type}" with a payload I don't recognize; ignoring it.`, p)
     return null
@@ -319,7 +410,38 @@ export function sanitizeSnapshot(snap: CommunitySnapshot): CommunitySnapshot {
     return openedThread ? markThreadRoot(msg, openedThread) : msg
   })
 
-  return { ...snap, channels, cards, messages, threads }
+  // Older servers (or a stale seed) may not send these at all: default rather
+  // than reject, so the rest of the community still draws.
+  const modules = Array.isArray(snap.modules) ? snap.modules : []
+  const assignments = Array.isArray(snap.assignments) ? snap.assignments : []
+  const moduleIds = new Set(modules.map((m) => m.id))
+  const assignmentIds = new Set(assignments.map((a) => a.id))
+
+  const feedback = (Array.isArray(snap.feedback) ? snap.feedback : []).filter((f) => {
+    if (!memberIds.has(f.studentId)) {
+      console.warn(`ada: feedback "${f.id}" is addressed to an unknown student "${f.studentId}"; leaving it out.`)
+      return false
+    }
+    if (!assignmentIds.has(f.assignmentId)) {
+      console.warn(`ada: feedback "${f.id}" points at an unknown assignment "${f.assignmentId}"; leaving it out.`)
+      return false
+    }
+    return true
+  })
+
+  const reports = (Array.isArray(snap.reports) ? snap.reports : []).filter((r) => {
+    if (!memberIds.has(r.studentId)) {
+      console.warn(`ada: report "${r.id}" is about an unknown student "${r.studentId}"; leaving it out.`)
+      return false
+    }
+    if (!moduleIds.has(r.moduleId)) {
+      console.warn(`ada: report "${r.id}" points at an unknown module "${r.moduleId}"; leaving it out.`)
+      return false
+    }
+    return true
+  })
+
+  return { ...snap, channels, cards, messages, threads, modules, assignments, feedback, reports }
 }
 
 /* ---- Reducer: apply events to the snapshot -------------------------------- */
@@ -376,6 +498,53 @@ export function applyEvent(snap: CommunitySnapshot, event: ServerEvent): Communi
       return {
         ...snap,
         members: snap.members.map((m) => (m.id === memberId ? { ...m, presence } : m)),
+      }
+    }
+
+    case "module.updated": {
+      const { module } = event.payload
+      if (!snap.channels.some((c) => c.id === module.channelId)) {
+        console.warn(`ada: module.updated "${module.id}" has an unknown channel "${module.channelId}"; ignoring it.`)
+        return null
+      }
+      const exists = snap.modules.some((m) => m.id === module.id)
+      return {
+        ...snap,
+        modules: exists ? snap.modules.map((m) => (m.id === module.id ? module : m)) : [...snap.modules, module],
+      }
+    }
+
+    case "feedback.created": {
+      const { feedback } = event.payload
+      if (!snap.members.some((m) => m.id === feedback.studentId)) {
+        console.warn(`ada: feedback.created "${feedback.id}" is addressed to an unknown student "${feedback.studentId}"; ignoring it.`)
+        return null
+      }
+      if (!snap.assignments.some((a) => a.id === feedback.assignmentId)) {
+        console.warn(`ada: feedback.created "${feedback.id}" points at an unknown assignment "${feedback.assignmentId}"; ignoring it.`)
+        return null
+      }
+      const exists = snap.feedback.some((f) => f.id === feedback.id)
+      return {
+        ...snap,
+        feedback: exists ? snap.feedback.map((f) => (f.id === feedback.id ? feedback : f)) : [...snap.feedback, feedback],
+      }
+    }
+
+    case "report.updated": {
+      const { report } = event.payload
+      if (!snap.members.some((m) => m.id === report.studentId)) {
+        console.warn(`ada: report.updated "${report.id}" is about an unknown student "${report.studentId}"; ignoring it.`)
+        return null
+      }
+      if (!snap.modules.some((m) => m.id === report.moduleId)) {
+        console.warn(`ada: report.updated "${report.id}" points at an unknown module "${report.moduleId}"; ignoring it.`)
+        return null
+      }
+      const exists = snap.reports.some((r) => r.id === report.id)
+      return {
+        ...snap,
+        reports: exists ? snap.reports.map((r) => (r.id === report.id ? report : r)) : [...snap.reports, report],
       }
     }
   }

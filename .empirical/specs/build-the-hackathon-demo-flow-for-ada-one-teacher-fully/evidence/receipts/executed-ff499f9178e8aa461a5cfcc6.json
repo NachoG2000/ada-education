@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "id": "executed-ff499f9178e8aa461a5cfcc6",
+  "criteria": [
+    "AC-6",
+    "AC-7"
+  ],
+  "evidenceKinds": [
+    "test"
+  ],
+  "summary": "tsc -b apps/web clean (role gate via shared isTeacher, switch person, both pages).",
+  "passed": true,
+  "startedAt": "2026-08-23T08:46:45.834Z",
+  "completedAt": "2026-08-23T08:46:47.524Z",
+  "provenance": {
+    "repositoryId": "sha256:5ec6f3c476f2e40bbacdcf2c39af35f7b9a3ba3e39dcaea1b038f04ae0131813",
+    "feature": "build-the-hackathon-demo-flow-for-ada-one-teacher-fully",
+    "specRevision": 2,
+    "specDigest": "sha256:e715bb9f81378d19838d16870686eebead495c581dc9c26e76432ff7b33c31d2",
+    "treeDigest": "sha256:745a4615c7937f8d83e05f795bd564179e93d0ec7920168a6390f7bac700d202",
+    "policyDigest": "sha256:39a64c33840d3b872a0572551571da16de6c692805bfd2aa7d488fbd2ee8a471"
+  },
+  "digest": "sha256:318642a1b1dbc8ae4c2069a4559b58f7037384321239d99dee23ae505f6adfcb",
+  "kind": "executed",
+  "command": {
+    "argv": [
+      "npm",
+      "run",
+      "typecheck"
+    ],
+    "cwd": ".",
+    "timeoutMs": 300000,
+    "maxOutputBytes": 262144,
+    "environmentKeys": [
+      "PATH",
+      "TMPDIR"
+    ]
+  },
+  "result": {
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "stdoutDigest": "sha256:731f74238bae1fbf83aa2cdf21d88c7de1edc675536ed3d0c016fc11791c462a",
+    "stderrDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdoutTail": "\n> ada@0.0.0 typecheck\n> tsc -b apps/web\n\n",
+    "stderrTail": "",
+    "stdoutTruncated": false,
+    "stderrTruncated": false
+  }
+}

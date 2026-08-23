@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "id": "executed-f20639940a5c7d17fcaada5d",
+  "criteria": [
+    "AC-5"
+  ],
+  "evidenceKinds": [
+    "test"
+  ],
+  "summary": "Scripted runtime check: 18 assertions over ingest/plan/question intents, deterministic delay, frontmatter, citations of written cards only, report payload and #teachers note.",
+  "passed": true,
+  "startedAt": "2026-08-23T08:46:45.013Z",
+  "completedAt": "2026-08-23T08:46:45.293Z",
+  "provenance": {
+    "repositoryId": "sha256:5ec6f3c476f2e40bbacdcf2c39af35f7b9a3ba3e39dcaea1b038f04ae0131813",
+    "feature": "build-the-hackathon-demo-flow-for-ada-one-teacher-fully",
+    "specRevision": 2,
+    "specDigest": "sha256:e715bb9f81378d19838d16870686eebead495c581dc9c26e76432ff7b33c31d2",
+    "treeDigest": "sha256:745a4615c7937f8d83e05f795bd564179e93d0ec7920168a6390f7bac700d202",
+    "policyDigest": "sha256:39a64c33840d3b872a0572551571da16de6c692805bfd2aa7d488fbd2ee8a471"
+  },
+  "digest": "sha256:1c57f16ace086c579b6a2d5f85d526d3b0ae905cd890f0725b179240319e689b",
+  "kind": "executed",
+  "command": {
+    "argv": [
+      "npm",
+      "run",
+      "check:scripted",
+      "-w",
+      "@ada/runner"
+    ],
+    "cwd": ".",
+    "timeoutMs": 300000,
+    "maxOutputBytes": 262144,
+    "environmentKeys": [
+      "PATH",
+      "TMPDIR"
+    ]
+  },
+  "result": {
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "stdoutDigest": "sha256:7e8f05acd856ef0421e25170dc71a01d5da49ca7d8c7eaf3a2cbb431cfed0e2b",
+    "stderrDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdoutTail": "\n> @ada/runner@0.0.0 check:scripted\n> tsx scripts/scripted-check.ts\n\nok  thinking delay is deterministic and in range (1494 ms)\nok  ingest intent detected from the hint\nok  ingest wrote one card per heading (3)\nok  ingest cards carry title/type/channel frontmatter\nok  ingest answer cites every card it wrote\nok  ingest suggests a difficulty for the module with a rationale naming the material\nok  plan intent detected from a student's question in her private channel\nok  plan cites at least two module cards (3)\nok  plan puts the gap card first\nok  plan names the feedback gap\nok  plan ends with the sharing line\nok  plan writes the plan card\nok  plan files a report with three recommendations and the plan card\nok  plan posts a note in #teachers citing the plan card\nok  no doubled period after the gap\nok  question answers with the matching card\nok  unknown question gets an honest miss without an invented citation\nok  plan intent also detected by module slug in a course channel\n\nScripted runtime OK\n",
+    "stderrTail": "",
+    "stdoutTruncated": false,
+    "stderrTruncated": false
+  }
+}

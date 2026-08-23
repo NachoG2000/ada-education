@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "classification": "behavioral",
+  "capabilities": [
+    "agent-reports",
+    "course-modules",
+    "scripted-runtime",
+    "student-study"
+  ],
+  "surfaces": [
+    "workflow"
+  ],
+  "regressionRationale": null,
+  "digest": "sha256:5c0c1b94f4c4c0b57408884fcfa95660c9af91efd879b52a881f2882341176cd"
+}

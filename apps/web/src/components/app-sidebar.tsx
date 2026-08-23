@@ -1,6 +1,6 @@
 /* Ada's sidebar over the shadcn primitives (inset variant). Drawers: Course · Work · Private · Members. */
 
-import { ChevronsUpDownIcon, PlusIcon } from "lucide-react"
+import { ChevronsUpDownIcon, GraduationCapIcon, LayersIcon, PlusIcon } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -15,7 +15,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { cn } from "@/lib/utils"
-import { isAgent, useCommunity } from "@/lib/community"
+import { isAgent, isTeacher, useCommunity } from "@/lib/community"
 import type { Channel, Member, WorkStatus } from "@/lib/types"
 import { MemberAvatar, PRESENCE_LABEL, agentInk } from "@/components/ada/identity"
 
@@ -26,8 +26,8 @@ const STATUS: Record<WorkStatus, { dot: string; label: string }> = {
 }
 
 function ChannelItem({ channel }: { channel: Channel }) {
-  const { activeChannelId, setActiveChannelId, community, member } = useCommunity()
-  const active = channel.id === activeChannelId
+  const { activeChannelId, showChannel, community, member, view } = useCommunity()
+  const active = view === "channel" && channel.id === activeChannelId
   const cardsCount = community.cards.filter((c) => c.channelId === channel.id).length
   const dm = channel.group === "private" ? member(channel.memberIds.find((id) => id !== community.meId) ?? channel.memberIds[0]) : null
 
@@ -36,7 +36,7 @@ function ChannelItem({ channel }: { channel: Channel }) {
       <SidebarMenuButton
         isActive={active}
         aria-current={active ? "page" : undefined}
-        onClick={() => setActiveChannelId(channel.id)}
+        onClick={() => showChannel(channel.id)}
         className={cn(channel.unread && !active && "font-semibold", channel.work?.status === "archived" && !active && "text-ink-3")}
       >
         {channel.work ? (
@@ -62,6 +62,31 @@ function ChannelItem({ channel }: { channel: Channel }) {
         )}
       </SidebarMenuButton>
     </SidebarMenuItem>
+  )
+}
+
+/** The role landing page, above every drawer: "Modules" for the teacher,
+    "My study" for a student. Agents don't get one — there's no client for
+    them to click it from. */
+function RoleEntry() {
+  const { me, view, goTo } = useCommunity()
+  if (me.kind !== "person") return null
+  const teacher = isTeacher(me)
+  const target = teacher ? "modules" : "home"
+  const active = view === target
+  return (
+    <SidebarGroup>
+      <SidebarGroupContent>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton isActive={active} aria-current={active ? "page" : undefined} onClick={() => goTo(target)}>
+              {teacher ? <LayersIcon /> : <GraduationCapIcon />}
+              <span className="min-w-0 flex-1 truncate">{teacher ? "Modules" : "My study"}</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
   )
 }
 
@@ -96,7 +121,7 @@ function MemberItem({ member: m }: { member: Member }) {
     m.kind === "person"
       ? m.id === me.id
         ? "you"
-        : m.role === "teacher"
+        : isTeacher(m)
           ? "teacher"
           : ""
       : m.presence === "publishing" || m.presence === "thinking"
@@ -139,8 +164,12 @@ function MemberItem({ member: m }: { member: Member }) {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { community, me } = useCommunity()
-  const groups = (g: Channel["group"]) => community.channels.filter((c) => c.group === g)
+  const { community, me, switchPerson } = useCommunity()
+  // A channel that names its members is listed only for them (a student's DM
+  // with their agent, #teachers); one with no member list (the demo's) is open
+  // to everyone. Not mutated on the community, just left off the list.
+  const groups = (g: Channel["group"]) =>
+    community.channels.filter((c) => c.group === g && (c.memberIds.length === 0 || c.memberIds.includes(me.id)))
   const presenceOrder = { publishing: 0, thinking: 1, online: 2, away: 3 } as const
   const members = [...community.members].sort((a, b) => presenceOrder[a.presence] - presenceOrder[b.presence])
 
@@ -164,6 +193,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
 
       <SidebarContent>
+        <RoleEntry />
         <Drawer label="Course" action>
           {groups("course").map((c) => (
             <ChannelItem key={c.id} channel={c} />
@@ -189,13 +219,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg">
+            <SidebarMenuButton size="lg" title="Switch person" onClick={switchPerson}>
               <MemberAvatar member={me} size={28} presence />
               <div className="grid flex-1 text-left leading-tight">
                 <span className="truncate text-[13.5px] font-semibold">{me.name}</span>
-                <span className="meta truncate text-ink-3">local key</span>
+                <span className="meta truncate text-ink-3">switch person</span>
               </div>
-              <kbd className="ml-auto rounded-md bg-panel-3 px-1.5 py-0.5 font-sans text-[10.5px] font-medium text-ink-3">⌘K</kbd>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

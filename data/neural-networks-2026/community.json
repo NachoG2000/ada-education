@@ -8,20 +8,128 @@
       "id": "general",
       "name": "general",
       "group": "course",
-      "memberIds": ["martin", "sofia", "ignacio", "ada"]
+      "memberIds": [
+        "martin",
+        "sofia",
+        "ignacio",
+        "lucia",
+        "ada"
+      ]
     },
     {
       "id": "questions",
       "name": "questions",
       "group": "course",
       "description": "Ask anything. Ada answers and archives what's worth keeping.",
-      "memberIds": ["martin", "sofia", "ignacio", "ada"]
+      "memberIds": [
+        "martin",
+        "sofia",
+        "ignacio",
+        "lucia",
+        "ada"
+      ]
+    },
+    {
+      "id": "01-perceptron",
+      "name": "01-perceptron",
+      "group": "course",
+      "memberIds": [
+        "martin",
+        "sofia",
+        "ignacio",
+        "lucia",
+        "ada"
+      ]
+    },
+    {
+      "id": "02-mlp",
+      "name": "02-mlp",
+      "group": "course",
+      "memberIds": [
+        "martin",
+        "sofia",
+        "ignacio",
+        "lucia",
+        "ada"
+      ]
     },
     {
       "id": "03-backprop",
       "name": "03-backprop",
       "group": "course",
-      "memberIds": ["martin", "sofia", "ignacio", "ada"]
+      "memberIds": [
+        "martin",
+        "sofia",
+        "ignacio",
+        "lucia",
+        "ada"
+      ]
+    },
+    {
+      "id": "teachers",
+      "name": "teachers",
+      "group": "course",
+      "description": "Where the course is run. Ada files what it learns about the cohort here.",
+      "memberIds": [
+        "martin",
+        "ada"
+      ]
+    },
+    {
+      "id": "assignment-2-backprop",
+      "name": "Assignment 2 · Backprop by hand",
+      "group": "work",
+      "work": {
+        "status": "submitted",
+        "due": "Aug 20"
+      },
+      "memberIds": [
+        "martin",
+        "sofia",
+        "ignacio",
+        "lucia",
+        "ada"
+      ]
+    },
+    {
+      "id": "sofia-ada",
+      "name": "Sofia · Ada",
+      "group": "private",
+      "memberIds": [
+        "sofia",
+        "ada"
+      ]
+    },
+    {
+      "id": "ignacio-ada",
+      "name": "Ignacio · Ada",
+      "group": "private",
+      "memberIds": [
+        "ignacio",
+        "ada"
+      ]
+    },
+    {
+      "id": "lucia-ada",
+      "name": "Lucia · Ada",
+      "group": "private",
+      "memberIds": [
+        "lucia",
+        "ada"
+      ]
+    },
+    {
+      "id": "04-attention",
+      "name": "04-attention",
+      "group": "course",
+      "description": "Attention and transformers. Material coming; Ada compiles the cards as soon as it lands.",
+      "memberIds": [
+        "martin",
+        "sofia",
+        "ignacio",
+        "lucia",
+        "ada"
+      ]
     }
   ],
   "people": [
@@ -48,6 +156,14 @@
       "initials": "I",
       "tone": "card",
       "role": "student"
+    },
+    {
+      "kind": "person",
+      "id": "lucia",
+      "name": "Lucia",
+      "initials": "L",
+      "tone": "red-soft",
+      "role": "student"
     }
   ],
   "agents": [
@@ -59,8 +175,23 @@
       "createdBy": "martin",
       "figureSeed": "ada",
       "instructions": "Keep the course cards up to date: answer questions by citing cards, and archive anything that comes up again as an answer.",
-      "provider": { "mode": "subscription", "model": "Claude" },
-      "channelIds": ["general", "questions", "03-backprop"],
+      "provider": {
+        "mode": "subscription",
+        "model": "Claude"
+      },
+      "channelIds": [
+        "general",
+        "questions",
+        "01-perceptron",
+        "02-mlp",
+        "03-backprop",
+        "teachers",
+        "assignment-2-backprop",
+        "sofia-ada",
+        "ignacio-ada",
+        "lucia-ada",
+        "04-attention"
+      ],
       "token": "ada-demo-token"
     }
   ],
@@ -71,5 +202,391 @@
       "title": "Backpropagation — base document",
       "type": "note"
     }
-  ]
+  ],
+  "modules": [
+    {
+      "id": "01-perceptron",
+      "index": 1,
+      "slug": "perceptron",
+      "title": "The perceptron",
+      "summary": "The single-unit linear classifier the rest of the course builds on: one weighted sum, one threshold, one straight decision boundary.",
+      "channelId": "01-perceptron",
+      "objectives": [
+        "State the perceptron's decision rule and compute its output for a given input.",
+        "Update a perceptron's weights by hand using the perceptron learning rule.",
+        "Explain why a single perceptron cannot separate a non-linearly-separable dataset like XOR."
+      ],
+      "difficulty": {
+        "level": "intro",
+        "rationale": "The perceptron is the right place to start: one linear boundary, one weight update, and the geometry is visible in two dimensions. Nothing here requires calculus or vectorized notation yet, and everything the cohort has asked about so far is the decision rule's limits, not the mechanics of computing it.",
+        "evidence": [
+          "Every student replicated the OR and AND decision boundaries correctly on the first pass through the material.",
+          "The XOR question in #questions is the only place a limit of the single perceptron has come up — no one has struggled with the update rule itself."
+        ],
+        "suggestedBy": "ada",
+        "setBy": "martin"
+      },
+      "status": "ready",
+      "materials": [
+        {
+          "id": "material-01-perceptron-perceptron",
+          "name": "perceptron.md",
+          "kind": "markdown",
+          "size": 3531,
+          "path": "martin/modules/01-perceptron/perceptron.md",
+          "uploadedAt": "2026-08-04T09:15:00-03:00"
+        }
+      ],
+      "cardIds": []
+    },
+    {
+      "id": "02-mlp",
+      "index": 2,
+      "slug": "mlp",
+      "title": "Multilayer perceptrons",
+      "summary": "Stacking perceptron-like units with a nonlinearity between layers, so the network can represent boundaries a single line never could.",
+      "channelId": "02-mlp",
+      "objectives": [
+        "Describe why stacking linear layers without a nonlinearity collapses to a single linear layer.",
+        "Compute a forward pass through a two-layer MLP by hand, then in matrix form.",
+        "Justify a choice of hidden layer width and depth for a small classification problem."
+      ],
+      "difficulty": {
+        "level": "core",
+        "rationale": "Multilayer perceptrons are where the course moves from one line to a function built from several lines composed with a nonlinearity between them — that composition, not the arithmetic, is what the cohort trips on. The forward-pass formula is easy to copy; trusting what each hidden unit is actually computing is not.",
+        "evidence": [
+          "Assignment 1 needed the scalar forward pass spelled out before the matrix form — Ignacio's report showed the matrix formula was correct with no sense of what a hidden unit was doing.",
+          "Two of three students could write `Z = X @ W + b` but not state the shape of `Z` without checking."
+        ],
+        "suggestedBy": "ada",
+        "setBy": "martin"
+      },
+      "status": "ready",
+      "materials": [
+        {
+          "id": "material-02-mlp-mlp",
+          "name": "mlp.md",
+          "kind": "markdown",
+          "size": 3875,
+          "path": "martin/modules/02-mlp/mlp.md",
+          "uploadedAt": "2026-08-06T09:30:00-03:00"
+        }
+      ],
+      "cardIds": [],
+      "revision": "Revised after Assignment 1 · 2 changes accepted"
+    },
+    {
+      "id": "03-backprop",
+      "index": 3,
+      "slug": "backprop",
+      "title": "Backpropagation",
+      "summary": "The chain rule applied layer by layer to a network, to find how much each weight is responsible for the final error.",
+      "channelId": "03-backprop",
+      "objectives": [
+        "Derive the gradient of the loss with respect to a weight using the chain rule.",
+        "Explain why the derivative of the activation — not the activation itself — appears in the backward pass.",
+        "Identify when gradients vanish or explode across layers and why."
+      ],
+      "difficulty": {
+        "level": "core",
+        "rationale": "Backpropagation itself is mechanical once the chain rule is set up correctly, but that setup is exactly where the cohort is slipping: multiplying by the activation instead of its derivative erases the one place the network can tell how the error should split across a hidden layer.",
+        "evidence": [
+          "2 of 3 students multiplied by σ(z) instead of σ′(z) in Assignment 2.",
+          "Assignment 1 showed partial derivatives are fresh, so the chain rule needed to restate them rather than assume them."
+        ],
+        "suggestedBy": "ada",
+        "setBy": "martin"
+      },
+      "status": "ready",
+      "materials": [
+        {
+          "id": "material-03-backprop-backprop",
+          "name": "backprop.md",
+          "kind": "markdown",
+          "size": 5028,
+          "path": "martin/modules/03-backprop/backprop.md",
+          "uploadedAt": "2026-08-14T08:45:00-03:00"
+        }
+      ],
+      "cardIds": []
+    },
+    {
+      "id": "04-attention",
+      "index": 4,
+      "slug": "attention",
+      "title": "Attention",
+      "summary": "Where the course goes after backprop: attention as a weighted lookup, and why it replaced recurrence.",
+      "channelId": "04-attention",
+      "objectives": [
+        "Compute scaled dot-product attention by hand on a 3-token example",
+        "Explain what the softmax over scores buys over a plain average",
+        "Say in one sentence why attention parallelizes where recurrence cannot"
+      ],
+      "difficulty": {
+        "level": "core"
+      },
+      "status": "empty",
+      "materials": [],
+      "cardIds": []
+    }
+  ],
+  "assignments": [
+    {
+      "id": "assignment-2-backprop",
+      "moduleId": "03-backprop",
+      "channelId": "assignment-2-backprop",
+      "title": "Assignment 2 · Backprop by hand",
+      "due": "2026-08-20",
+      "status": "submitted"
+    }
+  ],
+  "feedback": [
+    {
+      "id": "feedback-sofia-assignment-2",
+      "assignmentId": "assignment-2-backprop",
+      "studentId": "sofia",
+      "agentId": "ada",
+      "score": {
+        "got": 6,
+        "of": 10
+      },
+      "summary": "Sofia's forward pass and loss computation were both correct, and the notation throughout was clean and easy to follow. The submission slips in exactly one place: in layer 2, the chain rule was applied with σ(z) instead of σ′(z), which changes what the backward pass actually computes rather than just shifting a number. Fixing that one substitution closes the gap — everything else in the derivation was sound.",
+      "strengths": [
+        "The forward pass was computed correctly through both layers.",
+        "The loss was computed correctly against the target.",
+        "The notation was clean and consistent throughout the derivation."
+      ],
+      "gaps": [
+        {
+          "moduleId": "03-backprop",
+          "note": "In layer 2 you multiplied by σ(z) instead of σ′(z): the chain rule through the activation needs the derivative.",
+          "cardId": "modules/03-backprop/chain-rule.md"
+        }
+      ],
+      "nextSteps": [
+        {
+          "text": "Reread the chain-rule card and check the σ′(z) closed form against your layer-2 step.",
+          "cardId": "modules/03-backprop/chain-rule.md"
+        },
+        {
+          "text": "Redo the scalar walkthrough by hand with your own numbers before touching the matrix form again.",
+          "cardId": "modules/03-backprop/scalar-walkthrough.md"
+        },
+        {
+          "text": "Once the scalar version is solid, compare it term by term against the vectorized form.",
+          "cardId": "modules/03-backprop/vectorized.md"
+        }
+      ],
+      "ago": "2d"
+    },
+    {
+      "id": "feedback-lucia-assignment-2",
+      "assignmentId": "assignment-2-backprop",
+      "studentId": "lucia",
+      "agentId": "ada",
+      "score": {
+        "got": 5,
+        "of": 10
+      },
+      "summary": "Lucia's submission has the same slip as most of the cohort — σ(z) in place of σ′(z) in the chain rule — plus a second gap upstream in the forward pass, where the hidden and output activation shapes didn't line up once the matrix form was written out. Both are fixable with the same habit: state the derivative and the shape explicitly at each step instead of carrying them along implicitly.",
+      "strengths": [
+        "The forward pass was set up correctly for the given architecture.",
+        "The loss function was applied correctly to the final output."
+      ],
+      "gaps": [
+        {
+          "moduleId": "03-backprop",
+          "note": "σ(z) was used instead of σ′(z) in the chain rule, the same slip as most of the cohort.",
+          "cardId": "modules/03-backprop/chain-rule.md"
+        },
+        {
+          "moduleId": "02-mlp",
+          "note": "The hidden and output activation shapes didn't match when the forward pass was written in matrix form.",
+          "cardId": "modules/02-mlp/forward-pass.md"
+        }
+      ],
+      "nextSteps": [
+        {
+          "text": "Reread the chain-rule card and rework layer 2 with σ′(z) instead of σ(z).",
+          "cardId": "modules/03-backprop/chain-rule.md"
+        },
+        {
+          "text": "Go back to the forward-pass card and state the shape of every activation before computing it.",
+          "cardId": "modules/02-mlp/forward-pass.md"
+        },
+        {
+          "text": "Once both are fixed, redo the vectorized form end to end to confirm the shapes carry through.",
+          "cardId": "modules/03-backprop/vectorized.md"
+        }
+      ],
+      "ago": "2d"
+    },
+    {
+      "id": "feedback-ignacio-assignment-2",
+      "assignmentId": "assignment-2-backprop",
+      "studentId": "ignacio",
+      "agentId": "ada",
+      "score": {
+        "got": 9,
+        "of": 10
+      },
+      "summary": "Ignacio's submission is clean end to end: the forward pass, the chain rule through both activations, and the vectorized form all check out, including the σ′(z) step most of the cohort slipped on. This is the strongest submission on Assignment 2 — there's nothing to fix here, only a stretch exercise if he wants one.",
+      "strengths": [
+        "The forward pass and loss computation were both correct.",
+        "The chain rule correctly used σ′(z), not σ(z), at every layer.",
+        "The vectorized form matched the scalar derivation term by term."
+      ],
+      "gaps": [],
+      "nextSteps": [
+        {
+          "text": "Try deriving the vectorized backward pass for a 3-layer network by hand as a stretch exercise.",
+          "cardId": "modules/03-backprop/vectorized.md"
+        }
+      ],
+      "ago": "2d"
+    }
+  ],
+  "reports": [
+    {
+      "id": "report-ignacio-02-mlp",
+      "agentId": "ada",
+      "studentId": "ignacio",
+      "moduleId": "02-mlp",
+      "told": "I told Ignacio to derive the forward pass for a small MLP by hand, layer by layer, before touching the matrix form — writing out each z and a with real numbers first, then generalizing to Z = X @ W + b. He picked it up quickly, and it closed the gap between knowing the formula and being able to explain what each hidden unit computes.",
+      "recommendations": [
+        {
+          "id": "r1",
+          "text": "Add a worked scalar example of the forward pass before introducing the matrix form."
+        },
+        {
+          "id": "r2",
+          "text": "Include a diagram of how hidden layer width relates to depth for common architectures."
+        },
+        {
+          "id": "r3",
+          "text": "Have students state the shape of each activation vector explicitly before computing it in matrix form."
+        }
+      ],
+      "cardIds": [
+        "modules/02-mlp/forward-pass.md"
+      ],
+      "status": "reconciled",
+      "reconciled": {
+        "at": "2026-08-12T09:00:00-03:00",
+        "by": "martin",
+        "accepted": [
+          "r1",
+          "r3"
+        ],
+        "note": "Added the scalar forward pass before the matrix form.",
+        "cardId": "decisions/02-mlp-revision-assignment-1.md"
+      },
+      "ago": "12d"
+    }
+  ],
+  "messages": [
+    {
+      "id": "m-general-announce",
+      "channelId": "general",
+      "authorId": "martin",
+      "ago": "48h",
+      "text": "Assignment 2 feedback is out. Ada wrote each of you a note on how it went — open My study to read it."
+    },
+    {
+      "id": "m-general-thanks",
+      "channelId": "general",
+      "authorId": "ignacio",
+      "ago": "47h",
+      "text": "Thanks Ada, the note was clear — already rereading the chain-rule card."
+    },
+    {
+      "id": "m-questions-xor-ask",
+      "channelId": "questions",
+      "authorId": "ignacio",
+      "ago": "5d",
+      "text": "Why can't a single perceptron learn XOR? I can get it to learn AND and OR fine, but XOR just won't converge no matter how long I train it."
+    },
+    {
+      "id": "m-questions-xor-answer",
+      "channelId": "questions",
+      "authorId": "ada",
+      "ago": "119h",
+      "fromCard": {
+        "cardPath": "modules/01-perceptron/linear-separability.md",
+        "ago": "9 days ago"
+      },
+      "text": "A single perceptron can only draw one straight decision boundary through the input space, so it can only solve problems where one line (or hyperplane) separates the two classes. AND and OR are both linearly separable — one line puts every positive example on one side — so the perceptron converges on both. [[modules/01-perceptron/linear-separability.md|Linear separability and XOR]] walks through why.\n\nXOR isn't linearly separable: no single straight line separates its positive and negative examples, no matter how the weights are trained. That's not a training problem — it's a limit on what one linear boundary can represent, and it's exactly why a lone perceptron can't solve it. Stacking perceptrons with a nonlinearity between them, which is the next module, is what fixes it."
+    },
+    {
+      "id": "m-questions-xor-thanks",
+      "channelId": "questions",
+      "authorId": "ignacio",
+      "ago": "118h",
+      "text": "That's the one, thanks — makes sense now."
+    },
+    {
+      "id": "m-03-ingest-request",
+      "channelId": "03-backprop",
+      "authorId": "martin",
+      "ago": "9d",
+      "text": "The base document for backprop is up in raw/martin/modules/03-backprop/backprop.md. @Ada, can you ingest it?"
+    },
+    {
+      "id": "m-03-ingest-done",
+      "channelId": "03-backprop",
+      "authorId": "ada",
+      "ago": "215h",
+      "text": "Filed 4 cards from backprop.md into 03-backprop: [[modules/03-backprop/chain-rule.md|Chain rule through the activation]], [[modules/03-backprop/scalar-walkthrough.md|A scalar walkthrough of backprop]], [[modules/03-backprop/vectorized.md|The vectorized form of backprop]], and [[modules/03-backprop/vanishing-gradients.md|Vanishing and exploding gradients]]."
+    },
+    {
+      "id": "m-teachers-ask",
+      "channelId": "teachers",
+      "authorId": "martin",
+      "ago": "26h",
+      "text": "@Ada how did Assignment 2 go overall?"
+    },
+    {
+      "id": "m-teachers-answer",
+      "channelId": "teachers",
+      "authorId": "ada",
+      "ago": "25h",
+      "text": "3 submissions, median score 6/10. The forward pass and the loss computation were solid across the board — the gap is all in the backward pass: 2 of 3 students multiplied by σ(z) instead of σ′(z) when applying the chain rule through the activation.\n\nThat's consistent enough that I think [[modules/03-backprop/chain-rule.md|the chain-rule card]] may be too terse on that one step — it states the rule but doesn't dwell on why the derivative, not the activation, is what carries the gradient. I could expand it with the scalar example front and center if that seems worth doing."
+    },
+    {
+      "id": "m-teachers-reply",
+      "channelId": "teachers",
+      "authorId": "martin",
+      "ago": "24h",
+      "text": "Let's see what the students ask first before we touch the card."
+    },
+    {
+      "id": "m-sofia-note",
+      "channelId": "sofia-ada",
+      "authorId": "ada",
+      "ago": "48h",
+      "text": "Your Assignment 2 feedback is in — 6/10. The forward pass and the loss are clean, and the notation is easy to follow. The one slip: in layer 2 you multiplied by σ(z) instead of σ′(z) when applying the chain rule through the activation, which changes what the backward pass computes. [[modules/03-backprop/chain-rule.md|The chain-rule card]] has the fix, with a worked example.\n\nWant a plan to get ahead in 03-backprop? Just ask."
+    },
+    {
+      "id": "m-sofia-reply",
+      "channelId": "sofia-ada",
+      "authorId": "sofia",
+      "ago": "47h",
+      "text": "Thanks, I'll read it tonight."
+    },
+    {
+      "id": "m-lucia-note",
+      "channelId": "lucia-ada",
+      "authorId": "ada",
+      "ago": "48h",
+      "text": "Your Assignment 2 feedback is in — 5/10. Same slip as most of the cohort: σ(z) instead of σ′(z) in the chain rule ([[modules/03-backprop/chain-rule.md|see here]]), plus a shape mismatch between the hidden and output activations in the forward pass ([[modules/02-mlp/forward-pass.md|see here]]). Ask me anytime for a plan through both."
+    },
+    {
+      "id": "m-ignacio-note",
+      "channelId": "ignacio-ada",
+      "authorId": "ada",
+      "ago": "48h",
+      "text": "Your Assignment 2 feedback is in — 9/10, no gaps this time. If you want a stretch exercise, try deriving the vectorized backward pass for a 3-layer network by hand — [[modules/03-backprop/vectorized.md|this card]] has the layer-by-layer form to check your work against."
+    }
+  ],
+  "wikiCards": true
 }

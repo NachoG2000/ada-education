@@ -5,19 +5,34 @@
    useConnectedCommunity feeds it with the server's snapshot and the WS events.
    Product components don't know which of the two sources is active. */
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from "react"
+import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState, useSyncExternalStore, type ReactNode } from "react"
 import {
   applyEvent,
   connectEvents,
   createThread,
   fetchCommunity,
+  patchModule as patchModuleRest,
   postMessage,
+  reconcileReport as reconcileReportRest,
+  uploadMaterial as uploadMaterialRest,
   type CommunitySnapshot,
   type MessageInput,
   type RunnerInfo,
   type ServerEvent,
 } from "./api"
-import type { Agent, Card, Community, Member, Message, Person, Thread } from "./types"
+import { subscribeToHash } from "./hash"
+import type { Agent, Card, Community, DifficultyLevel, Feedback, Material, Member, Message, Module, Person, Presence, Report, Thread } from "./types"
+
+/** Which of the three top-level screens is showing, decided by the hash
+    (`#modules`, `#home`, anything else → the channel screen). Kept separate
+    from `Panel` (the contextual stack), which stays independent of it. */
+export type View = "channel" | "modules" | "home"
+
+function readView(): View {
+  if (location.hash === "#modules") return "modules"
+  if (location.hash === "#home") return "home"
+  return "channel"
+}
 
 export type Panel =
   | { kind: "thread"; threadId: string }
@@ -46,6 +61,29 @@ interface CommunityCtx {
   runnerInfo: (memberId: string) => RunnerInfo | undefined
   activeChannelId: string
   setActiveChannelId: (id: string) => void
+  /** which top-level screen is showing, read from the hash */
+  view: View
+  /** switches to the channel screen and shows this channel, clearing the hash */
+  showChannel: (id: string) => void
+  /** switches to the modules or home screen by setting the hash */
+  goTo: (view: "modules" | "home") => void
+  /** forgets the local identity and reloads into "who are you?" */
+  switchPerson: () => void
+  /** uploads one material to a module; rejects in demo */
+  uploadMaterial: (moduleId: string, input: { name: string; kind: Material["kind"]; size?: number; text?: string }) => Promise<Module>
+  /** sets a module's difficulty (by hand) and/or objectives; rejects in demo */
+  patchModule: (
+    moduleId: string,
+    input: { difficulty?: { level: DifficultyLevel; rationale?: string }; objectives?: string[] },
+  ) => Promise<Module>
+  /** accepts a subset of a report's recommendations into the module; rejects in demo */
+  reconcileReport: (reportId: string, input: { accepted: string[]; note: string }) => Promise<Report>
+  /** cards in the module's channel, oldest first, base documents excluded */
+  moduleCards: (moduleId: string) => Card[]
+  /** feedback addressed to me, newest first */
+  myFeedback: () => Feedback[]
+  /** a member's live presence; "away" for an id we don't recognize */
+  presenceOf: (memberId: string) => Presence
   panels: Panel[]
   openThread: (threadId: string) => void
   openCard: (cardId: string) => void
@@ -67,6 +105,12 @@ const sendMessageDemo = (): Promise<void> =>
 const startThreadDemo = (): Promise<Thread> =>
   Promise.reject(new Error("You're in demo mode: the threads are the ones in demo.ts. Set VITE_ADA_SERVER to connect to a course."))
 const runnerInfoDemo = (): RunnerInfo | undefined => undefined
+const uploadMaterialDemo = (): Promise<Module> =>
+  Promise.reject(new Error("You're in demo mode: uploading material doesn't go anywhere. Set VITE_ADA_SERVER to connect to a course."))
+const patchModuleDemo = (): Promise<Module> =>
+  Promise.reject(new Error("You're in demo mode: editing a module doesn't go anywhere. Set VITE_ADA_SERVER to connect to a course."))
+const reconcileReportDemo = (): Promise<Report> =>
+  Promise.reject(new Error("You're in demo mode: reconciling a report doesn't go anywhere. Set VITE_ADA_SERVER to connect to a course."))
 
 export function CommunityProvider({
   community,
@@ -78,6 +122,9 @@ export function CommunityProvider({
   sendMessage = sendMessageDemo,
   startThread = startThreadDemo,
   runnerInfo = runnerInfoDemo,
+  uploadMaterial = uploadMaterialDemo,
+  patchModule = patchModuleDemo,
+  reconcileReport = reconcileReportDemo,
   children,
 }: {
   community: Community
@@ -91,8 +138,16 @@ export function CommunityProvider({
   /** creates the thread on the server and folds it into the state; the panel is this provider's job */
   startThread?: (messageId: string) => Promise<Thread>
   runnerInfo?: (memberId: string) => RunnerInfo | undefined
+  /** authorId is added by useConnectedCommunity (it knows the local identity); demo mode rejects */
+  uploadMaterial?: (moduleId: string, input: { name: string; kind: Material["kind"]; size?: number; text?: string }) => Promise<Module>
+  patchModule?: (
+    moduleId: string,
+    input: { difficulty?: { level: DifficultyLevel; rationale?: string }; objectives?: string[] },
+  ) => Promise<Module>
+  reconcileReport?: (reportId: string, input: { accepted: string[]; note: string }) => Promise<Report>
   children: ReactNode
 }) {
+  const view = useSyncExternalStore(subscribeToHash, readView)
   const [activeChannelId, setActiveChannel] = useState(initialChannelId)
   const [panels, setPanels] = useState<Panel[]>(initialPanels)
 
@@ -129,6 +184,32 @@ export function CommunityProvider({
     },
     [mode],
   )
+
+  /** Switches to the channel screen and shows this channel. Clears the hash
+      without pushing a history entry, then tells `useSyncExternalStore`'s
+      subscribers by hand — `replaceState` doesn't fire `hashchange` itself. */
+  const showChannel = useCallback(
+    (id: string) => {
+      setActiveChannelId(id)
+      if (location.hash) {
+        history.replaceState(null, "", location.pathname + location.search)
+        window.dispatchEvent(new HashChangeEvent("hashchange"))
+      }
+    },
+    [setActiveChannelId],
+  )
+
+  /** Switches to the modules or home screen. A real hash change, so it
+      notifies subscribers on its own. */
+  const goTo = useCallback((v: "modules" | "home") => {
+    location.hash = v === "modules" ? "#modules" : "#home"
+  }, [])
+
+  /** Forgets the local identity and reloads into "who are you?". */
+  const switchPerson = useCallback(() => {
+    clearMe()
+    location.reload()
+  }, [])
 
   // The tab title carries the count, so the channel shows up in the tab strip too.
   useEffect(() => {
@@ -190,6 +271,30 @@ export function CommunityProvider({
     [startThread, openThread],
   )
 
+  /** Cards in a module's channel, oldest first, base documents excluded (a
+      module's list reads as the compiled file growing, not the channel's raw
+      base docs). Unknown module id: nothing to show. */
+  const moduleCards = useCallback(
+    (moduleId: string): Card[] => {
+      const mod = community.modules.find((m) => m.id === moduleId)
+      if (!mod) return []
+      return community.cards
+        .filter((c) => c.channelId === mod.channelId && !c.base)
+        .sort((a, b) => a.publishedAt.localeCompare(b.publishedAt))
+    },
+    [community.modules, community.cards],
+  )
+
+  /** Feedback addressed to me, newest first. */
+  const myFeedback = useCallback(
+    (): Feedback[] => community.feedback.filter((f) => f.studentId === community.meId).sort((a, b) => b.at.localeCompare(a.at)),
+    [community.feedback, community.meId],
+  )
+
+  /** A member's live presence; "away" for an id that doesn't resolve (never
+      seen it, so the safest reading is "not here"). */
+  const presenceOf = useCallback((memberId: string): Presence => byId.members.get(memberId)?.presence ?? "away", [byId.members])
+
   const value = useMemo<CommunityCtx>(() => {
     /* Lookups throw on broken ids: an invalid id in demo.ts is a bug we want to
        see head-on. In connected mode the ids come from another process, so two
@@ -214,6 +319,16 @@ export function CommunityProvider({
       me: member(community.meId),
       activeChannelId,
       setActiveChannelId,
+      view,
+      showChannel,
+      goTo,
+      switchPerson,
+      uploadMaterial,
+      patchModule,
+      reconcileReport,
+      moduleCards,
+      myFeedback,
+      presenceOf,
       panels,
       openThread,
       openCard,
@@ -226,7 +341,35 @@ export function CommunityProvider({
       message: (id) => must(byId.messages, id, "message"),
       authorName: (id) => member(id).name,
     }
-  }, [community.meId, communityWithUnread, now, mode, connected, sendMessage, replyInThread, runnerInfo, activeChannelId, setActiveChannelId, panels, byId, openThread, openCard, openAgent, closePanel, popPanel])
+  }, [
+    community.meId,
+    communityWithUnread,
+    now,
+    mode,
+    connected,
+    sendMessage,
+    replyInThread,
+    runnerInfo,
+    activeChannelId,
+    setActiveChannelId,
+    view,
+    showChannel,
+    goTo,
+    switchPerson,
+    uploadMaterial,
+    patchModule,
+    reconcileReport,
+    moduleCards,
+    myFeedback,
+    presenceOf,
+    panels,
+    byId,
+    openThread,
+    openCard,
+    openAgent,
+    closePanel,
+    popPanel,
+  ])
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }
@@ -334,6 +477,12 @@ export type ConnectionState =
       sendMessage: (input: MessageInput) => Promise<void>
       startThread: (messageId: string) => Promise<Thread>
       runnerInfo: (memberId: string) => RunnerInfo | undefined
+      uploadMaterial: (moduleId: string, input: { name: string; kind: Material["kind"]; size?: number; text?: string }) => Promise<Module>
+      patchModule: (
+        moduleId: string,
+        input: { difficulty?: { level: DifficultyLevel; rationale?: string }; objectives?: string[] },
+      ) => Promise<Module>
+      reconcileReport: (reportId: string, input: { accepted: string[]; note: string }) => Promise<Report>
     }
 
 /** The connected source: hydrates with GET /api/community, applies WS events
@@ -468,6 +617,32 @@ export function useConnectedCommunity(server: string): ConnectionState {
   const runners = live?.runners
   const runnerInfo = useCallback((memberId: string) => runners?.[memberId], [runners])
 
+  /* The three module/report REST calls, the same shape as `sendMessage`
+     above: this hook knows the local identity, so it's the one that adds
+     `authorId`; the context methods (community.tsx's provider) pass the rest
+     of the input straight through. */
+  const uploadMaterial = useCallback(
+    async (moduleId: string, input: { name: string; kind: Material["kind"]; size?: number; text?: string }) => {
+      if (!meId) throw new Error("You haven't chosen who you are yet.")
+      return uploadMaterialRest(server, moduleId, { ...input, authorId: meId })
+    },
+    [server, meId],
+  )
+  const patchModule = useCallback(
+    async (moduleId: string, input: { difficulty?: { level: DifficultyLevel; rationale?: string }; objectives?: string[] }) => {
+      if (!meId) throw new Error("You haven't chosen who you are yet.")
+      return patchModuleRest(server, moduleId, { ...input, authorId: meId })
+    },
+    [server, meId],
+  )
+  const reconcileReport = useCallback(
+    async (reportId: string, input: { accepted: string[]; note: string }) => {
+      if (!meId) throw new Error("You haven't chosen who you are yet.")
+      return reconcileReportRest(server, reportId, { ...input, authorId: meId })
+    },
+    [server, meId],
+  )
+
   const community = useMemo<Community | null>(
     () => (live && meId !== null ? { ...live.snapshot, meId } : null),
     [live, meId],
@@ -496,12 +671,21 @@ export function useConnectedCommunity(server: string): ConnectionState {
     sendMessage,
     startThread,
     runnerInfo,
+    uploadMaterial,
+    patchModule,
+    reconcileReport,
   }
 }
 
 /** A card is "new" during the first 24 h since it was published. */
 export function isNew(card: Card, now: Date) {
   return card.state === "new" && now.getTime() - new Date(card.publishedAt).getTime() < 24 * 3600 * 1000
+}
+
+/** The role gate, in one place: the sidebar entry, the screen redirect and any
+    copy that names the teacher all ask this same question. */
+export function isTeacher(m: Member): m is Person & { role: "teacher" } {
+  return m.kind === "person" && m.role === "teacher"
 }
 
 export function isAgent(m: Member): m is Agent {

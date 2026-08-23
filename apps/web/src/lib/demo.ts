@@ -186,6 +186,10 @@ export const demo: Community = {
   subtitle: "Term 2 2026 · 31 members",
   initial: "N",
   meId: "sofia",
+  modules: [],
+  assignments: [],
+  feedback: [],
+  reports: [],
   members: [
     { kind: "person", id: "martin", name: "Martin", initials: "M", tone: "red-soft", role: "teacher", presence: "online" },
     {

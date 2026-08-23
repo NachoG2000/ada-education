@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "sequence": 4,
+  "previousDigest": "sha256:5f56108f8e1fdecd07d0dee8552030520be753e14b572cc994a9a055e15a841a",
+  "actor": "agent",
+  "type": "transition",
+  "summary": "Plan: 1 protocol task, six parallel implementation slices (server, seed content, web plumbing, modules page, study page, scripted runtime), integration/evidence and docs, each mapped to acceptance criteria",
+  "createdAt": "2026-08-23T07:36:23.848Z",
+  "stateBeforeDigest": "sha256:8f3e23caf668a3e4ac9379afd5d206965a8bdab78de4945fe101ba9975cbb675",
+  "stateAfterDigest": "sha256:fa3e542a015b951aef8b0af687296d5e5a341630ee93cb3d329e66a273ece1f6",
+  "state": {
+    "schemaVersion": 5,
+    "revision": 4,
+    "activeFeature": "build-the-hackathon-demo-flow-for-ada-one-teacher-fully",
+    "request": "Build the hackathon demo flow for Ada (one teacher, fully local, everything mocked but convincing):\n(1) Teacher (Martin) loads modules and study material on a dedicated full page, with a difficulty level adapted to the course and its students; the course agent (Ada) derives the adequate study plan from the material plus student context.\n(2) Student (Sofia) logs in and sees the agent's feedback on her last assignment; if she failed module X she can learn that module; she asks the agent how to advance and prioritize in module X and gets a plan.\n(3) The agent notifies the teacher what it told the student and what it recommended.\n(4) The teacher sees that report and reconciles it, improving the subject without leaving its learning goals.\nMock: pressing Enter must produce a context-aware scripted agent response with a realistic delay, and prior seeded conversation so it doesn't feel empty or hardcoded.",
+    "profile": "complex",
+    "workflow": "complex",
+    "mode": "normal",
+    "phase": "implement",
+    "status": "waiting",
+    "repairAttempts": 0,
+    "message": "Plan: 1 protocol task, six parallel implementation slices (server, seed content, web plumbing, modules page, study page, scripted runtime), integration/evidence and docs, each mapped to acceptance criteria",
+    "implementationActor": null,
+    "specDigest": "sha256:e715bb9f81378d19838d16870686eebead495c581dc9c26e76432ff7b33c31d2",
+    "approvedSpecRevision": 2,
+    "capabilityArchiveRequired": true,
+    "capabilityDeltaDigest": "sha256:d1f53a6b659bcf6d08fe1043d38ef72cc020e33e4a4c6960b5ae8c94d2f425df",
+    "impactDigest": "sha256:5c0c1b94f4c4c0b57408884fcfa95660c9af91efd879b52a881f2882341176cd",
+    "capabilityClaimId": "build-the-hackathon-demo-flow-for-ada-one-teacher-fully-57609fad9478",
+    "authorizationDigest": null,
+    "evidence": [],
+    "evidenceReceiptIds": [],
+    "legacyEvidenceCount": 0,
+    "completion": {
+      "implemented": false,
+      "verified": false,
+      "integrated": false,
+      "delivered": false,
+      "published": false,
+      "highest": "none",
+      "reasons": {
+        "implemented": "implemented has not been proven by a durable receipt.",
+        "verified": "verified has not been proven by a durable receipt.",
+        "integrated": "integrated has not been proven by a durable receipt.",
+        "delivered": "delivered has not been proven by a durable receipt.",
+        "published": "published has not been proven by a durable receipt."
+      }
+    },
+    "updatedAt": "2026-08-23T07:36:23.848Z"
+  },
+  "digest": "sha256:a8bf6345bae3b3011a872b0e500c8687d5e6ab4d55c80239aee2779b0edfa322"
+}

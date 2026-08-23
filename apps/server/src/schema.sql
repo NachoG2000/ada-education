@@ -81,3 +81,64 @@ CREATE TABLE IF NOT EXISTS cards (
   body TEXT NOT NULL,
   UNIQUE (author_id, path)
 );
+
+/* ---- Modules, assignments, feedback and reports (DECISIONS.md §16) ------- */
+
+CREATE TABLE IF NOT EXISTS modules (
+  id TEXT PRIMARY KEY,
+  idx INTEGER NOT NULL,
+  slug TEXT NOT NULL,
+  title TEXT NOT NULL,
+  summary TEXT NOT NULL,
+  channel_id TEXT NOT NULL REFERENCES channels(id),
+  objectives TEXT NOT NULL,
+  difficulty TEXT NOT NULL,
+  status TEXT NOT NULL,
+  revision TEXT
+);
+
+CREATE TABLE IF NOT EXISTS materials (
+  id TEXT PRIMARY KEY,
+  module_id TEXT NOT NULL REFERENCES modules(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  kind TEXT NOT NULL,
+  size INTEGER,
+  path TEXT NOT NULL,
+  uploaded_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS materials_module ON materials(module_id);
+
+CREATE TABLE IF NOT EXISTS assignments (
+  id TEXT PRIMARY KEY,
+  module_id TEXT NOT NULL REFERENCES modules(id),
+  channel_id TEXT NOT NULL REFERENCES channels(id),
+  title TEXT NOT NULL,
+  due TEXT NOT NULL,
+  status TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS feedback (
+  id TEXT PRIMARY KEY,
+  assignment_id TEXT NOT NULL REFERENCES assignments(id),
+  student_id TEXT NOT NULL REFERENCES members(id),
+  agent_id TEXT NOT NULL REFERENCES members(id),
+  at TEXT NOT NULL,
+  body TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS feedback_student ON feedback(student_id);
+
+CREATE TABLE IF NOT EXISTS reports (
+  id TEXT PRIMARY KEY,
+  agent_id TEXT NOT NULL REFERENCES members(id),
+  student_id TEXT NOT NULL REFERENCES members(id),
+  module_id TEXT NOT NULL REFERENCES modules(id),
+  assignment_id TEXT REFERENCES assignments(id),
+  at TEXT NOT NULL,
+  body TEXT NOT NULL,
+  status TEXT NOT NULL,
+  reconciled TEXT
+);
+
+CREATE INDEX IF NOT EXISTS reports_student ON reports(student_id);

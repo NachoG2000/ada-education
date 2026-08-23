@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "sequence": 9,
+  "previousDigest": "sha256:0329eb5973f2593f45007013d9bfa101da8164bbed76d8c8b9d4e218fb025ad2",
+  "actor": "agent",
+  "type": "transition",
+  "summary": "Review fixes applied: material name sanitized (basename + charset + raw-root containment) closing the path traversal; teacher gate (403) on materials upload, module PATCH and report reconcile so setBy is always a teacher; teacher folder derived from authorId instead of hardcoded martin/; shared isTeacher helper used by the gate, the sidebar and the study copy; one hash subscription (lib/hash.ts); shared formatAgo/LEVEL_LABEL (lib/format.ts); dead comments removed; ModuleList counts computed once per cards change; listModules batched (3 queries total, no N+1); server check scripts share scripts/lib.ts; AGENTS.md notes for check:seed/check:e2e/check:scripted. All checks re-run green (typecheck, server/runner tsc, seed/scripted/e2e/smoke/docs, build; lint +1 known-category warning for the isTeacher export).",
+  "createdAt": "2026-08-23T08:44:56.933Z",
+  "stateBeforeDigest": "sha256:bf25c995564244a83c56e29cc67f0bda36a6a623756079abbd3c5b9884a5e6c5",
+  "stateAfterDigest": "sha256:3621c1fe62397d613b9957785950718b1359505b823563fcb26906eba0f6cd2d",
+  "state": {
+    "schemaVersion": 5,
+    "revision": 9,
+    "activeFeature": "build-the-hackathon-demo-flow-for-ada-one-teacher-fully",
+    "request": "Build the hackathon demo flow for Ada (one teacher, fully local, everything mocked but convincing):\n(1) Teacher (Martin) loads modules and study material on a dedicated full page, with a difficulty level adapted to the course and its students; the course agent (Ada) derives the adequate study plan from the material plus student context.\n(2) Student (Sofia) logs in and sees the agent's feedback on her last assignment; if she failed module X she can learn that module; she asks the agent how to advance and prioritize in module X and gets a plan.\n(3) The agent notifies the teacher what it told the student and what it recommended.\n(4) The teacher sees that report and reconciles it, improving the subject without leaving its learning goals.\nMock: pressing Enter must produce a context-aware scripted agent response with a realistic delay, and prior seeded conversation so it doesn't feel empty or hardcoded.",
+    "profile": "complex",
+    "workflow": "complex",
+    "mode": "normal",
+    "phase": "context",
+    "status": "waiting",
+    "repairAttempts": 1,
+    "message": "Review fixes applied: material name sanitized (basename + charset + raw-root containment) closing the path traversal; teacher gate (403) on materials upload, module PATCH and report reconcile so setBy is always a teacher; teacher folder derived from authorId instead of hardcoded martin/; shared isTeacher helper used by the gate, the sidebar and the study copy; one hash subscription (lib/hash.ts); shared formatAgo/LEVEL_LABEL (lib/format.ts); dead comments removed; ModuleList counts computed once per cards change; listModules batched (3 queries total, no N+1); server check scripts share scripts/lib.ts; AGENTS.md notes for check:seed/check:e2e/check:scripted. All checks re-run green (typecheck, server/runner tsc, seed/scripted/e2e/smoke/docs, build; lint +1 known-category warning for the isTeacher export).",
+    "implementationActor": "agent",
+    "specDigest": "sha256:e715bb9f81378d19838d16870686eebead495c581dc9c26e76432ff7b33c31d2",
+    "approvedSpecRevision": 2,
+    "capabilityArchiveRequired": true,
+    "capabilityDeltaDigest": "sha256:d1f53a6b659bcf6d08fe1043d38ef72cc020e33e4a4c6960b5ae8c94d2f425df",
+    "impactDigest": "sha256:5c0c1b94f4c4c0b57408884fcfa95660c9af91efd879b52a881f2882341176cd",
+    "capabilityClaimId": "build-the-hackathon-demo-flow-for-ada-one-teacher-fully-57609fad9478",
+    "authorizationDigest": null,
+    "evidence": [],
+    "evidenceReceiptIds": [],
+    "legacyEvidenceCount": 0,
+    "completion": {
+      "implemented": true,
+      "verified": false,
+      "integrated": false,
+      "delivered": false,
+      "published": false,
+      "highest": "implemented",
+      "reasons": {
+        "verified": "verified has not been proven by a durable receipt.",
+        "integrated": "integrated has not been proven by a durable receipt.",
+        "delivered": "delivered has not been proven by a durable receipt.",
+        "published": "published has not been proven by a durable receipt."
+      }
+    },
+    "updatedAt": "2026-08-23T08:44:56.933Z"
+  },
+  "digest": "sha256:fa49560bc225f41682ec836df2eb7c8fe07f68cdd55fd51f45dfbd969c81735b"
+}

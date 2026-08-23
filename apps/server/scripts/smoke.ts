@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs"
+import { resolve } from "node:path"
 import { WebSocket } from "ws"
 
 const baseUrl = process.env.ADA_SERVER_URL ?? "http://localhost:8787"
@@ -64,6 +66,124 @@ async function post(path: string, body: unknown): Promise<JsonObject> {
   const value = (await response.json()) as JsonObject
   if (!response.ok) throw new Error(`REST ${response.status}: ${JSON.stringify(value)}`)
   return value
+}
+
+async function patch(path: string, body: unknown): Promise<JsonObject> {
+  const response = await fetch(`${baseUrl}${path}`, {
+    method: "PATCH",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  })
+  const value = (await response.json()) as JsonObject
+  if (!response.ok) throw new Error(`REST ${response.status}: ${JSON.stringify(value)}`)
+  return value
+}
+
+async function get(path: string): Promise<JsonObject> {
+  const response = await fetch(`${baseUrl}${path}`)
+  const value = (await response.json()) as JsonObject
+  if (!response.ok) throw new Error(`REST ${response.status}: ${JSON.stringify(value)}`)
+  return value
+}
+
+/** Modules/materials/reports checks (design.md §8): PATCH difficulty, a material upload that triggers
+    an ingest mention, and a report (filed here over the runner socket) reconciled into a decision card.
+    Everything it writes lands in the course/DB it runs against: run it through `npm run smoke`, which
+    uses a throwaway copy of the course, not the demo's. */
+async function moduleAndReportChecks(client: WebSocket, runner: WebSocket): Promise<void> {
+  const snapshot = await get("/api/community")
+  for (const key of ["modules", "assignments", "feedback", "reports"]) {
+    if (!Array.isArray(snapshot[key])) throw new Error(`snapshot is missing array "${key}"`)
+  }
+  const modules = snapshot.modules as JsonObject[]
+  if (modules.length === 0) throw new Error("no modules to exercise module/report checks against")
+  const targetModule = modules[0]
+  const moduleId = String(targetModule.id)
+
+  const moduleUpdated = next(client, (event) => {
+    if (event.type !== "module.updated") return false
+    const module = (event.payload as JsonObject | undefined)?.module as JsonObject | undefined
+    const difficulty = module?.difficulty as JsonObject | undefined
+    return module?.id === moduleId && difficulty?.level === "advanced"
+  }, "module.updated after PATCH")
+  const patched = await patch(`/api/modules/${moduleId}`, {
+    difficulty: { level: "advanced", rationale: "Smoke test override" },
+    authorId: "martin",
+  })
+  const patchedDifficulty = patched.difficulty as JsonObject | undefined
+  if (patchedDifficulty?.level !== "advanced") throw new Error("PATCH /api/modules did not apply difficulty.level")
+  if (patchedDifficulty?.setBy !== "martin") throw new Error("PATCH /api/modules did not set difficulty.setBy")
+  await moduleUpdated
+
+  const materialName = `smoke-${Date.now()}.md`
+  const messageCreated = next(client, (event) => {
+    if (event.type !== "message.created") return false
+    const message = (event.payload as JsonObject | undefined)?.message as JsonObject | undefined
+    return message?.channelId === targetModule.channelId
+  }, "message.created for the material ingest mention")
+  const mentionEvent = next(runner, (event) => event.type === "agent.mention"
+    && (event.payload as JsonObject | undefined)?.intent === "ingest"
+    && (event.payload as JsonObject | undefined)?.moduleId === moduleId, "agent.mention with the ingest hint")
+  const uploaded = await post(`/api/modules/${moduleId}/materials`, {
+    name: materialName,
+    kind: "markdown",
+    text: "# Smoke material\n\nUploaded by the smoke test.",
+    authorId: "martin",
+  })
+  if (uploaded.status !== "compiling") throw new Error("material upload did not set module status to compiling")
+  const materials = uploaded.materials as JsonObject[]
+  if (!materials.some((item) => item.name === materialName)) throw new Error("material upload did not append the material")
+  await messageCreated
+  await mentionEvent
+  const courseDir = resolve(process.cwd(), process.env.ADA_COURSE ?? "data/neural-networks-2026")
+  const writtenPath = resolve(courseDir, "raw/martin/modules", moduleId, materialName)
+  if (!existsSync(writtenPath)) throw new Error(`material upload did not write ${writtenPath}`)
+
+  // The report to reconcile is filed by this script over the runner socket, the
+  // way a runtime does it: the seeded course doesn't need a pending one.
+  const reportRef = `smoke-report-${Date.now()}`
+  const reportAck = next(runner, (event) => event.type === "ack" && event.ref === reportRef, "ack for report.create")
+  const reportCreated = next(client, (event) => event.type === "report.updated"
+    && ((event.payload as JsonObject | undefined)?.report as JsonObject | undefined)?.status === "new", "report.updated after report.create")
+  runner.send(JSON.stringify({
+    type: "report.create",
+    ref: reportRef,
+    payload: {
+      studentId: "sofia",
+      moduleId,
+      told: "Smoke test: what the agent told the student.",
+      recommendations: [{ id: "r1", text: "Smoke recommendation one" }, { id: "r2", text: "Smoke recommendation two" }],
+      cardIds: [],
+    },
+  }))
+  const ack = await reportAck
+  if (ack.ok !== true || !(ack.report as JsonObject | undefined)?.id) throw new Error("report.create was not acknowledged with a report")
+  const pendingReport = (await reportCreated).payload as JsonObject
+  const pendingReportObj = pendingReport.report as JsonObject
+  const recommendations = pendingReportObj.recommendations as JsonObject[]
+  const acceptedIds = recommendations.slice(0, 1).map((rec) => String(rec.id))
+  const cardPublished = next(client, (event) => {
+    if (event.type !== "card.published") return false
+    const card = (event.payload as JsonObject | undefined)?.card as JsonObject | undefined
+    return card?.type === "decision"
+  }, "card.published for the reconcile decision")
+  const reportUpdated = next(client, (event) => {
+    if (event.type !== "report.updated") return false
+    const report = (event.payload as JsonObject | undefined)?.report as JsonObject | undefined
+    return report?.id === pendingReportObj.id && report?.status === "reconciled"
+  }, "report.updated after reconcile")
+  const reconciled = await post(`/api/reports/${pendingReportObj.id}/reconcile`, {
+    accepted: acceptedIds,
+    note: "Smoke test reconciliation.",
+    authorId: "martin",
+  })
+  if (reconciled.status !== "reconciled") throw new Error("reconcile did not mark the report reconciled")
+  const reconciledInfo = reconciled.reconciled as JsonObject | undefined
+  if (!reconciledInfo?.cardId) throw new Error("reconcile did not record the decision card id")
+  await cardPublished
+  await reportUpdated
+
+  console.log("Smoke OK (modules/reports): PATCH difficulty, material upload with ingest mention, and report reconcile with a decision card.")
 }
 
 async function main(): Promise<void> {
@@ -167,6 +287,8 @@ async function main(): Promise<void> {
   if (!createdEventMessage || createdEventMessage.id !== citedMessage.id) {
     throw new Error("message.created does not match the ACK's message")
   }
+
+  await moduleAndReportChecks(client, runner)
 
   const offline = next(client, (event) =>
     event.type === "member.presence"

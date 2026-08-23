@@ -79,6 +79,7 @@ export const cardSchema = z.object({
   state: z.enum(["new", "updated", "superseded", "compiling"]).optional(),
   publishedAt: z.string(),
   body: z.string(),
+  path: z.string().optional(),
 })
 
 export const channelSchema = z.object({
@@ -95,6 +96,106 @@ export const channelSchema = z.object({
   unread: z.boolean().optional(),
 })
 
+/* ---- Modules, assignments, feedback, reports (DECISIONS.md §18) ------------ */
+
+export const difficultyLevelSchema = z.enum(["intro", "core", "advanced"])
+export const moduleStatusSchema = z.enum(["empty", "compiling", "ready"])
+
+export const materialSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  kind: z.enum(["markdown", "pdf", "slides", "link"]),
+  size: z.number().optional(),
+  path: z.string(),
+  uploadedAt: z.string(),
+})
+
+export const difficultySchema = z.object({
+  level: difficultyLevelSchema,
+  rationale: z.string().optional(),
+  evidence: z.array(z.string()).optional(),
+  suggestedBy: z.string().optional(),
+  setBy: z.string().optional(),
+})
+
+export const moduleSchema = z.object({
+  id: z.string(),
+  index: z.number(),
+  slug: z.string(),
+  title: z.string(),
+  summary: z.string(),
+  channelId: z.string(),
+  objectives: z.array(z.string()),
+  difficulty: difficultySchema,
+  status: moduleStatusSchema,
+  materials: z.array(materialSchema),
+  cardIds: z.array(z.string()),
+  revision: z.string().optional(),
+})
+
+export const assignmentSchema = z.object({
+  id: z.string(),
+  moduleId: z.string(),
+  channelId: z.string(),
+  title: z.string(),
+  due: z.string(),
+  status: z.enum(["active", "submitted", "archived"]),
+})
+
+export const feedbackSchema = z.object({
+  id: z.string(),
+  assignmentId: z.string(),
+  studentId: z.string(),
+  agentId: z.string(),
+  at: z.string(),
+  score: z.object({ got: z.number(), of: z.number() }),
+  summary: z.string(),
+  strengths: z.array(z.string()),
+  gaps: z.array(z.object({ moduleId: z.string(), note: z.string(), cardId: z.string().optional() })),
+  nextSteps: z.array(z.object({ text: z.string(), cardId: z.string().optional() })),
+})
+
+export const reportSchema = z.object({
+  id: z.string(),
+  agentId: z.string(),
+  studentId: z.string(),
+  moduleId: z.string(),
+  assignmentId: z.string().optional(),
+  at: z.string(),
+  told: z.string(),
+  recommendations: z.array(z.object({ id: z.string(), text: z.string() })),
+  cardIds: z.array(z.string()),
+  status: z.enum(["new", "reconciled"]),
+  reconciled: z.object({
+    at: z.string(),
+    by: z.string(),
+    accepted: z.array(z.string()),
+    note: z.string(),
+    cardId: z.string(),
+  }).optional(),
+})
+
+/** What a runner sends after compiling a module: a suggested difficulty (the teacher's hand-set level wins). */
+export const moduleSuggestInputSchema = z.object({
+  moduleId: z.string(),
+  status: moduleStatusSchema.optional(),
+  difficulty: z.object({
+    level: difficultyLevelSchema,
+    rationale: z.string(),
+    evidence: z.array(z.string()).default([]),
+  }),
+})
+
+/** What a runner files to the teacher after advising a student. */
+export const reportCreateInputSchema = z.object({
+  studentId: z.string(),
+  moduleId: z.string(),
+  assignmentId: z.string().optional(),
+  told: z.string(),
+  recommendations: z.array(z.object({ id: z.string(), text: z.string() })),
+  cardIds: z.array(z.string()).default([]),
+})
+
 /** Snapshot that hydrates the web client; each local client decides its own `meId`. */
 export const communitySnapshotSchema = z.object({
   id: z.string(),
@@ -106,6 +207,10 @@ export const communitySnapshotSchema = z.object({
   cards: z.array(cardSchema),
   messages: z.array(messageSchema),
   threads: z.array(threadSchema),
+  modules: z.array(moduleSchema),
+  assignments: z.array(assignmentSchema),
+  feedback: z.array(feedbackSchema),
+  reports: z.array(reportSchema),
 })
 
 export const cardPublishInputSchema = z.object({
@@ -142,7 +247,21 @@ export const serverEventSchema = z.discriminatedUnion("type", [
       model: z.string().optional(),
     }),
   }),
+  z.object({
+    type: z.literal("module.updated"),
+    payload: z.object({ module: moduleSchema }),
+  }),
+  z.object({
+    type: z.literal("feedback.created"),
+    payload: z.object({ feedback: feedbackSchema }),
+  }),
+  z.object({
+    type: z.literal("report.updated"),
+    payload: z.object({ report: reportSchema }),
+  }),
 ])
+
+export const mentionIntentSchema = z.enum(["ingest", "plan", "question"])
 
 export const runnerServerMessageSchema = z.discriminatedUnion("type", [
   z.object({
@@ -153,6 +272,9 @@ export const runnerServerMessageSchema = z.discriminatedUnion("type", [
       message: messageSchema,
       from: memberSchema,
       context: z.array(messageSchema),
+      /** what the server already knows about the mention (an upload-triggered ingest names its module) */
+      intent: mentionIntentSchema.optional(),
+      moduleId: z.string().optional(),
     }),
   }),
 ])
@@ -182,6 +304,16 @@ export const runnerClientMessageSchema = z.discriminatedUnion("type", [
     ref: z.string(),
     payload: cardPublishInputSchema,
   }),
+  z.object({
+    type: z.literal("module.suggest"),
+    ref: z.string(),
+    payload: moduleSuggestInputSchema,
+  }),
+  z.object({
+    type: z.literal("report.create"),
+    ref: z.string(),
+    payload: reportCreateInputSchema,
+  }),
 ])
 
 const ackSuccessSchema = z.object({
@@ -190,6 +322,8 @@ const ackSuccessSchema = z.object({
   ok: z.literal(true),
   message: messageSchema.optional(),
   card: cardSchema.optional(),
+  report: reportSchema.optional(),
+  module: moduleSchema.optional(),
 })
 
 const ackErrorSchema = z.object({
@@ -207,3 +341,6 @@ export type RunnerServerMessage = z.infer<typeof runnerServerMessageSchema>
 export type RunnerClientMessage = z.infer<typeof runnerClientMessageSchema>
 export type CardPublishInput = z.infer<typeof cardPublishInputSchema>
 export type Ack = z.infer<typeof ackSchema>
+export type ModuleSuggestInput = z.infer<typeof moduleSuggestInputSchema>
+export type ReportCreateInput = z.infer<typeof reportCreateInputSchema>
+export type MentionIntent = z.infer<typeof mentionIntentSchema>

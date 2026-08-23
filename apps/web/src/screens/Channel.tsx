@@ -15,11 +15,13 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable"
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
-import { panelKey, useCommunity } from "@/lib/community"
+import { isTeacher, panelKey, useCommunity } from "@/lib/community"
 import { CardRow, ChannelActions, ChannelHeader, Composer, Conversation } from "@/components/ada/channel"
 import { Folder, FolderTab } from "@/components/ada/folder"
 import { PanelBroken, PanelStack } from "@/components/ada/panel"
 import { ErrorBoundary } from "@/components/ada/boundary"
+import { ModulesScreen } from "./Modules"
+import { StudyScreen } from "./Study"
 
 const LAYOUT_KEY = "ada:layout:channel"
 const PANEL_IDS = ["channel", "context"]
@@ -54,10 +56,25 @@ function discardLayout() {
 }
 
 export function ChannelScreen() {
-  const { community, activeChannelId, now, panels, card, member } = useCommunity()
+  const { community, activeChannelId, now, panels, card, member, view, me } = useCommunity()
   const defaultLayout = useMemo(() => readLayout(), [])
   const hasContext = panels.length > 0
   const channel = community.channels.find((c) => c.id === activeChannelId) ?? community.channels[0]
+
+  /* Role gate: Modules is the teacher's screen, home is the student's. Caught
+     here rather than in app-sidebar (which only controls what's clickable) so
+     a bookmarked or typed hash can't land the wrong role on the wrong screen.
+     `location.replace` (no history entry) fixes the hash; until the effect
+     runs and the hash updates `view`, the safer of the two screens renders —
+     a teacher glimpsing "My study" for a frame is harmless, a student
+     glimpsing the teacher's Modules screen is not. */
+  const wrongViewForStudent = view === "modules" && !isTeacher(me)
+  const wrongViewForTeacher = view === "home" && isTeacher(me)
+  useEffect(() => {
+    if (wrongViewForStudent) location.replace("#home")
+    else if (wrongViewForTeacher) location.replace("#modules")
+  }, [wrongViewForStudent, wrongViewForTeacher])
+  const effectiveView = wrongViewForStudent || wrongViewForTeacher ? "home" : view
   /* Stable reference: without this, opening a card or a thread (which only
      changes `panels`) returned a new array and Conversation's auto-scroll threw
      the conversation to the bottom even while the user was reading further up. */
@@ -105,7 +122,8 @@ export function ChannelScreen() {
       {/* Same position as SidebarInset: margin 8, no left margin; inside, two resizable inset panels. */}
       <div className="relative flex h-svh min-w-0 flex-1 flex-col p-2 md:pl-0">
         <h1 className="sr-only">
-          {community.name} · channel #{channel.name}
+          {community.name} ·{" "}
+          {effectiveView === "modules" ? "Modules" : effectiveView === "home" ? "My study" : `channel #${channel.name}`}
         </h1>
         <div aria-live="polite" aria-atomic="true" className="sr-only">
           {announcement}
@@ -130,20 +148,26 @@ export function ChannelScreen() {
               the one that gives. */}
           <ResizablePanel id="channel" defaultSize="62" minSize={420} className="min-w-0">
             <main className="h-full min-h-0">
-              <Folder
-                tabs={
-                  <FolderTab active>
-                    <span className="mr-0.5 font-normal text-ink-3">#</span>
-                    {channel.name}
-                  </FolderTab>
-                }
-                actions={<ChannelActions channel={channel} />}
-              >
-                <ChannelHeader channel={channel} />
-                <CardRow channel={channel} />
-                <Conversation channel={channel} messages={messages} />
-                <Composer placeholder={`Write in #${channel.name}… @Ada to ask her something directly`} />
-              </Folder>
+              {effectiveView === "modules" ? (
+                <ModulesScreen />
+              ) : effectiveView === "home" ? (
+                <StudyScreen />
+              ) : (
+                <Folder
+                  tabs={
+                    <FolderTab active>
+                      <span className="mr-0.5 font-normal text-ink-3">#</span>
+                      {channel.name}
+                    </FolderTab>
+                  }
+                  actions={<ChannelActions channel={channel} />}
+                >
+                  <ChannelHeader channel={channel} />
+                  <CardRow channel={channel} />
+                  <Conversation channel={channel} messages={messages} />
+                  <Composer placeholder={`Write in #${channel.name}… @Ada to ask her something directly`} />
+                </Folder>
+              )}
             </main>
           </ResizablePanel>
           {/* With no thread or card open, the channel takes the full width. */}

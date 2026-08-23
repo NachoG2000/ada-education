@@ -1,0 +1,1193 @@
+{
+  "schemaVersion": 2,
+  "generator": "empirical-0.27.0",
+  "sourceDigest": "sha256:04eda51716ed00b53dbd3018bd39604f02752e13cdf777690c3f817c58de2693",
+  "files": [
+    {
+      "path": ".agents/skills/.openspec-target",
+      "size": 6,
+      "digest": "sha256:243b0dc9b847e66c440dca985e10fe0ce9e29c379b018ddd5747ba8948f84cc8"
+    },
+    {
+      "path": ".agents/skills/openspec-apply-change/SKILL.md",
+      "size": 8423,
+      "digest": "sha256:9a8c4451009e64f6b8ad0e8e382afb5ad0ff74e262be9e6486ae4d9cc67827cb"
+    },
+    {
+      "path": ".agents/skills/openspec-archive-change/SKILL.md",
+      "size": 10731,
+      "digest": "sha256:c6bedae20cf8de2af4c76b742a09782d820e9f586a9c0b41bbbbf4483361286c"
+    },
+    {
+      "path": ".agents/skills/openspec-explore/SKILL.md",
+      "size": 16281,
+      "digest": "sha256:e30095eb3baa9870935826f752204ea72e0b1e76bf06952f555287423a2c601b"
+    },
+    {
+      "path": ".agents/skills/openspec-propose/SKILL.md",
+      "size": 11345,
+      "digest": "sha256:9c57136297e26a183046d33a555a9e7a9bbe7752b77486e94338e34810ce2ef4"
+    },
+    {
+      "path": ".agents/skills/openspec-sync-specs/SKILL.md",
+      "size": 12554,
+      "digest": "sha256:169a351444e4039e52c95790c47e5c84d70bf37165e0b4e09fe528e58a56b899"
+    },
+    {
+      "path": ".agents/skills/openspec-update-change/SKILL.md",
+      "size": 7502,
+      "digest": "sha256:5f2890abe9714b76cb914211a7f4f9ea44e260c32cc065c405ed378859646440"
+    },
+    {
+      "path": ".claude/commands/opsx/apply.md",
+      "size": 8039,
+      "digest": "sha256:6e6c33442d74aca44bcbcbee71deccdc28efaa6c3484b5877d62bbbea460f315"
+    },
+    {
+      "path": ".claude/commands/opsx/archive.md",
+      "size": 11491,
+      "digest": "sha256:ec3ebf753601ab1107a77e88decabc87b971e61896292ec7dfb252db51998c72"
+    },
+    {
+      "path": ".claude/commands/opsx/explore.md",
+      "size": 12264,
+      "digest": "sha256:386041eaffb09c1efbc080ca390bccd2112a95d3692b72223765582d6d1cb58d"
+    },
+    {
+      "path": ".claude/commands/opsx/propose.md",
+      "size": 11066,
+      "digest": "sha256:66945fbaf81870787bfabadb50e9c182ae55e606b6d411e590205850ecdb410e"
+    },
+    {
+      "path": ".claude/commands/opsx/sync.md",
+      "size": 12377,
+      "digest": "sha256:f2d9729161cd9f6f8abf813e91b52ec533e96acd7d8adf04b308c0b14d7db47a"
+    },
+    {
+      "path": ".claude/commands/opsx/update.md",
+      "size": 6661,
+      "digest": "sha256:8cc619740136c8aef229844134afd3f5de818cce2aaa05a6f0ff3d2ebfbdcc87"
+    },
+    {
+      "path": ".claude/skills/empirical/SKILL.md",
+      "size": 5864,
+      "digest": "sha256:8f0dfc18d2a515aaf146d18da2185fe2e1aec8dac2686551d3a7a54be79933e1"
+    },
+    {
+      "path": ".claude/skills/openspec-apply-change/SKILL.md",
+      "size": 8178,
+      "digest": "sha256:d988fc94a0b5272f283fad6a4b5b8c32dd242f39185a1463c2e36618357e7593"
+    },
+    {
+      "path": ".claude/skills/openspec-archive-change/SKILL.md",
+      "size": 10669,
+      "digest": "sha256:3ead2658603c3f703d8368c3a67103198d3a0271b916775a5c0ccb437353f3b1"
+    },
+    {
+      "path": ".claude/skills/openspec-explore/SKILL.md",
+      "size": 16233,
+      "digest": "sha256:8dca1ef60755467a6e8b7c99b64b7f8eae013b51346db11b9b3eaa2a50a2719e"
+    },
+    {
+      "path": ".claude/skills/openspec-propose/SKILL.md",
+      "size": 11285,
+      "digest": "sha256:3ceb7d0171f1911c719c8849c107cae5454f1ff2327fb3f01263acde1f119167"
+    },
+    {
+      "path": ".claude/skills/openspec-sync-specs/SKILL.md",
+      "size": 12497,
+      "digest": "sha256:ad132986ec76ddf9341f52c693e6b91e0de352e1f4bd47b8050f9c2553505abd"
+    },
+    {
+      "path": ".claude/skills/openspec-update-change/SKILL.md",
+      "size": 6828,
+      "digest": "sha256:0c76a8e951d64bd9084349b75fd2f1a706f84e88779d3488637c6c0c71960039"
+    },
+    {
+      "path": ".codex/config.toml",
+      "size": 111,
+      "digest": "sha256:f5740bba08f992d4a5fe9f5b9f8a2c191f6922a16b5f9ac61695da88b6131d82"
+    },
+    {
+      "path": ".cursor/mcp.json",
+      "size": 119,
+      "digest": "sha256:a4d50e5110c610d398e04657e81a2c2db9328cd131f5c28995aaf4e213a9c90b"
+    },
+    {
+      "path": ".gemini/settings.json",
+      "size": 137,
+      "digest": "sha256:58b7bc1fef265b214425ef17eeb67f9f9ad687e049cc8d65c368c01ef5bb8780"
+    },
+    {
+      "path": ".gitignore",
+      "size": 596,
+      "digest": "sha256:e3025f573b506b4392c239ff78050d73f88ea7ba4d593b861edb8836dfe8a37d"
+    },
+    {
+      "path": ".mcp.json",
+      "size": 119,
+      "digest": "sha256:a4d50e5110c610d398e04657e81a2c2db9328cd131f5c28995aaf4e213a9c90b"
+    },
+    {
+      "path": ".oxlintrc.json",
+      "size": 245,
+      "digest": "sha256:b4d344818a1e1bf43997e4744a9153c8eef770c98b58229cd86363dabb85ded4"
+    },
+    {
+      "path": "AGENTS.md",
+      "size": 15353,
+      "digest": "sha256:b0a96780d85f9552739da7a7d324b7602db95c6e5e84aa2de6fb6cc7f68d4674"
+    },
+    {
+      "path": "CLAUDE.md",
+      "size": 1009,
+      "digest": "sha256:155f81ea2ab4c117545fdd04a9089b5fbda2ace3ad3a6244c7fde0e3ed37cb57"
+    },
+    {
+      "path": "DECISIONS.md",
+      "size": 29577,
+      "digest": "sha256:e392ad3b1e7247d2cc132bc964b783846f85f6ffd5366217e677c4d1af76d621"
+    },
+    {
+      "path": "DESIGN.md",
+      "size": 12288,
+      "digest": "sha256:36dc02bf2d95e59f976d0d5194640b2cd8ed352b421c1984821046c50fcc93eb"
+    },
+    {
+      "path": "GEMINI.md",
+      "size": 805,
+      "digest": "sha256:14298c46724f89ad22461199fae4c2b423b647992ad23fb144e0074e1d8c2542"
+    },
+    {
+      "path": "LICENSE",
+      "size": 11358,
+      "digest": "sha256:cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "path": "PROBLEM.md",
+      "size": 20157,
+      "digest": "sha256:8c448719f93c004a12d0aaaa1446d442d06cb4aa69ea573ef59290b446b9c1aa"
+    },
+    {
+      "path": "PRODUCT.md",
+      "size": 11432,
+      "digest": "sha256:1e4e543becf8bbe8c78d09134e323009a91e357d561687b3af5b87c56c8f0548"
+    },
+    {
+      "path": "README.md",
+      "size": 2697,
+      "digest": "sha256:64d148838ab99a2a49305c96928dcd822d3b7dce5e176bc82de91022597ea8e3"
+    },
+    {
+      "path": "apps/server/AGENTS.md",
+      "size": 7829,
+      "digest": "sha256:9f18627300caa1aceaa4efd66c40cb1e2b2d88ee9abfc463bd1d9c27a5e1943a"
+    },
+    {
+      "path": "apps/server/package.json",
+      "size": 551,
+      "digest": "sha256:4955d7b717c963842d2316b4c103207e5aed883b0e4aa8685980b39c37a54d4f"
+    },
+    {
+      "path": "apps/server/scripts/e2e-flow.ts",
+      "size": 8733,
+      "digest": "sha256:51eb417f5409862404b201be3fd6aa8f0768c1ed540a17ad4b9f8a6493f99a90"
+    },
+    {
+      "path": "apps/server/scripts/lib.ts",
+      "size": 1972,
+      "digest": "sha256:8775ef079f9d4e4637254a06fdac5b125195f053e7c582505c2328e00d571424"
+    },
+    {
+      "path": "apps/server/scripts/seed-check.ts",
+      "size": 4116,
+      "digest": "sha256:81db8dedf3e20afe062a8ae822134c318596917e31bfa28492fb9ae3f84e6a47"
+    },
+    {
+      "path": "apps/server/scripts/smoke-run.ts",
+      "size": 1933,
+      "digest": "sha256:b0c6edb207fc26a7ce2a573dd7d954d59523bfa9893ab54387fc506b704a354b"
+    },
+    {
+      "path": "apps/server/scripts/smoke.ts",
+      "size": 14172,
+      "digest": "sha256:0613d600d03dfc8ed062c855183f071c0b7b7d46f36de40e07973dd701ab0c88"
+    },
+    {
+      "path": "apps/server/src/api.ts",
+      "size": 13242,
+      "digest": "sha256:bfb8c0e6bb354efbffdb9fa643bf66075506ec6612769bfa4be090705f4b764d"
+    },
+    {
+      "path": "apps/server/src/db.ts",
+      "size": 39194,
+      "digest": "sha256:25d9c0d3dbfc75ff601e296ab33e09a4dd00a55115a095863b9ad68c96e84077"
+    },
+    {
+      "path": "apps/server/src/index.ts",
+      "size": 4254,
+      "digest": "sha256:6015400abc992574db226e6e57d741acc3d1d483a3ed11dc18361b965da62460"
+    },
+    {
+      "path": "apps/server/src/mentions.ts",
+      "size": 2520,
+      "digest": "sha256:2cde6218b1953d23f5f85840f5264df2c57e20fd7f4739f704ab9cc4b3494770"
+    },
+    {
+      "path": "apps/server/src/schema.sql",
+      "size": 3715,
+      "digest": "sha256:b9ba91ccb9208ba0adac77a19b3b099290bf59719696a6fe16ebcbc2e2d4a0a1"
+    },
+    {
+      "path": "apps/server/src/seed.ts",
+      "size": 15428,
+      "digest": "sha256:0973e8e1159643323793b465df9e868b40beab506574487fef02e2988a829199"
+    },
+    {
+      "path": "apps/server/src/ws.ts",
+      "size": 9668,
+      "digest": "sha256:015abcdd93661f5c942ed7543fc44d52c4f837a3ac0d1de02d6150ac7b2df478"
+    },
+    {
+      "path": "apps/server/tsconfig.json",
+      "size": 427,
+      "digest": "sha256:dc06230cf0662eb5fe90c0a514556513dc711e0478b08e0aed676801ba89c014"
+    },
+    {
+      "path": "apps/web/AGENTS.md",
+      "size": 6322,
+      "digest": "sha256:b056e365aa57992792ddb2f5b06c0cbbdf161dcfd91f3f02fbf3761865a2eea7"
+    },
+    {
+      "path": "apps/web/components.json",
+      "size": 515,
+      "digest": "sha256:156858e2da20785ac0f1853580c7e34d5b8496f519e8839d2176e85947d4f779"
+    },
+    {
+      "path": "apps/web/index.html",
+      "size": 355,
+      "digest": "sha256:8a02ff1a648ede39d826598c2c20a235e41dfaad99337a771bcf2e0183129aca"
+    },
+    {
+      "path": "apps/web/package.json",
+      "size": 1056,
+      "digest": "sha256:e27acd9d7bd21a386bf20b5e7a4475b4f7f718916731e45c3867a52731e15c58"
+    },
+    {
+      "path": "apps/web/public/favicon.svg",
+      "size": 9522,
+      "digest": "sha256:61bc9a161de58248288e6905425d7180f0624c2865007b97d763fdac12043a66"
+    },
+    {
+      "path": "apps/web/src/App.tsx",
+      "size": 4803,
+      "digest": "sha256:1893eb5f3ba886b70c84dba0707f9d3ebbc9decaa705506679c942f0d095a009"
+    },
+    {
+      "path": "apps/web/src/components/ada/boundary.tsx",
+      "size": 1378,
+      "digest": "sha256:efd629e59b975b61f6ed86c1808b953bfa783b489b698e435e1089b535f99c93"
+    },
+    {
+      "path": "apps/web/src/components/ada/card.tsx",
+      "size": 8992,
+      "digest": "sha256:825fc2e9979f0633967c64626485be9ff72a926a4fe4d09b6f72ad9e412ce401"
+    },
+    {
+      "path": "apps/web/src/components/ada/channel.tsx",
+      "size": 24218,
+      "digest": "sha256:b742b93252c18cbbf160197b0b0cf26087376044770a54a55dd2cff1945c5b7b"
+    },
+    {
+      "path": "apps/web/src/components/ada/folder.tsx",
+      "size": 3434,
+      "digest": "sha256:34232db109867b287c55751f9ba6801d6800fb6fc6c274b88a51b9280f561b75"
+    },
+    {
+      "path": "apps/web/src/components/ada/identity.tsx",
+      "size": 7445,
+      "digest": "sha256:bdf4d9cb8056f70097fbb93c514a9e7b6585c81514c5fea1abf4282a349f8567"
+    },
+    {
+      "path": "apps/web/src/components/ada/markdown.tsx",
+      "size": 3103,
+      "digest": "sha256:c6119935f08dc2468aa5390607643bf52bef5c7c5dae9c2d0909a36365b15701"
+    },
+    {
+      "path": "apps/web/src/components/ada/message.tsx",
+      "size": 10326,
+      "digest": "sha256:2fb671a8fe86531eb0f35702e486f496a885da7e0cde4d3962ef3a5f43365f3d"
+    },
+    {
+      "path": "apps/web/src/components/ada/modules.tsx",
+      "size": 27749,
+      "digest": "sha256:64b6360f5de1549226db57cacbd27dc0856ba58c9886ec30bb603ea504151c6f"
+    },
+    {
+      "path": "apps/web/src/components/ada/panel.tsx",
+      "size": 22893,
+      "digest": "sha256:ff5762f263661731a03ddc0f27d15d252d01fe7c26d2129d1f2b0cda638d27ea"
+    },
+    {
+      "path": "apps/web/src/components/ada/study-helpers.ts",
+      "size": 1281,
+      "digest": "sha256:9453ee3e30e3f466008cf95e0687e065b8483cd9ae880da55aa52939542cf7af"
+    },
+    {
+      "path": "apps/web/src/components/ada/study.tsx",
+      "size": 11396,
+      "digest": "sha256:fb24e97d1eb1fd58cbeaa169413c5c500da95517716c78084fbb9d2eb2c36cf5"
+    },
+    {
+      "path": "apps/web/src/components/ada/who-are-you.tsx",
+      "size": 2871,
+      "digest": "sha256:cd76fd92926b36fd5787ec8324a0058e604507cdac09d891672cf21d7856580f"
+    },
+    {
+      "path": "apps/web/src/components/app-sidebar.tsx",
+      "size": 9058,
+      "digest": "sha256:d4d478736d263918ba29c568e06c605dbf64e1af9402458ef5f76cc4a1e2988a"
+    },
+    {
+      "path": "apps/web/src/components/ui/avatar.tsx",
+      "size": 3038,
+      "digest": "sha256:357b2f9aac0192c071cb2ed65cb6e4c8ec01fa02fc15cf50d889b85731b75666"
+    },
+    {
+      "path": "apps/web/src/components/ui/breadcrumb.tsx",
+      "size": 2586,
+      "digest": "sha256:26f83fc8ed302d710851a71b705f5f8f28c805561c1fb6945370617267c5a4a9"
+    },
+    {
+      "path": "apps/web/src/components/ui/button.tsx",
+      "size": 3240,
+      "digest": "sha256:d14549ab3ba7a9d5d1f424c2599233bffa0b317121abf3b6efa2fb902d5e2781"
+    },
+    {
+      "path": "apps/web/src/components/ui/checkbox.tsx",
+      "size": 1539,
+      "digest": "sha256:7221fec06ed8f697d03157cec8e668f84fcc6706391f487a90773b7fe4fc762d"
+    },
+    {
+      "path": "apps/web/src/components/ui/collapsible.tsx",
+      "size": 658,
+      "digest": "sha256:ead4349ff7b01d696ef89294a81d18ee1d3f732321398896462c834ab9b9e065"
+    },
+    {
+      "path": "apps/web/src/components/ui/dialog.tsx",
+      "size": 4061,
+      "digest": "sha256:dd373d38c46f0e2227238fb517a7e58351cba91cd8b4a663641b7cfab7fbd697"
+    },
+    {
+      "path": "apps/web/src/components/ui/dropdown-menu.tsx",
+      "size": 8722,
+      "digest": "sha256:c143e8692f7b899d55c889d2978e3f1d0aef1bf5a83dffe1590a0640aba60044"
+    },
+    {
+      "path": "apps/web/src/components/ui/input.tsx",
+      "size": 1040,
+      "digest": "sha256:f7d6ecff9a4d631feeaf401c02bb87e26ddb38131c55d15a43b9290747390847"
+    },
+    {
+      "path": "apps/web/src/components/ui/popover.tsx",
+      "size": 2560,
+      "digest": "sha256:59a0d01d22af44dc9969c3c2aac7cc2f5b712c51ee4c73e8453d81f3d9819ed1"
+    },
+    {
+      "path": "apps/web/src/components/ui/radio-group.tsx",
+      "size": 1821,
+      "digest": "sha256:213e7fd8662ad3fa78ab2bc59061fa943f05ec97f94a7546a7093701482e9c58"
+    },
+    {
+      "path": "apps/web/src/components/ui/resizable.tsx",
+      "size": 1657,
+      "digest": "sha256:6e3f0f912a0d68614281e7570f4077a966a0517f8adcde65aed5cf9c88af073c"
+    },
+    {
+      "path": "apps/web/src/components/ui/scroll-area.tsx",
+      "size": 1579,
+      "digest": "sha256:6412f9ef47c1c652db43a08994f3171cdbc62ef16d760ce20df8c7c361d063d2"
+    },
+    {
+      "path": "apps/web/src/components/ui/separator.tsx",
+      "size": 545,
+      "digest": "sha256:75085bd84ff6965e4a356c53a4689799cabf65caa93c0bba064d5a0c6fa78f13"
+    },
+    {
+      "path": "apps/web/src/components/ui/sheet.tsx",
+      "size": 4419,
+      "digest": "sha256:e80712ffb97f01a3568523bc67c85823c882e86fb4ec922f5af13831ed3e22fe"
+    },
+    {
+      "path": "apps/web/src/components/ui/sidebar.tsx",
+      "size": 21633,
+      "digest": "sha256:29e33400cfdd00cb499da3615ed2258d75192d2b2a5a5117a84d2db4242ed0bf"
+    },
+    {
+      "path": "apps/web/src/components/ui/skeleton.tsx",
+      "size": 275,
+      "digest": "sha256:8110bba70d0cb9fe968c0b7bd092ad12258caef40b028b4a87f402bdab907faf"
+    },
+    {
+      "path": "apps/web/src/components/ui/switch.tsx",
+      "size": 1811,
+      "digest": "sha256:cabbf7804a4d6768ef62f5c2256fbf39e214372318bb1b3b22d407f808c56249"
+    },
+    {
+      "path": "apps/web/src/components/ui/tabs.tsx",
+      "size": 3483,
+      "digest": "sha256:84c1ebcee9c620b4b9543b1fe097307051a68ee7bd2901241a962360337f1191"
+    },
+    {
+      "path": "apps/web/src/components/ui/textarea.tsx",
+      "size": 842,
+      "digest": "sha256:58b58d84fc54ba5f4ca46937870c619349fd9eccc4d494250ac7bc73a94e05e9"
+    },
+    {
+      "path": "apps/web/src/components/ui/tooltip.tsx",
+      "size": 2832,
+      "digest": "sha256:a9f7b6823ef80334f2a70ee0e7eb40e01f095d63f7e354be6b7c499e2d2c84aa"
+    },
+    {
+      "path": "apps/web/src/hooks/use-mobile.ts",
+      "size": 565,
+      "digest": "sha256:ad0936f84f1df79d3697bfbff9c18f8ad58431c1cbaf2359c6a853b0fcc9f28b"
+    },
+    {
+      "path": "apps/web/src/index.css",
+      "size": 7282,
+      "digest": "sha256:a257e6405b80137a3db5e17d9fbfac4e3885b347102037cd19b2d47c9d00593c"
+    },
+    {
+      "path": "apps/web/src/lib/api.ts",
+      "size": 24922,
+      "digest": "sha256:caef636e780144f4c44c7498e6dc2417fece95bbab69524947010cf521a59f6b"
+    },
+    {
+      "path": "apps/web/src/lib/community.tsx",
+      "size": 27439,
+      "digest": "sha256:0e71d8bb2e0df7eef83dab43684e84b6f5bd8673a7fcbcf8f189a09eba60d23d"
+    },
+    {
+      "path": "apps/web/src/lib/demo.ts",
+      "size": 10347,
+      "digest": "sha256:28c942b067770de0603dc9fe13963b7e08345eccdff9467ede5c19ccd42d3530"
+    },
+    {
+      "path": "apps/web/src/lib/figure.ts",
+      "size": 5907,
+      "digest": "sha256:cdfc9d3c14b37e411082f2e2f30b8196d382500d9302f0dda386e6579c1c41e0"
+    },
+    {
+      "path": "apps/web/src/lib/format.ts",
+      "size": 922,
+      "digest": "sha256:3447525d3ae94a88474d90cdf819e029a60e879397f83ed36bb1126c9aa40d1e"
+    },
+    {
+      "path": "apps/web/src/lib/hash.ts",
+      "size": 448,
+      "digest": "sha256:f4bb8f45ae1b55b593060a03b93c5357dc3764050e3a924788f6f54694ac4191"
+    },
+    {
+      "path": "apps/web/src/lib/types.ts",
+      "size": 217,
+      "digest": "sha256:67cd62ac055c76c9b32a0537edf100dc5700a809460ddef423a18c936e01aa6f"
+    },
+    {
+      "path": "apps/web/src/lib/utils.ts",
+      "size": 166,
+      "digest": "sha256:7c8c3dfc0cdd370d44932828eb067ef771c8fe7996693221d5d4b90af6d54f2d"
+    },
+    {
+      "path": "apps/web/src/main.tsx",
+      "size": 230,
+      "digest": "sha256:6e9e5807fcbd48b75a96db5cbef36c996262196be42e6d4760dc86babbe61ad2"
+    },
+    {
+      "path": "apps/web/src/screens/Channel.tsx",
+      "size": 9404,
+      "digest": "sha256:0e6566a5c2d208b2203567f86acba9cdaec37d7f110ef9a9ead10db3ad01cf99"
+    },
+    {
+      "path": "apps/web/src/screens/FigureSheet.tsx",
+      "size": 2297,
+      "digest": "sha256:64871f4d9309b200f26e665459b57e27262fbe3e0d7befac646820a138bfe09e"
+    },
+    {
+      "path": "apps/web/src/screens/Modules.tsx",
+      "size": 4882,
+      "digest": "sha256:b8b7b85e16099f047d2dfaaf02a48ee80e799d7af2a5497c22bbd1070b37ac75"
+    },
+    {
+      "path": "apps/web/src/screens/Study.tsx",
+      "size": 12359,
+      "digest": "sha256:d003d116cfe73c720000e7a930e497ba489d345b30bd2baa1cd63e5f990c8643"
+    },
+    {
+      "path": "apps/web/tsconfig.app.json",
+      "size": 702,
+      "digest": "sha256:c7c45c39b36d600e0d8be31ed2c4480fd7923397c7cf3c4e6282d63f1863a5f0"
+    },
+    {
+      "path": "apps/web/tsconfig.json",
+      "size": 193,
+      "digest": "sha256:b61ef4249c889edc5cbeafd43bdc38481bd7dcd0de043f8349f20ad01ef7aa3c"
+    },
+    {
+      "path": "apps/web/tsconfig.node.json",
+      "size": 558,
+      "digest": "sha256:d366cc0827139db39c61815f22491bbfda56c654354a42ad7795143d314e45e8"
+    },
+    {
+      "path": "apps/web/vite.config.ts",
+      "size": 860,
+      "digest": "sha256:838856cab15cdfbd4bd2b488e248c1fa1b1a4292b8219fc44c7834bdf40cbd4c"
+    },
+    {
+      "path": "data/AGENTS.md",
+      "size": 4489,
+      "digest": "sha256:9c3947ebe3550c163f67eb43c0bc8bb380bc305ad54037204f2a231b60ee2e70"
+    },
+    {
+      "path": "data/neural-networks-2026/agents/ada/AGENTS.md",
+      "size": 2916,
+      "digest": "sha256:11434881dea1b8fc1604c2f32dbaf6e1cb8f0629c84521ca515628012ac68dcd"
+    },
+    {
+      "path": "data/neural-networks-2026/agents/ada/CLAUDE.md",
+      "size": 2916,
+      "digest": "sha256:11434881dea1b8fc1604c2f32dbaf6e1cb8f0629c84521ca515628012ac68dcd"
+    },
+    {
+      "path": "data/neural-networks-2026/agents/ada/about/README.md",
+      "size": 81,
+      "digest": "sha256:307605cb4ddeb78ef2fc27295eec4e8dc6e443b4c30158a251ae203ca767b278"
+    },
+    {
+      "path": "data/neural-networks-2026/agents/ada/wiki/decisions/.gitkeep",
+      "size": 0,
+      "digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "data/neural-networks-2026/agents/ada/wiki/decisions/02-mlp-revision-assignment-1.md",
+      "size": 851,
+      "digest": "sha256:3bffc2429839076085eabadac7c31acf4f3e54567596a58dcd81b1e65e54ce32"
+    },
+    {
+      "path": "data/neural-networks-2026/agents/ada/wiki/difficulties/.gitkeep",
+      "size": 0,
+      "digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "data/neural-networks-2026/agents/ada/wiki/index.md",
+      "size": 978,
+      "digest": "sha256:c4298d6e1ba1152738eca18de0bebafac07b71ff21642958698978f8f7b1e021"
+    },
+    {
+      "path": "data/neural-networks-2026/agents/ada/wiki/log.md",
+      "size": 1662,
+      "digest": "sha256:131ee00f06b1386d15dd1b211856e18498d103a04550356fc1bda46988a8ae4d"
+    },
+    {
+      "path": "data/neural-networks-2026/agents/ada/wiki/modules/.gitkeep",
+      "size": 0,
+      "digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "data/neural-networks-2026/agents/ada/wiki/modules/01-perceptron/decision-rule.md",
+      "size": 1664,
+      "digest": "sha256:60d2912216bb812e971b4033b5f34b170f4b81d938aae1db54877848ff97080e"
+    },
+    {
+      "path": "data/neural-networks-2026/agents/ada/wiki/modules/01-perceptron/learning-rule.md",
+      "size": 1888,
+      "digest": "sha256:2cbd5000b29c197c40223df0f4f98f27c9ac97c5cd6e63d1f727f5a52cc8276d"
+    },
+    {
+      "path": "data/neural-networks-2026/agents/ada/wiki/modules/01-perceptron/linear-separability.md",
+      "size": 1894,
+      "digest": "sha256:c95d1d29135abbe8a7d1fde30b47ab0b1f529ae6d522fe34764cb2aa33638927"
+    },
+    {
+      "path": "data/neural-networks-2026/agents/ada/wiki/modules/02-mlp/forward-pass.md",
+      "size": 1810,
+      "digest": "sha256:ac09a3f619818c4a89d1b32fa60673d5078a0a9b4c094fe5b5776ce0615fed28"
+    },
+    {
+      "path": "data/neural-networks-2026/agents/ada/wiki/modules/02-mlp/hidden-layers.md",
+      "size": 2072,
+      "digest": "sha256:02338d8c1f5def52c605611ef3dda27003f4b5fea9f46ed54cb7fff1cb2e2d3c"
+    },
+    {
+      "path": "data/neural-networks-2026/agents/ada/wiki/modules/02-mlp/nonlinearity.md",
+      "size": 2103,
+      "digest": "sha256:145221c0a4fa6f849acf3a9880710db0bfc2dbcb5cbad588b8e26ba6580d55c7"
+    },
+    {
+      "path": "data/neural-networks-2026/agents/ada/wiki/modules/03-backprop/chain-rule.md",
+      "size": 1754,
+      "digest": "sha256:3bc36d85d6b49695b2b77f67c2b8dccc437253a6e3d720d325bafddc1c163c2e"
+    },
+    {
+      "path": "data/neural-networks-2026/agents/ada/wiki/modules/03-backprop/scalar-walkthrough.md",
+      "size": 1915,
+      "digest": "sha256:28cf79825d6c7ad940aa26dc7f889cd704bb047feb825efd851bc8e01241097b"
+    },
+    {
+      "path": "data/neural-networks-2026/agents/ada/wiki/modules/03-backprop/vanishing-gradients.md",
+      "size": 2228,
+      "digest": "sha256:fe0626f9cbeadea842343396c9271133e0c0489b419e2ccac94c66e9840f332e"
+    },
+    {
+      "path": "data/neural-networks-2026/agents/ada/wiki/modules/03-backprop/vectorized.md",
+      "size": 1956,
+      "digest": "sha256:d531e6d8fcd205d242e176c189ae346f643277527d458702a35db3309c3a4f3d"
+    },
+    {
+      "path": "data/neural-networks-2026/agents/ada/wiki/questions/.gitkeep",
+      "size": 0,
+      "digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "data/neural-networks-2026/community.json",
+      "size": 21950,
+      "digest": "sha256:2560d92749cf635da36602254f17674f9c92635164b5ce1e496adabc02d4683f"
+    },
+    {
+      "path": "data/neural-networks-2026/raw/martin/modules/01-perceptron/perceptron.md",
+      "size": 3531,
+      "digest": "sha256:4354c20818b92915f73dec315368f8f927176075453c469997139b6322309fcb"
+    },
+    {
+      "path": "data/neural-networks-2026/raw/martin/modules/02-mlp/mlp.md",
+      "size": 3875,
+      "digest": "sha256:dd8295adfe25bddfab5fdc83e33cbb61189c280d8ef512f28c114cb5a99b5ce0"
+    },
+    {
+      "path": "data/neural-networks-2026/raw/martin/modules/03-backprop/.gitkeep",
+      "size": 0,
+      "digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "data/neural-networks-2026/raw/martin/modules/03-backprop/backprop.md",
+      "size": 5028,
+      "digest": "sha256:a3db6d0dd34746a4634e32eb32fc67ebb8eb9f58126e2fa5a618320365510ca1"
+    },
+    {
+      "path": "design/BRIEF.md",
+      "size": 9225,
+      "digest": "sha256:44e09d8b4ae677ee9cf64480f0d7872ebb777866541247b77e08a7a2b70098b8"
+    },
+    {
+      "path": "design/mockups/02-dudas-thread-A.html",
+      "size": 12238,
+      "digest": "sha256:384e80a4aa107cc44ced836c1095a43c7d302f53ecf68cbcc6da9ccac00c2090"
+    },
+    {
+      "path": "design/mockups/02-dudas-thread-B.html",
+      "size": 12280,
+      "digest": "sha256:55657209e34c8b5f5302188c6f39ac89b47d8fd2d006307d9a2ce7d909108d69"
+    },
+    {
+      "path": "design/mockups/README.md",
+      "size": 3494,
+      "digest": "sha256:52e39686ad9d06322d316861cebc5b0d71c44cf0dcd1db43ef2161f05dfaf23a"
+    },
+    {
+      "path": "design/mockups/ada.css",
+      "size": 25965,
+      "digest": "sha256:73b1be4a344c4bb64a9ae3d1d4bba3045b85f5dbd3f53d673d1f9c875fb61b3d"
+    },
+    {
+      "path": "design/mockups/ada.js",
+      "size": 7229,
+      "digest": "sha256:20ff1da0fd5836402061928e0b12e3d1c6ed69671e6eeb66cca9a633b81a3364"
+    },
+    {
+      "path": "design/mockups/theme-b.css",
+      "size": 7071,
+      "digest": "sha256:a4e5fa9b7c364bd8c819099e555ca6c043be6af2d07bebedb270cbeb82d9c06b"
+    },
+    {
+      "path": "docs/AGENTS.md",
+      "size": 1089,
+      "digest": "sha256:7bb2c52be98c15dcebda02757bd2ec91e1050843d7ae9e9bdaa319035b2cb0c2"
+    },
+    {
+      "path": "docs/how-it-works.html",
+      "size": 28420,
+      "digest": "sha256:df5a4f097f8fb7205cfdc6265057f789159ccb289326129bb0ff2bd3d2407fd3"
+    },
+    {
+      "path": "docs/usecases-api.html",
+      "size": 61360,
+      "digest": "sha256:dae36bd3016a7cc45af3862788fd9612e1c4f27ab2e5d40926f7249a19e02d57"
+    },
+    {
+      "path": "openspec/changes/demo-local-backend/.openspec.yaml",
+      "size": 40,
+      "digest": "sha256:b9399e03673ba9cf76a3aaed652b32793349b0b8bda5bafea77ccfa94a12a811"
+    },
+    {
+      "path": "openspec/changes/demo-local-backend/design.md",
+      "size": 6269,
+      "digest": "sha256:d41687713d2596eb824529292211e2378a75ef29227d9bbf427838577deb28bf"
+    },
+    {
+      "path": "openspec/changes/demo-local-backend/goal-2-api.md",
+      "size": 8478,
+      "digest": "sha256:560ccb76443a3b20cb6ec8c9eef24a2284e712c9dff7e9ff0896f24b5ddb284d"
+    },
+    {
+      "path": "openspec/changes/demo-local-backend/proposal.md",
+      "size": 4175,
+      "digest": "sha256:e68ba8ae4a2e2f04a49cc2f05f00ae870f2a1bc1cc1a1d3a368f7903d7590e47"
+    },
+    {
+      "path": "openspec/changes/demo-local-backend/specs/agent-runner/spec.md",
+      "size": 6577,
+      "digest": "sha256:d44ff4a1f35e02d02ad2e834873537e5f8682b0f6143f294bab3b36a7b9500a7"
+    },
+    {
+      "path": "openspec/changes/demo-local-backend/specs/agent-wiki/spec.md",
+      "size": 4955,
+      "digest": "sha256:bed4b82a04b8839fce9c48b172425a8c41b61b5cacefdc9d0a88fcae6331b10b"
+    },
+    {
+      "path": "openspec/changes/demo-local-backend/specs/community-server/spec.md",
+      "size": 6791,
+      "digest": "sha256:aaf47feed5c35b8e944af7b88b47b32bfcce4ce3b4ea2499c01714597dca8f64"
+    },
+    {
+      "path": "openspec/changes/demo-local-backend/specs/web-client/spec.md",
+      "size": 3603,
+      "digest": "sha256:1f07233bfee7d5c8706197e07a7953c94e7f4a9ddcc35aa9e34a9462ff9fe29a"
+    },
+    {
+      "path": "openspec/changes/demo-local-backend/tasks.md",
+      "size": 4885,
+      "digest": "sha256:41d6e62d6fdc71cde49b5353c3d61d9da835588f189c6d12f5dff127f2404de0"
+    },
+    {
+      "path": "openspec/config.yaml",
+      "size": 776,
+      "digest": "sha256:0bafebb27fb1d8b6179b14f4fad083f38c9ef83b995877cd027413cb9c9c0c5a"
+    },
+    {
+      "path": "package-lock.json",
+      "size": 232988,
+      "digest": "sha256:1998da96d301fd9a62a94913182b75dd1bd4fd49fce36e82df9ccfabcd3fcf3b"
+    },
+    {
+      "path": "package.json",
+      "size": 905,
+      "digest": "sha256:d383a5b38eafbee3c8adacadf15533908a45da073dc2a4ad49bc8bf8d55b47f1"
+    },
+    {
+      "path": "packages/protocol/AGENTS.md",
+      "size": 813,
+      "digest": "sha256:0656d3a556a599c27c07749b9f7596a64380c96920ce22c132d739b46afacd22"
+    },
+    {
+      "path": "packages/protocol/package.json",
+      "size": 235,
+      "digest": "sha256:bbd802e9ea9538bd6a0e95948ccfea1cf6b922377361bfc5ae29d36709c9b557"
+    },
+    {
+      "path": "packages/protocol/src/events.ts",
+      "size": 10435,
+      "digest": "sha256:3ecbde70e0e8af172dab098b4fe6ca5efafb3472a831492cbfc579bc238716a1"
+    },
+    {
+      "path": "packages/protocol/src/index.ts",
+      "size": 343,
+      "digest": "sha256:714373218e95f1f2556e72cca801e07b68893fde75ecd91669ec937796e51e75"
+    },
+    {
+      "path": "packages/protocol/src/types.ts",
+      "size": 6555,
+      "digest": "sha256:36cc39656f0c12083aa859e80e01cb1a97cbb52aaf342017482eee2fa047637e"
+    },
+    {
+      "path": "packages/runner/AGENTS.md",
+      "size": 4361,
+      "digest": "sha256:ecdd8b64713678944b8379e300a2fb03dcb15497538e5cb42c79d6fd60d00f2d"
+    },
+    {
+      "path": "packages/runner/package.json",
+      "size": 341,
+      "digest": "sha256:4d4ef5908bff32d6e60a57d33ca746faf65dd3c4c477f05069c485aacc3452a2"
+    },
+    {
+      "path": "packages/runner/scripts/scripted-check.ts",
+      "size": 9842,
+      "digest": "sha256:fd0081df498eac43341cd5d972ea4003c2f59de8c706b3102f3a7dc34b218bff"
+    },
+    {
+      "path": "packages/runner/src/cli.ts",
+      "size": 23316,
+      "digest": "sha256:22864f6fdd237f06252bc639c20d1ad8d8f4dcd203113dad147557110bd07ee5"
+    },
+    {
+      "path": "packages/runner/src/runtimes/scripted.ts",
+      "size": 23279,
+      "digest": "sha256:19685649ca9ef3dd6bd6f5864b43fc367a5a9ac5182299a54334ce6aee6d999c"
+    },
+    {
+      "path": "packages/runner/tsconfig.json",
+      "size": 427,
+      "digest": "sha256:dc06230cf0662eb5fe90c0a514556513dc711e0478b08e0aed676801ba89c014"
+    },
+    {
+      "path": "pitch/AGENTS.md",
+      "size": 1800,
+      "digest": "sha256:f9930c0e13b7343b9fd8078b38090b1d33fe2223a0bf798029a01a51251230cb"
+    },
+    {
+      "path": "pitch/SCRIPT.md",
+      "size": 6437,
+      "digest": "sha256:f6e7b87b6f39d9950500cd5389fdfc80d9532ed0f4689ed3a4e7666b1fac1680"
+    },
+    {
+      "path": "pitch/deck-stage.js",
+      "size": 115909,
+      "digest": "sha256:ae930193822ae12d36f0d823065b6d130a5ab81dbcb1ff0f46dcb274ed997174"
+    },
+    {
+      "path": "pitch/index.html",
+      "size": 29272,
+      "digest": "sha256:a80010697f11b5d1dfb048641e45c2f930bd70c747fba99144a9cadd5cb86027"
+    },
+    {
+      "path": "research/2026-08-22-aleph-submission-and-pitch.md",
+      "size": 3588,
+      "digest": "sha256:b889db112fe7f60f06d090bcad0a820cf55f7f83bcf0263851edc325bf154c5e"
+    },
+    {
+      "path": "research/2026-08-22-api-local-frameworks.md",
+      "size": 1432,
+      "digest": "sha256:a5ad662379bfed7d7391e2e990aaf18243b42875b81ac55e475786a27ecc195e"
+    },
+    {
+      "path": "research/2026-08-22-frontend-audit.md",
+      "size": 25319,
+      "digest": "sha256:96dce3a366413ea7636b3bf878b35583038b5124c2d6370d49d1c5a492362a32"
+    },
+    {
+      "path": "research/2026-08-22-open-source-vs-premium.md",
+      "size": 3597,
+      "digest": "sha256:c0d3f2f72993d980a8cac7c352e7d7c5d1100cb8ae69288f0d04d937f9f1e91a"
+    },
+    {
+      "path": "research/2026-08-22-problem-impact.md",
+      "size": 28730,
+      "digest": "sha256:932e762f94739d9d30c4a2cc3ea8c743aecb01d44f4a3774c440e7cc40cf1eca"
+    },
+    {
+      "path": "research/2026-08-22-subscriptions-runners-buzz-pi.md",
+      "size": 5622,
+      "digest": "sha256:335dda713620d2ac7bec6e5874029d20c3e3a1aedb07fc72ebf184e609822380"
+    },
+    {
+      "path": "research/2026-08-22-why-now.md",
+      "size": 7060,
+      "digest": "sha256:9c9ad41fcd0d5ae5baa116cc18b19b4b96b59bd9752442dbd0411ad11ffcda7b"
+    },
+    {
+      "path": "research/README.md",
+      "size": 1671,
+      "digest": "sha256:6d1f042a44285ffd7a8b1a281179591f44df6a487f39876cf0b16968b2a0cc20"
+    },
+    {
+      "path": "scripts/docs-check.mjs",
+      "size": 1178,
+      "digest": "sha256:2bf399bab0fa968ec92d35828271b185ffa86865354518a68a39dc9d6a4bff7b"
+    },
+    {
+      "path": "skills-lock.json",
+      "size": 695,
+      "digest": "sha256:7955c583b7c0a69dd85949ce7fc5eb01f06b3730feb7271763a5ee6d21aad82e"
+    }
+  ],
+  "pages": [
+    {
+      "path": ".empirical/context/index.md",
+      "generator": "empirical-0.27.0",
+      "managed": true,
+      "dependencies": [
+        ".agents/skills/.openspec-target",
+        ".agents/skills/openspec-apply-change/SKILL.md",
+        ".agents/skills/openspec-archive-change/SKILL.md",
+        ".agents/skills/openspec-explore/SKILL.md",
+        ".agents/skills/openspec-propose/SKILL.md",
+        ".agents/skills/openspec-sync-specs/SKILL.md",
+        ".agents/skills/openspec-update-change/SKILL.md",
+        ".claude/commands/opsx/apply.md",
+        ".claude/commands/opsx/archive.md",
+        ".claude/commands/opsx/explore.md",
+        ".claude/commands/opsx/propose.md",
+        ".claude/commands/opsx/sync.md",
+        ".claude/commands/opsx/update.md",
+        ".claude/skills/empirical/SKILL.md",
+        ".claude/skills/openspec-apply-change/SKILL.md",
+        ".claude/skills/openspec-archive-change/SKILL.md",
+        ".claude/skills/openspec-explore/SKILL.md",
+        ".claude/skills/openspec-propose/SKILL.md",
+        ".claude/skills/openspec-sync-specs/SKILL.md",
+        ".claude/skills/openspec-update-change/SKILL.md",
+        ".codex/config.toml",
+        ".cursor/mcp.json",
+        ".gemini/settings.json",
+        ".gitignore",
+        ".mcp.json",
+        ".oxlintrc.json",
+        "AGENTS.md",
+        "CLAUDE.md",
+        "DECISIONS.md",
+        "DESIGN.md",
+        "GEMINI.md",
+        "LICENSE",
+        "PROBLEM.md",
+        "PRODUCT.md",
+        "README.md",
+        "apps/server/AGENTS.md",
+        "apps/server/package.json",
+        "apps/server/scripts/e2e-flow.ts",
+        "apps/server/scripts/lib.ts",
+        "apps/server/scripts/seed-check.ts",
+        "apps/server/scripts/smoke-run.ts",
+        "apps/server/scripts/smoke.ts",
+        "apps/server/src/api.ts",
+        "apps/server/src/db.ts",
+        "apps/server/src/index.ts",
+        "apps/server/src/mentions.ts",
+        "apps/server/src/schema.sql",
+        "apps/server/src/seed.ts",
+        "apps/server/src/ws.ts",
+        "apps/server/tsconfig.json",
+        "apps/web/AGENTS.md",
+        "apps/web/components.json",
+        "apps/web/index.html",
+        "apps/web/package.json",
+        "apps/web/public/favicon.svg",
+        "apps/web/src/App.tsx",
+        "apps/web/src/components/ada/boundary.tsx",
+        "apps/web/src/components/ada/card.tsx",
+        "apps/web/src/components/ada/channel.tsx",
+        "apps/web/src/components/ada/folder.tsx",
+        "apps/web/src/components/ada/identity.tsx",
+        "apps/web/src/components/ada/markdown.tsx",
+        "apps/web/src/components/ada/message.tsx",
+        "apps/web/src/components/ada/modules.tsx",
+        "apps/web/src/components/ada/panel.tsx",
+        "apps/web/src/components/ada/study-helpers.ts",
+        "apps/web/src/components/ada/study.tsx",
+        "apps/web/src/components/ada/who-are-you.tsx",
+        "apps/web/src/components/app-sidebar.tsx",
+        "apps/web/src/components/ui/avatar.tsx",
+        "apps/web/src/components/ui/breadcrumb.tsx",
+        "apps/web/src/components/ui/button.tsx",
+        "apps/web/src/components/ui/checkbox.tsx",
+        "apps/web/src/components/ui/collapsible.tsx",
+        "apps/web/src/components/ui/dialog.tsx",
+        "apps/web/src/components/ui/dropdown-menu.tsx",
+        "apps/web/src/components/ui/input.tsx",
+        "apps/web/src/components/ui/popover.tsx",
+        "apps/web/src/components/ui/radio-group.tsx",
+        "apps/web/src/components/ui/resizable.tsx",
+        "apps/web/src/components/ui/scroll-area.tsx",
+        "apps/web/src/components/ui/separator.tsx",
+        "apps/web/src/components/ui/sheet.tsx",
+        "apps/web/src/components/ui/sidebar.tsx",
+        "apps/web/src/components/ui/skeleton.tsx",
+        "apps/web/src/components/ui/switch.tsx",
+        "apps/web/src/components/ui/tabs.tsx",
+        "apps/web/src/components/ui/textarea.tsx",
+        "apps/web/src/components/ui/tooltip.tsx",
+        "apps/web/src/hooks/use-mobile.ts",
+        "apps/web/src/index.css",
+        "apps/web/src/lib/api.ts",
+        "apps/web/src/lib/community.tsx",
+        "apps/web/src/lib/demo.ts",
+        "apps/web/src/lib/figure.ts",
+        "apps/web/src/lib/format.ts",
+        "apps/web/src/lib/hash.ts",
+        "apps/web/src/lib/types.ts",
+        "apps/web/src/lib/utils.ts",
+        "apps/web/src/main.tsx",
+        "apps/web/src/screens/Channel.tsx",
+        "apps/web/src/screens/FigureSheet.tsx",
+        "apps/web/src/screens/Modules.tsx",
+        "apps/web/src/screens/Study.tsx",
+        "apps/web/tsconfig.app.json",
+        "apps/web/tsconfig.json",
+        "apps/web/tsconfig.node.json",
+        "apps/web/vite.config.ts",
+        "data/AGENTS.md",
+        "data/neural-networks-2026/agents/ada/AGENTS.md",
+        "data/neural-networks-2026/agents/ada/CLAUDE.md",
+        "data/neural-networks-2026/agents/ada/about/README.md",
+        "data/neural-networks-2026/agents/ada/wiki/decisions/.gitkeep",
+        "data/neural-networks-2026/agents/ada/wiki/decisions/02-mlp-revision-assignment-1.md",
+        "data/neural-networks-2026/agents/ada/wiki/difficulties/.gitkeep",
+        "data/neural-networks-2026/agents/ada/wiki/index.md",
+        "data/neural-networks-2026/agents/ada/wiki/log.md",
+        "data/neural-networks-2026/agents/ada/wiki/modules/.gitkeep",
+        "data/neural-networks-2026/agents/ada/wiki/modules/01-perceptron/decision-rule.md",
+        "data/neural-networks-2026/agents/ada/wiki/modules/01-perceptron/learning-rule.md",
+        "data/neural-networks-2026/agents/ada/wiki/modules/01-perceptron/linear-separability.md",
+        "data/neural-networks-2026/agents/ada/wiki/modules/02-mlp/forward-pass.md",
+        "data/neural-networks-2026/agents/ada/wiki/modules/02-mlp/hidden-layers.md",
+        "data/neural-networks-2026/agents/ada/wiki/modules/02-mlp/nonlinearity.md",
+        "data/neural-networks-2026/agents/ada/wiki/modules/03-backprop/chain-rule.md",
+        "data/neural-networks-2026/agents/ada/wiki/modules/03-backprop/scalar-walkthrough.md",
+        "data/neural-networks-2026/agents/ada/wiki/modules/03-backprop/vanishing-gradients.md",
+        "data/neural-networks-2026/agents/ada/wiki/modules/03-backprop/vectorized.md",
+        "data/neural-networks-2026/agents/ada/wiki/questions/.gitkeep",
+        "data/neural-networks-2026/community.json",
+        "data/neural-networks-2026/raw/martin/modules/01-perceptron/perceptron.md",
+        "data/neural-networks-2026/raw/martin/modules/02-mlp/mlp.md",
+        "data/neural-networks-2026/raw/martin/modules/03-backprop/.gitkeep",
+        "data/neural-networks-2026/raw/martin/modules/03-backprop/backprop.md",
+        "design/BRIEF.md",
+        "design/mockups/02-dudas-thread-A.html",
+        "design/mockups/02-dudas-thread-B.html",
+        "design/mockups/README.md",
+        "design/mockups/ada.css",
+        "design/mockups/ada.js",
+        "design/mockups/theme-b.css",
+        "docs/AGENTS.md",
+        "docs/how-it-works.html",
+        "docs/usecases-api.html",
+        "openspec/changes/demo-local-backend/.openspec.yaml",
+        "openspec/changes/demo-local-backend/design.md",
+        "openspec/changes/demo-local-backend/goal-2-api.md",
+        "openspec/changes/demo-local-backend/proposal.md",
+        "openspec/changes/demo-local-backend/specs/agent-runner/spec.md",
+        "openspec/changes/demo-local-backend/specs/agent-wiki/spec.md",
+        "openspec/changes/demo-local-backend/specs/community-server/spec.md",
+        "openspec/changes/demo-local-backend/specs/web-client/spec.md",
+        "openspec/changes/demo-local-backend/tasks.md",
+        "openspec/config.yaml",
+        "package-lock.json",
+        "package.json",
+        "packages/protocol/AGENTS.md",
+        "packages/protocol/package.json",
+        "packages/protocol/src/events.ts",
+        "packages/protocol/src/index.ts",
+        "packages/protocol/src/types.ts",
+        "packages/runner/AGENTS.md",
+        "packages/runner/package.json",
+        "packages/runner/scripts/scripted-check.ts",
+        "packages/runner/src/cli.ts",
+        "packages/runner/src/runtimes/scripted.ts",
+        "packages/runner/tsconfig.json",
+        "pitch/AGENTS.md",
+        "pitch/SCRIPT.md",
+        "pitch/deck-stage.js",
+        "pitch/index.html",
+        "research/2026-08-22-aleph-submission-and-pitch.md",
+        "research/2026-08-22-api-local-frameworks.md",
+        "research/2026-08-22-frontend-audit.md",
+        "research/2026-08-22-open-source-vs-premium.md",
+        "research/2026-08-22-problem-impact.md",
+        "research/2026-08-22-subscriptions-runners-buzz-pi.md",
+        "research/2026-08-22-why-now.md",
+        "research/README.md",
+        "scripts/docs-check.mjs",
+        "skills-lock.json"
+      ],
+      "sourceDigest": "sha256:04eda51716ed00b53dbd3018bd39604f02752e13cdf777690c3f817c58de2693",
+      "digest": "sha256:d8975d14a42600851de5d76ecae7debb6c697e30c4247f43e87b9d20ef746906",
+      "freshness": "fresh"
+    },
+    {
+      "path": ".empirical/context/overview.md",
+      "generator": "empirical-0.27.0",
+      "managed": false,
+      "dependencies": [
+        "PRODUCT.md",
+        "README.md",
+        "apps/server/package.json",
+        "apps/web/package.json",
+        "data/neural-networks-2026/agents/ada/about/README.md",
+        "design/mockups/README.md",
+        "package.json",
+        "packages/protocol/package.json",
+        "packages/runner/package.json",
+        "research/README.md"
+      ],
+      "sourceDigest": "sha256:d11055ded62eae90da01856a8f4a47a79d085268eef5abb224b9ee6b5367d677",
+      "digest": "sha256:128a1351781f75ccece0c1f48edadd79f2981f511485f06c8f9bdd757c78ad2d",
+      "freshness": "fresh"
+    },
+    {
+      "path": ".empirical/context/architecture.md",
+      "generator": "empirical-0.27.0",
+      "managed": false,
+      "dependencies": [
+        "DESIGN.md",
+        "apps/server/package.json",
+        "apps/web/package.json",
+        "openspec/changes/demo-local-backend/design.md",
+        "package.json",
+        "packages/protocol/AGENTS.md",
+        "packages/protocol/package.json",
+        "packages/protocol/src/events.ts",
+        "packages/protocol/src/index.ts",
+        "packages/protocol/src/types.ts",
+        "packages/runner/AGENTS.md",
+        "packages/runner/package.json",
+        "packages/runner/scripts/scripted-check.ts",
+        "packages/runner/src/cli.ts",
+        "packages/runner/src/runtimes/scripted.ts",
+        "packages/runner/tsconfig.json"
+      ],
+      "sourceDigest": "sha256:ff7ac161c334a5a5647034534373598ce32c900db740cde6ead73623c7fb9ecb",
+      "digest": "sha256:ab48810d2cee3e04ac52e9f03585d3340603c0a66c60f887c6b87bc40891f07f",
+      "freshness": "fresh"
+    },
+    {
+      "path": ".empirical/context/commands.md",
+      "generator": "empirical-0.27.0",
+      "managed": false,
+      "dependencies": [
+        "apps/server/package.json",
+        "apps/web/package.json",
+        "package.json",
+        "packages/protocol/package.json",
+        "packages/runner/package.json",
+        "scripts/docs-check.mjs"
+      ],
+      "sourceDigest": "sha256:4ca52b45a8bab7c526627babeabb691669708664e4e5b8043e693625885fe610",
+      "digest": "sha256:cd0a962b8161fb81ba0e4308dc7a4794a41bd61a9bbc7b1ad37dc4f8d4b32586",
+      "freshness": "fresh"
+    },
+    {
+      "path": ".empirical/context/conventions.md",
+      "generator": "empirical-0.27.0",
+      "managed": false,
+      "dependencies": [
+        "AGENTS.md",
+        "apps/server/AGENTS.md",
+        "apps/server/tsconfig.json",
+        "apps/web/AGENTS.md",
+        "apps/web/tsconfig.app.json",
+        "apps/web/tsconfig.json",
+        "apps/web/tsconfig.node.json",
+        "data/AGENTS.md",
+        "data/neural-networks-2026/agents/ada/AGENTS.md",
+        "docs/AGENTS.md",
+        "packages/protocol/AGENTS.md",
+        "packages/runner/AGENTS.md",
+        "packages/runner/tsconfig.json",
+        "pitch/AGENTS.md"
+      ],
+      "sourceDigest": "sha256:647a2d5844972be1744ea3cad45e3d71065d282e30029243612737a5d1b36caa",
+      "digest": "sha256:bcaf300e45ae8e7ae9f2a50cdebdc6e133bf03e06c42636e0e24866f727c1c07",
+      "freshness": "fresh"
+    }
+  ],
+  "truncated": false,
+  "digest": "sha256:0f86dda14baa917bb6f5673498b88006ae0f37e6ac70e79cc72b43954b262ec3"
+}

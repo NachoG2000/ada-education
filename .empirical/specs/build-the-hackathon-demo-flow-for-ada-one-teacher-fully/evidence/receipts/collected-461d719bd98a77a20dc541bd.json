@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "collected-461d719bd98a77a20dc541bd",
+  "criteria": [
+    "AC-1",
+    "AC-2",
+    "AC-3",
+    "AC-4",
+    "AC-5",
+    "AC-6",
+    "AC-7",
+    "AC-8",
+    "AC-UI-1",
+    "AC-UI-2",
+    "AC-UI-3",
+    "AC-UI-4",
+    "AC-UI-5"
+  ],
+  "evidenceKinds": [
+    "review"
+  ],
+  "summary": "11 findings (1 high: path traversal; 2 medium: missing teacher gate, hardcoded teacher folder; 8 low) — all fixed and re-verified; decisions D-001..D-003 implemented with no contradictions; report at evidence/review.md.",
+  "passed": true,
+  "startedAt": "2026-08-23T08:48:19.353Z",
+  "completedAt": "2026-08-23T08:48:19.353Z",
+  "provenance": {
+    "repositoryId": "sha256:5ec6f3c476f2e40bbacdcf2c39af35f7b9a3ba3e39dcaea1b038f04ae0131813",
+    "feature": "build-the-hackathon-demo-flow-for-ada-one-teacher-fully",
+    "specRevision": 2,
+    "specDigest": "sha256:e715bb9f81378d19838d16870686eebead495c581dc9c26e76432ff7b33c31d2",
+    "treeDigest": "sha256:745a4615c7937f8d83e05f795bd564179e93d0ec7920168a6390f7bac700d202",
+    "policyDigest": "sha256:39a64c33840d3b872a0572551571da16de6c692805bfd2aa7d488fbd2ee8a471"
+  },
+  "digest": "sha256:99f3509d40cee36640dcea8ab9a4aa92a00ede4f51b9b63113bded08e84419aa",
+  "kind": "collected",
+  "collector": "Independent multi-angle code review (five reviewer agents: correctness, efficiency, simplification, altitude, conventions) + lead decision audit",
+  "artifacts": [
+    {
+      "path": ".empirical/specs/build-the-hackathon-demo-flow-for-ada-one-teacher-fully/evidence/review.md",
+      "mediaType": "text/markdown",
+      "bytes": 3121,
+      "digest": "sha256:1e573619e059fb87adbc601d6e4ac56ad70872c233c4d39e4393dfff2b95c337"
+    }
+  ]
+}

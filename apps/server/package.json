@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "seed": "tsx src/seed.ts",
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit",
+    "smoke": "tsx scripts/smoke-run.ts",
+    "check:seed": "tsx scripts/seed-check.ts",
+    "check:e2e": "tsx scripts/e2e-flow.ts"
   },
   "dependencies": {
     "@ada/protocol": "*",

@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 1,
+  "id": "collected-d2e2835b3134d5840231882a",
+  "criteria": [
+    "AC-6",
+    "AC-UI-1",
+    "AC-UI-2",
+    "AC-UI-3",
+    "AC-UI-4",
+    "AC-UI-5"
+  ],
+  "evidenceKinds": [
+    "browser",
+    "screenshot"
+  ],
+  "summary": "Browser pass as Martin and Sofia. AC-UI-1: Modules page with list, difficulty control + Ada rationale/evidence, material, cards, reports. AC-UI-2: attention.md dropped on empty module 04 -> material listed, compiling, 3 cards appear (newest sun) and suggested Core with rationale; channel shows the ingest answer citing the cards. AC-UI-3: Sofia's #home with 6/10 feedback, strengths, 03-backprop gap with reread cite, next steps with cites, modules with slipped/Learn it (opens the chain-rule card). AC-UI-4: suggestion chip + Enter -> thinking line -> plan citing 2+ cards, sharing line, persisted after reload. AC-UI-5: report on 03-backprop (told, 3 recommendations), 2 accepted + note -> Apply -> decision card in the channel card row (sun) and Reconciled pill. AC-6: role gate both directions (Sofia #modules->#home, Martin #home->#modules) and Switch person via the sidebar footer.",
+  "passed": true,
+  "startedAt": "2026-08-23T08:30:11.450Z",
+  "completedAt": "2026-08-23T08:30:11.450Z",
+  "provenance": {
+    "repositoryId": "sha256:5ec6f3c476f2e40bbacdcf2c39af35f7b9a3ba3e39dcaea1b038f04ae0131813",
+    "feature": "build-the-hackathon-demo-flow-for-ada-one-teacher-fully",
+    "specRevision": 2,
+    "specDigest": "sha256:e715bb9f81378d19838d16870686eebead495c581dc9c26e76432ff7b33c31d2",
+    "treeDigest": "sha256:29d857e0205d94b496fe590cd5408b9b3bb6378f54c3f0a4c41b99745ef418aa",
+    "policyDigest": "sha256:39a64c33840d3b872a0572551571da16de6c692805bfd2aa7d488fbd2ee8a471"
+  },
+  "digest": "sha256:5df8a6201b75c870c23ca3936072ad6ada7b7ecfab216f77ca3e30e9082ace27",
+  "kind": "collected",
+  "collector": "Playwright (real Chromium) against a live stack: seeded server on :8790, scripted runner connected, vite on :5174",
+  "artifacts": [
+    {
+      "path": ".empirical/specs/build-the-hackathon-demo-flow-for-ada-one-teacher-fully/evidence/ac-ui-1-modules-martin.png",
+      "mediaType": "image/png",
+      "bytes": 163204,
+      "digest": "sha256:59f6a3e3b0f60952af38cb4007a3e22235e040aa6a755b31ccc9f0503a35ec47"
+    },
+    {
+      "path": ".empirical/specs/build-the-hackathon-demo-flow-for-ada-one-teacher-fully/evidence/ac-ui-2a-compiling.png",
+      "mediaType": "image/png",
+      "bytes": 151774,
+      "digest": "sha256:9649b1035f807670e78be6de11a3bad0d587451ae4793c655fac02d8497a94d5"
+    },
+    {
+      "path": ".empirical/specs/build-the-hackathon-demo-flow-for-ada-one-teacher-fully/evidence/ac-ui-2b-channel-after-ingest.png",
+      "mediaType": "image/png",
+      "bytes": 169075,
+      "digest": "sha256:d0e6d2a382aef996a52faf22b17319a84cb263c43b795af8779101b221cadbe7"
+    },
+    {
+      "path": ".empirical/specs/build-the-hackathon-demo-flow-for-ada-one-teacher-fully/evidence/ac-ui-3-home-sofia.png",
+      "mediaType": "image/png",
+      "bytes": 254589,
+      "digest": "sha256:e6146840cd09cf2e63fcb14ab0fef67d396c5ad1584cfe30a32047a689824d8f"
+    },
+    {
+      "path": ".empirical/specs/build-the-hackathon-demo-flow-for-ada-one-teacher-fully/evidence/ac-ui-3b-learn-it.png",
+      "mediaType": "image/png",
+      "bytes": 280197,
+      "digest": "sha256:95bd48502a6a3f4342573242b2365b0e708564b98ad5ceeaa7713927410d8ac6"
+    },
+    {
+      "path": ".empirical/specs/build-the-hackathon-demo-flow-for-ada-one-teacher-fully/evidence/ac-ui-4a-thinking.png",
+      "mediaType": "image/png",
+      "bytes": 258435,
+      "digest": "sha256:f4539375a445e774574c07ba30e191b698c9bdc268da87b848423ec753293bb0"
+    },
+    {
+      "path": ".empirical/specs/build-the-hackathon-demo-flow-for-ada-one-teacher-fully/evidence/ac-ui-4b-plan.png",
+      "mediaType": "image/png",
+      "bytes": 266724,
+      "digest": "sha256:e72fc5f54ac8d05be6bee82b6d7a62995e2af5730d3e2f4ea52bcc6f10929be2"
+    },
+    {
+      "path": ".empirical/specs/build-the-hackathon-demo-flow-for-ada-one-teacher-fully/evidence/ac-ui-4c-plan-after-reload.png",
+      "mediaType": "image/png",
+      "bytes": 265351,
+      "digest": "sha256:127c30f4a18ce5d30b786cd059c553e4eb77e54d63c90405887a38b3181e7c26"
+    },
+    {
+      "path": ".empirical/specs/build-the-hackathon-demo-flow-for-ada-one-teacher-fully/evidence/ac-ui-5a-report-new.png",
+      "mediaType": "image/png",
+      "bytes": 149825,
+      "digest": "sha256:48122051ee5790c1729577ad20d2f5ea573c226258f9bb1184c165aa6e4edc24"
+    },
+    {
+      "path": ".empirical/specs/build-the-hackathon-demo-flow-for-ada-one-teacher-fully/evidence/ac-ui-5b-report-reconciled.png",
+      "mediaType": "image/png",
+      "bytes": 194959,
+      "digest": "sha256:ded36b467119609eb131d8c2f96f669ae0d586765cf9ecbaf9bfb67655a389c2"
+    }
+  ]
+}

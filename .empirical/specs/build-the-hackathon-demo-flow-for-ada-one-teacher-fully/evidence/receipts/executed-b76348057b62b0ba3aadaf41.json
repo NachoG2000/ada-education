@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "id": "executed-b76348057b62b0ba3aadaf41",
+  "criteria": [
+    "AC-7"
+  ],
+  "evidenceKinds": [
+    "test"
+  ],
+  "summary": "vite production build of apps/web succeeds.",
+  "passed": true,
+  "startedAt": "2026-08-23T08:28:36.133Z",
+  "completedAt": "2026-08-23T08:28:38.334Z",
+  "provenance": {
+    "repositoryId": "sha256:5ec6f3c476f2e40bbacdcf2c39af35f7b9a3ba3e39dcaea1b038f04ae0131813",
+    "feature": "build-the-hackathon-demo-flow-for-ada-one-teacher-fully",
+    "specRevision": 2,
+    "specDigest": "sha256:e715bb9f81378d19838d16870686eebead495c581dc9c26e76432ff7b33c31d2",
+    "treeDigest": "sha256:29d857e0205d94b496fe590cd5408b9b3bb6378f54c3f0a4c41b99745ef418aa",
+    "policyDigest": "sha256:39a64c33840d3b872a0572551571da16de6c692805bfd2aa7d488fbd2ee8a471"
+  },
+  "digest": "sha256:55b68a832e4a8c432dac99a78d5e8009002fc92e29580cc4f8ead72682fc4c66",
+  "kind": "executed",
+  "command": {
+    "argv": [
+      "npm",
+      "run",
+      "build"
+    ],
+    "cwd": ".",
+    "timeoutMs": 600000,
+    "maxOutputBytes": 262144,
+    "environmentKeys": [
+      "PATH",
+      "TMPDIR"
+    ]
+  },
+  "result": {
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "stdoutDigest": "sha256:3098f8b82b5c0ab7ae372d0a143096cf386b2b8357ce7277e117511d631c80ad",
+    "stderrDigest": "sha256:351b524197fb492920789369e7f1a271420c757633fbb553b280a181ac4c31a4",
+    "stdoutTail": "\n> ada@0.0.0 build\n> npm run build -w @ada/web\n\n\n> @ada/web@0.0.0 build\n> tsc -b && vite build\n\nvite v8.2.2 building client environment for production...\ntransforming...\n✓ 2053 modules transformed.\nrendering chunks...\ncomputing gzip size...\ndist/index.html                                                   0.45 kB │ gzip:   0.29 kB\ndist/assets/geist-mono-symbols2-wght-normal-CO5SzqOn.woff2        5.81 kB\ndist/assets/geist-mono-cyrillic-ext-wght-normal-X_5orZeX.woff2    6.17 kB\ndist/assets/geist-mono-vietnamese-wght-normal-DadHysG0.woff2      7.69 kB\ndist/assets/geist-mono-cyrillic-wght-normal-DiZS0aHC.woff2       12.94 kB\ndist/assets/geist-mono-latin-ext-wght-normal-Bwz-egvJ.woff2      14.69 kB\ndist/assets/inter-vietnamese-opsz-normal-Ci9T9ieq.woff2          15.26 kB\ndist/assets/inter-vietnamese-opsz-italic-C7TReJrb.woff2          16.21 kB\ndist/assets/inter-greek-ext-opsz-normal-BmPQvyvo.woff2           17.37 kB\ndist/assets/inter-greek-ext-opsz-italic-BIcRYUEt.woff2           18.62 kB\ndist/assets/literata-cyrillic-ext-opsz-italic-5yUt4G_9.woff2     20.76 kB\ndist/assets/literata-cyrillic-ext-opsz-normal-C5tfwALZ.woff2     21.17 kB\ndist/assets/literata-vietnamese-opsz-italic-BdcrZMcO.woff2       21.96 kB\ndist/assets/literata-vietnamese-opsz-normal-Gqw5JQlq.woff2       22.31 kB\ndist/assets/literata-greek-ext-opsz-normal-DGm64vGR.woff2        22.98 kB\ndist/assets/geist-mono-latin-wght-normal-XN7g48iV.woff2          23.12 kB\ndist/assets/literata-greek-ext-opsz-italic-DFpO5j-Z.woff2        25.34 kB\ndist/assets/inter-cyrillic-opsz-normal-BFQXbQ-f.woff2            29.63 kB\ndist/assets/inter-greek-opsz-normal-BM0NlUE_.woff2               30.20 kB\ndist/assets/inter-cyrillic-opsz-italic-Ck9oD2H0.woff2            32.19 kB\ndist/assets/inter-greek-opsz-italic-mtaF_0H_.woff2               33.18 kB\ndist/assets/literata-greek-opsz-normal-DFglUmAd.woff2            41.14 kB\ndist/assets/inter-cyrillic-ext-opsz-normal-CfYZpDVp.woff2        41.52 kB\ndist/assets/literata-greek-opsz-italic-CHERNRFq.woff2            42.04 kB\ndist/assets/inter-cyrillic-ext-opsz-italic-fe11NjBs.woff2        43.99 kB\ndist/assets/literata-cyrillic-opsz-normal-DgmypKXX.woff2         61.68 kB\ndist/assets/literata-cyrillic-opsz-italic-Bj0ndbyp.woff2         62.70 kB\ndist/assets/inter-latin-opsz-normal-BwkfbSeq.woff2               72.92 kB\ndist/assets/inter-latin-opsz-italic-BbqH_2Ar.woff2               79.71 kB\ndist/assets/literata-latin-ext-opsz-normal-STiTPs0F.woff2        89.66 kB\ndist/assets/literata-latin-ext-opsz-italic-4y8iAqqs.woff2        91.42 kB\ndist/assets/literata-latin-opsz-normal-BHZsWIlc.woff2           110.08 kB\ndist/assets/literata-latin-opsz-italic-CJ93D38p.woff2           113.18 kB\ndist/assets/inter-latin-ext-opsz-normal-DpK-iCPk.woff2          133.33 kB\ndist/assets/inter-latin-ext-opsz-italic-BLMf5All.woff2          146.46 kB\ndist/assets/index-CCZ9q5-y.css                                  105.64 kB │ gzip:  16.91 kB\ndist/assets/index-CDU0PR24.js                                   508.76 kB │ gzip: 157.12 kB\n\n✓ built in 202ms\n",
+    "stderrTail": "[plugin builtin:vite-reporter] \n(!) Some chunks are larger than 500 kB after minification. Consider:\n- Using dynamic import() to code-split the application\n- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting\n- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.\n",
+    "stdoutTruncated": false,
+    "stderrTruncated": false
+  }
+}

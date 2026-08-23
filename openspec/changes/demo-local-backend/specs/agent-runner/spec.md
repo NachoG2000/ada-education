@@ -62,11 +62,15 @@ Before executing the runtime the runner SHALL take a snapshot of `wiki/` (path �
 - **THEN** the new card is published with `replaces` pointing at the old one, and the old one moves to `superseded`
 
 ### Requirement: One commit per run
-If the agent's folder is a git repository, at the end of every run that changed files the runner SHALL do `git add -A && git commit -m "<agent>: <summary>"` inside that folder. If it isn't a repository, it SHALL continue unversioned and warn once in the log.
+If the agent's folder is its own git repository (a `.git` at its root), at the end of every run that changed files the runner SHALL do `git add -A && git commit -m "<agent>: <summary>"` inside that folder. If the folder sits inside an enclosing repository (this monorepo's `data/`), the runner SHALL NOT create a nested repository — the enclosing one is the history, and a nested `.git` would hide the wiki from it — and SHALL say so once in the log. If it isn't versioned at all, the runner initializes the folder as its own repository and commits from then on.
 
 #### Scenario: git log as the agent's history
-- **WHEN** two runs that wrote cards finish
+- **WHEN** two runs that wrote cards finish in a standalone agent folder
 - **THEN** `git log --oneline` in the agent's folder shows two commits
+
+#### Scenario: the agent folder lives inside a repository
+- **WHEN** a run changes `wiki/` in `data/<course>/agents/<agent>/` inside this monorepo
+- **THEN** no nested repository is created, the log says runs aren't committed separately, and the changed files show up in the monorepo's own `git status`
 
 ### Requirement: One mention at a time per agent
 The runner SHALL process mentions serially (in-memory queue). If the runtime fails or exceeds a configurable timeout (default 180 s), the runner SHALL post a short message from the agent in the thread saying it couldn't answer, and SHALL stay alive for the next mention.

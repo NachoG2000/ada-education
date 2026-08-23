@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from "react"
 import { CommunityProvider, useConnectedCommunity } from "@/lib/community"
+import { readHash, subscribeToHash } from "@/lib/hash"
 import { configuredServer } from "@/lib/api"
 import { demo } from "@/lib/demo"
 import { ErrorBoundary } from "@/components/ada/boundary"
@@ -13,15 +14,11 @@ const NOW = new Date("2026-08-22T12:00:00-03:00")
 /* With VITE_ADA_SERVER set the app runs connected; without it, the usual demo. */
 const SERVER = configuredServer()
 
-/* The hash is the whole router. Read live, not once: pointing an open tab at
-   #figures switches the screen without a reload, and coming back lands on the
-   course again. The boundary is keyed by it so a screen that broke doesn't
-   survive the navigation away from it. */
-const subscribeToHash = (onChange: () => void) => {
-  window.addEventListener("hashchange", onChange)
-  return () => window.removeEventListener("hashchange", onChange)
-}
-const readHash = () => location.hash
+/* The hash is the whole router (lib/hash.ts holds the one subscription; the
+   community provider derives the in-shell view from the same source). Read
+   live, not once: pointing an open tab at #figures switches the screen without
+   a reload, and coming back lands on the course again. The boundary is keyed
+   by it so a screen that broke doesn't survive the navigation away from it. */
 
 export default function App() {
   const hash = useSyncExternalStore(subscribeToHash, readHash)
@@ -107,6 +104,9 @@ function ConnectedApp({ server }: { server: string }) {
       sendMessage={con.sendMessage}
       startThread={con.startThread}
       runnerInfo={con.runnerInfo}
+      uploadMaterial={con.uploadMaterial}
+      patchModule={con.patchModule}
+      reconcileReport={con.reconcileReport}
     >
       <ChannelScreen />
     </CommunityProvider>

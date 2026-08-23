@@ -3,7 +3,9 @@ import { createServer, type Server } from "node:http"
 import { getRequestListener } from "@hono/node-server"
 import type { Channel, Member, Message, Presence } from "@ada/protocol"
 import {
+  applyModuleSuggestion,
   createMessage,
+  createReport,
   findAgentByToken,
   getMember,
   getMessages,
@@ -30,9 +32,11 @@ export function startServer(): RunningServer {
 
   const app = createApi(database, {
     presence,
-    onMessageCreated: (message) => hub?.onMessageCreated(message),
+    onMessageCreated: (message, hint) => hub?.onMessageCreated(message, hint),
     onThreadCreated: (thread) => hub?.onThreadCreated(thread),
     onCardPublished: ({ card, message }) => hub?.onCardPublished(card, message),
+    onModuleUpdated: (module) => hub?.broadcast({ type: "module.updated", payload: { module } }),
+    onReportUpdated: (report) => hub?.broadcast({ type: "report.updated", payload: { report } }),
   })
   const server = createServer(getRequestListener(app.fetch))
   const store: WsStore = {
@@ -60,6 +64,12 @@ export function startServer(): RunningServer {
     },
     publishCard(input) {
       return publishCard(database, input as AuthoredCardPublishInput)
+    },
+    applyModuleSuggestion(agentId, input) {
+      return applyModuleSuggestion(database, agentId, input)
+    },
+    createReport(agentId, input) {
+      return createReport(database, agentId, input)
     },
   }
   hub = createWebSocketHub(server, store, (agentId, nextPresence) => {

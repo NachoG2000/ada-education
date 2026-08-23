@@ -5,8 +5,13 @@ import type {
   Card,
   Channel,
   Member,
+  MentionIntent,
   Message,
+  Module,
+  ModuleSuggestInput,
   Presence,
+  Report,
+  ReportCreateInput,
   Thread,
 } from "@ada/protocol"
 import {
@@ -21,6 +26,8 @@ import { WebSocket, WebSocketServer } from "ws"
 import { mentionContext, mentionedAgentIds } from "./mentions.js"
 
 export type AgentRecord = Agent & { token: string; runtime?: string; model?: string }
+
+export type MentionHint = { intent: MentionIntent; moduleId: string }
 
 /** Functions the hub needs from the SQLite file; it holds no storage of its own. */
 export type WsStore = {
@@ -39,6 +46,8 @@ export type WsStore = {
     publishes?: string
   }): Message
   publishCard(input: CardPublishInput & { authorId: string }): { card: Card; message: Message }
+  applyModuleSuggestion(agentId: string, input: ModuleSuggestInput): Module
+  createReport(agentId: string, input: ReportCreateInput): Report
 }
 
 export type PresenceChange = (agentId: string, presence: Presence, runtime?: string, model?: string) => void
@@ -48,7 +57,7 @@ export type WebSocketHub = {
   runners: Map<string, WebSocket>
   presence: Map<string, { presence: Presence; runtime?: string; model?: string }>
   broadcast(event: ServerEvent): void
-  onMessageCreated(message: Message): void
+  onMessageCreated(message: Message, hint?: MentionHint): void
   onCardPublished(card: Card, message: Message): void
   onThreadCreated(thread: Thread): void
   handleUpgrade(request: IncomingMessage, socket: Socket, head: Buffer): void
@@ -77,7 +86,7 @@ export function createWebSocketHub(server: HttpServer, store: WsStore, onPresenc
     broadcast(event)
   }
 
-  const mention = (message: Message): void => {
+  const mention = (message: Message, hint?: MentionHint): void => {
     const channel = store.channel(message.channelId)
     if (!channel) return
     const members = store.members()
@@ -96,7 +105,14 @@ export function createWebSocketHub(server: HttpServer, store: WsStore, onPresenc
       if (!runner || !from) continue
       const event: RunnerServerMessage = {
         type: "agent.mention",
-        payload: { channelId: message.channelId, ...(message.threadId ? { threadId: message.threadId } : {}), message, from, context },
+        payload: {
+          channelId: message.channelId,
+          ...(message.threadId ? { threadId: message.threadId } : {}),
+          message,
+          from,
+          context,
+          ...(hint ? { intent: hint.intent, moduleId: hint.moduleId } : {}),
+        },
       }
       send(runner, event)
     }
@@ -129,6 +145,18 @@ export function createWebSocketHub(server: HttpServer, store: WsStore, onPresenc
         send(socket, { type: "ack", ref: parsed.ref, ok: true, message } satisfies Ack)
         broadcast({ type: "message.created", payload: { message } })
         mention(message)
+        return
+      }
+      if (parsed.type === "module.suggest") {
+        const module = store.applyModuleSuggestion(agent.id, parsed.payload)
+        send(socket, { type: "ack", ref: parsed.ref, ok: true, module } satisfies Ack)
+        broadcast({ type: "module.updated", payload: { module } })
+        return
+      }
+      if (parsed.type === "report.create") {
+        const report = store.createReport(agent.id, parsed.payload)
+        send(socket, { type: "ack", ref: parsed.ref, ok: true, report } satisfies Ack)
+        broadcast({ type: "report.updated", payload: { report } })
         return
       }
       const result = store.publishCard({ authorId: agent.id, ...parsed.payload })
@@ -192,9 +220,9 @@ export function createWebSocketHub(server: HttpServer, store: WsStore, onPresenc
     runners,
     presence,
     broadcast,
-    onMessageCreated(message) {
+    onMessageCreated(message, hint) {
       broadcast({ type: "message.created", payload: { message } })
-      mention(message)
+      mention(message, hint)
     },
     onCardPublished(card, message) {
       broadcast({ type: "card.published", payload: { card, message } })

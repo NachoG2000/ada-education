@@ -5,17 +5,28 @@ import { randomUUID } from "node:crypto"
 import { DatabaseSync } from "node:sqlite"
 import type {
   Agent,
+  Assignment,
   Card,
   CardType,
   Channel,
   CommunitySnapshot,
+  Difficulty,
+  DifficultyLevel,
+  Feedback,
+  Material,
   Member,
   Message,
   MessageBlock,
+  Module,
+  ModuleStatus,
+  ModuleSuggestInput,
   Person,
   Presence,
+  Report,
+  ReportCreateInput,
   Thread,
   Visibility,
+  WorkStatus,
 } from "@ada/protocol"
 import type { CardPublishInput as ProtocolCardPublishInput } from "@ada/protocol"
 
@@ -306,6 +317,39 @@ export function createMessage(database: DatabaseSync, input: MessageInput): Mess
   return message
 }
 
+export interface SeedMessageInput extends MessageInput {
+  id: string
+  at: string
+}
+
+/** Upsert-by-id message writer for the seed: unlike `createMessage`, it accepts a caller id and an explicit `at` so history can be backdated, and re-seeding never duplicates. */
+export function upsertSeedMessage(database: DatabaseSync, input: SeedMessageInput): Message {
+  assertChannelMember(database, input.channelId, input.authorId)
+  if (input.threadId && !getThread(database, input.threadId)) {
+    throw new Error(`Thread does not exist: ${input.threadId}`)
+  }
+  const message: Message = {
+    id: input.id,
+    channelId: input.channelId,
+    authorId: input.authorId,
+    at: input.at,
+    paragraphs: input.paragraphs,
+    threadId: input.threadId,
+    fromCard: input.fromCard,
+    publishes: input.publishes,
+  }
+  database.prepare(`
+    INSERT INTO messages (id, channel_id, author_id, at, paragraphs, thread_id, from_card, publishes, reactions)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(id) DO UPDATE SET channel_id = excluded.channel_id, author_id = excluded.author_id,
+      at = excluded.at, paragraphs = excluded.paragraphs, thread_id = excluded.thread_id,
+      from_card = excluded.from_card, publishes = excluded.publishes
+  `).run(message.id, message.channelId, message.authorId, message.at, JSON.stringify(message.paragraphs),
+    message.threadId ?? null, message.fromCard ? JSON.stringify(message.fromCard) : null,
+    message.publishes ?? null, null)
+  return message
+}
+
 export function createThread(database: DatabaseSync, rootMessageId: string): Thread {
   const message = getMessage(database, rootMessageId)
   if (!message) throw new Error("Root message does not exist")
@@ -345,6 +389,11 @@ export function getCardByPath(database: DatabaseSync, authorId: string, path: st
   return row ? cardFromRow(row) : undefined
 }
 
+export function getCardById(database: DatabaseSync, cardId: string): Card | undefined {
+  const row = database.prepare("SELECT * FROM cards WHERE id = ?").get(cardId) as Row | undefined
+  return row ? cardFromRow(row) : undefined
+}
+
 export function getCommunitySnapshot(database: DatabaseSync, presence: PresenceMap = new Map()): CommunitySnapshot {
   const communityRow = database.prepare("SELECT * FROM community LIMIT 1").get() as Row | undefined
   if (!communityRow) throw new Error("Community is not initialized; run the seed")
@@ -358,51 +407,460 @@ export function getCommunitySnapshot(database: DatabaseSync, presence: PresenceM
     cards: listCards(database),
     messages: listMessages(database),
     threads: listThreads(database),
+    modules: listModules(database),
+    assignments: listAssignments(database),
+    feedback: listFeedback(database),
+    reports: listReports(database),
   }
+}
+
+/* ---- Modules, materials, assignments, feedback and reports ---------------- */
+
+export interface SeedMaterial {
+  id: string
+  name: string
+  kind: Material["kind"]
+  size?: number
+  path: string
+  uploadedAt: string
+}
+
+export interface SeedModule {
+  id: string
+  index: number
+  slug: string
+  title: string
+  summary: string
+  channelId: string
+  objectives: string[]
+  difficulty: Difficulty
+  status: ModuleStatus
+  materials?: SeedMaterial[]
+  revision?: string
+}
+
+export function upsertModule(database: DatabaseSync, module: SeedModule): void {
+  if (!database.prepare("SELECT 1 FROM channels WHERE id = ?").get(module.channelId)) {
+    throw new Error(`Module "${module.id}" points at an unknown channel: ${module.channelId}`)
+  }
+  database.prepare(`
+    INSERT INTO modules (id, idx, slug, title, summary, channel_id, objectives, difficulty, status, revision)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(id) DO UPDATE SET idx = excluded.idx, slug = excluded.slug, title = excluded.title,
+      summary = excluded.summary, channel_id = excluded.channel_id, objectives = excluded.objectives,
+      difficulty = excluded.difficulty, status = excluded.status, revision = excluded.revision
+  `).run(module.id, module.index, module.slug, module.title, module.summary, module.channelId,
+    JSON.stringify(module.objectives), JSON.stringify(module.difficulty), module.status, module.revision ?? null)
+  for (const material of module.materials ?? []) addMaterial(database, module.id, material)
+}
+
+export function addMaterial(database: DatabaseSync, moduleId: string, material: SeedMaterial): void {
+  if (!database.prepare("SELECT 1 FROM modules WHERE id = ?").get(moduleId)) {
+    throw new Error(`Material "${material.name}" points at an unknown module: ${moduleId}`)
+  }
+  database.prepare(`
+    INSERT INTO materials (id, module_id, name, kind, size, path, uploaded_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(id) DO UPDATE SET module_id = excluded.module_id, name = excluded.name, kind = excluded.kind,
+      size = excluded.size, path = excluded.path, uploaded_at = excluded.uploaded_at
+  `).run(material.id, moduleId, material.name, material.kind, material.size ?? null, material.path, material.uploadedAt)
+}
+
+function listMaterials(database: DatabaseSync, moduleId: string): Material[] {
+  return (database.prepare("SELECT * FROM materials WHERE module_id = ? ORDER BY uploaded_at").all(moduleId) as Row[])
+    .map((row) => ({
+      id: asString(row.id) ?? "",
+      name: asString(row.name) ?? "",
+      kind: (asString(row.kind) ?? "markdown") as Material["kind"],
+      size: asNumber(row.size),
+      path: asString(row.path) ?? "",
+      uploadedAt: asString(row.uploaded_at) ?? "",
+    }))
+}
+
+/** Cards published in the module's channel, base documents excluded, oldest first. */
+function moduleCardIds(database: DatabaseSync, channelId: string): string[] {
+  return (database.prepare(`
+    SELECT id FROM cards WHERE channel_id = ? AND (base IS NULL OR base = 0) ORDER BY published_at ASC
+  `).all(channelId) as Row[]).map((row) => asString(row.id) ?? "")
+}
+
+/** Everything a module row holds by itself (materials and cardIds join in). */
+function moduleShell(row: Row): Omit<Module, "materials" | "cardIds"> {
+  return {
+    id: asString(row.id) ?? "",
+    index: asNumber(row.idx) ?? 0,
+    slug: asString(row.slug) ?? "",
+    title: asString(row.title) ?? "",
+    summary: asString(row.summary) ?? "",
+    channelId: asString(row.channel_id) ?? "",
+    objectives: parseJson<string[]>(row.objectives, []),
+    difficulty: parseJson<Difficulty>(row.difficulty, { level: "intro" }),
+    status: (asString(row.status) ?? "empty") as ModuleStatus,
+    revision: asString(row.revision),
+  }
+}
+
+function moduleFromRow(database: DatabaseSync, row: Row): Module {
+  const shell = moduleShell(row)
+  return {
+    ...shell,
+    materials: listMaterials(database, shell.id),
+    cardIds: moduleCardIds(database, shell.channelId),
+  }
+}
+
+export function listModules(database: DatabaseSync): Module[] {
+  // The snapshot path: batch materials and card ids in one query each instead
+  // of two queries per module (the row count grows with the course).
+  const rows = database.prepare("SELECT * FROM modules ORDER BY idx").all() as Row[]
+  if (rows.length === 0) return []
+  const materialsByModule = new Map<string, Material[]>()
+  for (const m of database.prepare("SELECT * FROM materials ORDER BY uploaded_at").all() as Row[]) {
+    const moduleId = asString(m.module_id) ?? ""
+    const list = materialsByModule.get(moduleId) ?? []
+    list.push({
+      id: asString(m.id) ?? "",
+      name: asString(m.name) ?? "",
+      kind: (asString(m.kind) ?? "markdown") as Material["kind"],
+      size: asNumber(m.size),
+      path: asString(m.path) ?? "",
+      uploadedAt: asString(m.uploaded_at) ?? "",
+    })
+    materialsByModule.set(moduleId, list)
+  }
+  const cardsByChannel = new Map<string, string[]>()
+  for (const c of database.prepare("SELECT id, channel_id FROM cards WHERE base IS NULL OR base = 0 ORDER BY published_at ASC").all() as Row[]) {
+    const channelId = asString(c.channel_id) ?? ""
+    const list = cardsByChannel.get(channelId) ?? []
+    list.push(asString(c.id) ?? "")
+    cardsByChannel.set(channelId, list)
+  }
+  return rows.map((row) => ({
+    ...moduleShell(row),
+    materials: materialsByModule.get(asString(row.id) ?? "") ?? [],
+    cardIds: cardsByChannel.get(asString(row.channel_id) ?? "") ?? [],
+  }))
+}
+
+export function getModule(database: DatabaseSync, moduleId: string): Module | undefined {
+  const row = database.prepare("SELECT * FROM modules WHERE id = ?").get(moduleId) as Row | undefined
+  return row ? moduleFromRow(database, row) : undefined
+}
+
+export interface ModulePatch {
+  objectives?: string[]
+  difficulty?: { level: DifficultyLevel; rationale?: string; setBy: string }
+  status?: ModuleStatus
+  revision?: string
+}
+
+export function updateModule(database: DatabaseSync, moduleId: string, patch: ModulePatch): Module {
+  const module = getModule(database, moduleId)
+  if (!module) throw new Error(`Module does not exist: ${moduleId}`)
+  const nextDifficulty: Difficulty = patch.difficulty
+    ? {
+      ...module.difficulty,
+      level: patch.difficulty.level,
+      rationale: patch.difficulty.rationale ?? module.difficulty.rationale,
+      setBy: patch.difficulty.setBy,
+    }
+    : module.difficulty
+  database.prepare(`
+    UPDATE modules SET objectives = ?, difficulty = ?, status = ?, revision = ? WHERE id = ?
+  `).run(
+    JSON.stringify(patch.objectives ?? module.objectives),
+    JSON.stringify(nextDifficulty),
+    patch.status ?? module.status,
+    patch.revision ?? module.revision ?? null,
+    moduleId,
+  )
+  return getModule(database, moduleId) as Module
+}
+
+export function setModuleStatus(database: DatabaseSync, moduleId: string, status: ModuleStatus): Module {
+  return updateModule(database, moduleId, { status })
+}
+
+/** Applies a runner's `module.suggest`: the level only moves if no teacher has set it by hand; rationale/evidence/suggestedBy are always recorded. */
+export function applyModuleSuggestion(database: DatabaseSync, agentId: string, input: ModuleSuggestInput): Module {
+  const module = getModule(database, input.moduleId)
+  if (!module) throw new Error(`Module does not exist: ${input.moduleId}`)
+  const nextDifficulty: Difficulty = {
+    ...module.difficulty,
+    level: module.difficulty.setBy ? module.difficulty.level : input.difficulty.level,
+    rationale: input.difficulty.rationale,
+    evidence: input.difficulty.evidence,
+    suggestedBy: agentId,
+  }
+  database.prepare(`
+    UPDATE modules SET difficulty = ?, status = ? WHERE id = ?
+  `).run(JSON.stringify(nextDifficulty), input.status ?? module.status, input.moduleId)
+  return getModule(database, input.moduleId) as Module
+}
+
+export interface SeedAssignment {
+  id: string
+  moduleId: string
+  channelId: string
+  title: string
+  due: string
+  status: WorkStatus
+}
+
+export function upsertAssignment(database: DatabaseSync, assignment: SeedAssignment): void {
+  if (!database.prepare("SELECT 1 FROM modules WHERE id = ?").get(assignment.moduleId)) {
+    throw new Error(`Assignment "${assignment.id}" points at an unknown module: ${assignment.moduleId}`)
+  }
+  if (!database.prepare("SELECT 1 FROM channels WHERE id = ?").get(assignment.channelId)) {
+    throw new Error(`Assignment "${assignment.id}" points at an unknown channel: ${assignment.channelId}`)
+  }
+  database.prepare(`
+    INSERT INTO assignments (id, module_id, channel_id, title, due, status)
+    VALUES (?, ?, ?, ?, ?, ?)
+    ON CONFLICT(id) DO UPDATE SET module_id = excluded.module_id, channel_id = excluded.channel_id,
+      title = excluded.title, due = excluded.due, status = excluded.status
+  `).run(assignment.id, assignment.moduleId, assignment.channelId, assignment.title, assignment.due, assignment.status)
+}
+
+function assignmentFromRow(row: Row): Assignment {
+  return {
+    id: asString(row.id) ?? "",
+    moduleId: asString(row.module_id) ?? "",
+    channelId: asString(row.channel_id) ?? "",
+    title: asString(row.title) ?? "",
+    due: asString(row.due) ?? "",
+    status: (asString(row.status) ?? "active") as WorkStatus,
+  }
+}
+
+export function listAssignments(database: DatabaseSync): Assignment[] {
+  return (database.prepare("SELECT * FROM assignments ORDER BY due").all() as Row[]).map(assignmentFromRow)
+}
+
+export function getAssignment(database: DatabaseSync, assignmentId: string): Assignment | undefined {
+  const row = database.prepare("SELECT * FROM assignments WHERE id = ?").get(assignmentId) as Row | undefined
+  return row ? assignmentFromRow(row) : undefined
+}
+
+export type SeedFeedback = Omit<Feedback, "id"> & { id: string }
+
+export function upsertFeedback(database: DatabaseSync, feedback: SeedFeedback): void {
+  if (!database.prepare("SELECT 1 FROM assignments WHERE id = ?").get(feedback.assignmentId)) {
+    throw new Error(`Feedback "${feedback.id}" points at an unknown assignment: ${feedback.assignmentId}`)
+  }
+  if (!database.prepare("SELECT 1 FROM members WHERE id = ?").get(feedback.studentId)) {
+    throw new Error(`Feedback "${feedback.id}" points at an unknown student: ${feedback.studentId}`)
+  }
+  if (!database.prepare("SELECT 1 FROM members WHERE id = ?").get(feedback.agentId)) {
+    throw new Error(`Feedback "${feedback.id}" points at an unknown agent: ${feedback.agentId}`)
+  }
+  const body = {
+    score: feedback.score,
+    summary: feedback.summary,
+    strengths: feedback.strengths,
+    gaps: feedback.gaps,
+    nextSteps: feedback.nextSteps,
+  }
+  database.prepare(`
+    INSERT INTO feedback (id, assignment_id, student_id, agent_id, at, body)
+    VALUES (?, ?, ?, ?, ?, ?)
+    ON CONFLICT(id) DO UPDATE SET assignment_id = excluded.assignment_id, student_id = excluded.student_id,
+      agent_id = excluded.agent_id, at = excluded.at, body = excluded.body
+  `).run(feedback.id, feedback.assignmentId, feedback.studentId, feedback.agentId, feedback.at, JSON.stringify(body))
+}
+
+interface FeedbackBody {
+  score: Feedback["score"]
+  summary: string
+  strengths: string[]
+  gaps: Feedback["gaps"]
+  nextSteps: Feedback["nextSteps"]
+}
+
+function feedbackFromRow(row: Row): Feedback {
+  const body = parseJson<FeedbackBody>(row.body, { score: { got: 0, of: 0 }, summary: "", strengths: [], gaps: [], nextSteps: [] })
+  return {
+    id: asString(row.id) ?? "",
+    assignmentId: asString(row.assignment_id) ?? "",
+    studentId: asString(row.student_id) ?? "",
+    agentId: asString(row.agent_id) ?? "",
+    at: asString(row.at) ?? "",
+    ...body,
+  }
+}
+
+export function listFeedback(database: DatabaseSync): Feedback[] {
+  return (database.prepare("SELECT * FROM feedback ORDER BY at").all() as Row[]).map(feedbackFromRow)
+}
+
+export function getFeedback(database: DatabaseSync, feedbackId: string): Feedback | undefined {
+  const row = database.prepare("SELECT * FROM feedback WHERE id = ?").get(feedbackId) as Row | undefined
+  return row ? feedbackFromRow(row) : undefined
+}
+
+export type SeedReport = Omit<Report, "id"> & { id: string }
+
+export function upsertReport(database: DatabaseSync, report: SeedReport): void {
+  if (!database.prepare("SELECT 1 FROM members WHERE id = ?").get(report.studentId)) {
+    throw new Error(`Report "${report.id}" points at an unknown student: ${report.studentId}`)
+  }
+  if (!database.prepare("SELECT 1 FROM members WHERE id = ?").get(report.agentId)) {
+    throw new Error(`Report "${report.id}" points at an unknown agent: ${report.agentId}`)
+  }
+  if (!database.prepare("SELECT 1 FROM modules WHERE id = ?").get(report.moduleId)) {
+    throw new Error(`Report "${report.id}" points at an unknown module: ${report.moduleId}`)
+  }
+  if (report.assignmentId && !database.prepare("SELECT 1 FROM assignments WHERE id = ?").get(report.assignmentId)) {
+    throw new Error(`Report "${report.id}" points at an unknown assignment: ${report.assignmentId}`)
+  }
+  const body = { told: report.told, recommendations: report.recommendations, cardIds: report.cardIds }
+  database.prepare(`
+    INSERT INTO reports (id, agent_id, student_id, module_id, assignment_id, at, body, status, reconciled)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(id) DO UPDATE SET agent_id = excluded.agent_id, student_id = excluded.student_id,
+      module_id = excluded.module_id, assignment_id = excluded.assignment_id, at = excluded.at,
+      body = excluded.body, status = excluded.status, reconciled = excluded.reconciled
+  `).run(report.id, report.agentId, report.studentId, report.moduleId, report.assignmentId ?? null, report.at,
+    JSON.stringify(body), report.status, report.reconciled ? JSON.stringify(report.reconciled) : null)
+}
+
+/** What a runner files after advising a student (`report.create`). */
+export function createReport(database: DatabaseSync, agentId: string, input: ReportCreateInput): Report {
+  if (!database.prepare("SELECT 1 FROM members WHERE id = ?").get(input.studentId)) {
+    throw new Error(`Report points at an unknown student: ${input.studentId}`)
+  }
+  if (!database.prepare("SELECT 1 FROM modules WHERE id = ?").get(input.moduleId)) {
+    throw new Error(`Report points at an unknown module: ${input.moduleId}`)
+  }
+  const report: Report = {
+    id: randomUUID(),
+    agentId,
+    studentId: input.studentId,
+    moduleId: input.moduleId,
+    assignmentId: input.assignmentId,
+    at: new Date().toISOString(),
+    told: input.told,
+    recommendations: input.recommendations,
+    cardIds: input.cardIds,
+    status: "new",
+  }
+  upsertReport(database, report)
+  return report
+}
+
+interface ReportBody {
+  told: string
+  recommendations: Report["recommendations"]
+  cardIds: string[]
+}
+
+function reportFromRow(row: Row): Report {
+  const body = parseJson<ReportBody>(row.body, { told: "", recommendations: [], cardIds: [] })
+  return {
+    id: asString(row.id) ?? "",
+    agentId: asString(row.agent_id) ?? "",
+    studentId: asString(row.student_id) ?? "",
+    moduleId: asString(row.module_id) ?? "",
+    assignmentId: asString(row.assignment_id),
+    at: asString(row.at) ?? "",
+    ...body,
+    status: (asString(row.status) ?? "new") as Report["status"],
+    reconciled: parseJson<Report["reconciled"]>(row.reconciled, undefined),
+  }
+}
+
+export function listReports(database: DatabaseSync): Report[] {
+  return (database.prepare("SELECT * FROM reports ORDER BY at").all() as Row[]).map(reportFromRow)
+}
+
+export function getReport(database: DatabaseSync, reportId: string): Report | undefined {
+  const row = database.prepare("SELECT * FROM reports WHERE id = ?").get(reportId) as Row | undefined
+  return row ? reportFromRow(row) : undefined
+}
+
+export interface ReconcileInput {
+  accepted: string[]
+  note: string
+  by: string
+  cardId: string
+}
+
+export function reconcileReport(database: DatabaseSync, reportId: string, input: ReconcileInput): Report {
+  const report = getReport(database, reportId)
+  if (!report) throw new Error(`Report does not exist: ${reportId}`)
+  const reconciled: NonNullable<Report["reconciled"]> = {
+    at: new Date().toISOString(),
+    by: input.by,
+    accepted: input.accepted,
+    note: input.note,
+    cardId: input.cardId,
+  }
+  database.prepare("UPDATE reports SET status = 'reconciled', reconciled = ? WHERE id = ?")
+    .run(JSON.stringify(reconciled), reportId)
+  return { ...report, status: "reconciled", reconciled }
+}
+
+export interface UpsertCardOptions {
+  /** deterministic id (e.g. `card:<authorId>:<path>`) used only when no row exists yet for (authorId, path) */
+  id?: string
+  /** explicit publish date (seed cards keep a fixed date instead of "now") */
+  publishedAt?: string
+  /** whether re-upserting the same path bumps `version` (true for a genuine publish event; false for seed/base upserts) */
+  bumpVersion?: boolean
+}
+
+/** Shared core for publishCard/upsertBaseCard/seed card upserts: computes version, supersede and state, writes the row. */
+export function upsertCard(database: DatabaseSync, input: AuthoredCardPublishInput, options: UpsertCardOptions = {}): Card {
+  const bumpVersion = options.bumpVersion ?? true
+  assertChannelMember(database, input.channelId, input.authorId)
+  const existingRow = database.prepare("SELECT * FROM cards WHERE author_id = ? AND path = ?")
+    .get(input.authorId, input.path) as Row | undefined
+  const previous = existingRow ? cardFromRow(existingRow) : undefined
+  const version = previous ? (bumpVersion ? previous.version + 1 : previous.version) : 1
+  const cardId = previous?.id ?? options.id ?? randomUUID()
+  const replacedCard = input.replaces
+    ? database.prepare("SELECT * FROM cards WHERE author_id = ? AND path = ?")
+      .get(input.authorId, input.replaces) as Row | undefined
+    : undefined
+  if (input.replaces && !replacedCard) throw new Error(`Card to replace does not exist: ${input.replaces}`)
+  const replacedId = replacedCard ? asString(replacedCard.id) : undefined
+  if (replacedId) database.prepare("UPDATE cards SET state = 'superseded' WHERE id = ?").run(replacedId)
+  const card: Card = {
+    id: cardId,
+    channelId: input.channelId,
+    title: input.title,
+    type: input.type,
+    authorId: input.authorId,
+    version,
+    visibility: input.visibility,
+    sources: input.sources,
+    replaces: replacedId,
+    base: input.base,
+    // A seed re-run (no version bump) is not an update: the card keeps the state it had.
+    state: input.base ? undefined : !bumpVersion ? (previous?.state ?? "new") : (previous ? "updated" : "new"),
+    publishedAt: options.publishedAt ?? previous?.publishedAt ?? new Date().toISOString(),
+    body: input.body,
+    path: input.path,
+  }
+  database.prepare(`
+    INSERT INTO cards (id, channel_id, title, type, author_id, path, version, visibility, sources, replaces,
+      base, state, published_at, body)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(author_id, path) DO UPDATE SET channel_id = excluded.channel_id, title = excluded.title,
+      type = excluded.type, version = excluded.version, visibility = excluded.visibility, sources = excluded.sources,
+      replaces = excluded.replaces, base = excluded.base, state = excluded.state, published_at = excluded.published_at,
+      body = excluded.body
+  `).run(card.id, card.channelId, card.title, card.type, card.authorId, input.path, card.version,
+    card.visibility, JSON.stringify(card.sources), card.replaces ?? null, card.base ? 1 : null,
+    card.state ?? null, card.publishedAt, card.body)
+  return card
 }
 
 export function publishCard(database: DatabaseSync, input: AuthoredCardPublishInput): PublishedCard {
   database.exec("BEGIN IMMEDIATE")
   try {
-    assertChannelMember(database, input.channelId, input.authorId)
-    const existingRow = database.prepare("SELECT * FROM cards WHERE author_id = ? AND path = ?")
-      .get(input.authorId, input.path) as Row | undefined
-    const previous = existingRow ? cardFromRow(existingRow) : undefined
-    const version = previous ? previous.version + 1 : 1
-    const cardId = previous?.id ?? randomUUID()
-    const replacedCard = input.replaces
-      ? database.prepare("SELECT * FROM cards WHERE author_id = ? AND path = ?")
-        .get(input.authorId, input.replaces) as Row | undefined
-      : undefined
-    if (input.replaces && !replacedCard) throw new Error("Card to replace does not exist")
-    const replacedId = replacedCard ? asString(replacedCard.id) : undefined
-    if (replacedId) database.prepare("UPDATE cards SET state = 'superseded' WHERE id = ?").run(replacedId)
-    const card: Card = {
-      id: cardId,
-      channelId: input.channelId,
-      title: input.title,
-      type: input.type,
-      authorId: input.authorId,
-      version,
-      visibility: input.visibility,
-      sources: input.sources,
-      replaces: replacedId,
-      base: input.base,
-      state: input.base ? undefined : (previous ? "updated" : "new"),
-      publishedAt: new Date().toISOString(),
-      body: input.body,
-    }
-    database.prepare(`
-      INSERT INTO cards (id, channel_id, title, type, author_id, path, version, visibility, sources, replaces,
-        base, state, published_at, body)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      ON CONFLICT(author_id, path) DO UPDATE SET channel_id = excluded.channel_id, title = excluded.title,
-        type = excluded.type, version = excluded.version, visibility = excluded.visibility, sources = excluded.sources,
-        replaces = excluded.replaces, base = excluded.base, state = excluded.state, published_at = excluded.published_at,
-        body = excluded.body
-    `).run(card.id, card.channelId, card.title, card.type, card.authorId, input.path, card.version,
-      card.visibility, JSON.stringify(card.sources), card.replaces ?? null, card.base ? 1 : null,
-      card.state ?? null, card.publishedAt, card.body)
+    const card = upsertCard(database, input)
     const message = createMessage(database, {
       channelId: input.channelId,
       authorId: input.authorId,
@@ -418,35 +876,8 @@ export function publishCard(database: DatabaseSync, input: AuthoredCardPublishIn
 }
 
 /** Inserts or updates a base card of the course. Base cards are not conversation messages. */
-export function upsertBaseCard(database: DatabaseSync, input: AuthoredCardPublishInput): Card {
-  assertChannelMember(database, input.channelId, input.authorId)
-  const existing = database.prepare("SELECT * FROM cards WHERE author_id = ? AND path = ?")
-    .get(input.authorId, input.path) as Row | undefined
-  const previous = existing ? cardFromRow(existing) : undefined
-  const card: Card = {
-    id: previous?.id ?? randomUUID(),
-    channelId: input.channelId,
-    title: input.title,
-    type: input.type,
-    authorId: input.authorId,
-    version: previous?.version ?? 1,
-    visibility: input.visibility,
-    sources: input.sources,
-    base: true,
-    state: undefined,
-    publishedAt: previous?.publishedAt ?? new Date().toISOString(),
-    body: input.body,
-  }
-  database.prepare(`
-    INSERT INTO cards (id, channel_id, title, type, author_id, path, version, visibility, sources,
-      base, published_at, body)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
-    ON CONFLICT(author_id, path) DO UPDATE SET channel_id = excluded.channel_id, title = excluded.title,
-      type = excluded.type, version = excluded.version, visibility = excluded.visibility, sources = excluded.sources,
-      base = 1, state = NULL, published_at = excluded.published_at, body = excluded.body
-  `).run(card.id, card.channelId, card.title, card.type, card.authorId, input.path, card.version,
-    card.visibility, JSON.stringify(card.sources), card.publishedAt, card.body)
-  return card
+export function upsertBaseCard(database: DatabaseSync, input: AuthoredCardPublishInput, options: UpsertCardOptions = {}): Card {
+  return upsertCard(database, { ...input, base: true }, { ...options, bumpVersion: false })
 }
 
 export function assertChannelMember(database: DatabaseSync, channelId: string, memberId: string): void {
@@ -486,5 +917,6 @@ function cardFromRow(row: Row): Card {
     state: asString(row.state) as Card["state"],
     publishedAt: asString(row.published_at) ?? "",
     body: asString(row.body) ?? "",
+    path: asString(row.path),
   }
 }
