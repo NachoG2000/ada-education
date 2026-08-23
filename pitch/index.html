@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Ada — Aleph 2026 pitch</title>
+<title>Ada — pitch</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&family=Literata:ital,opsz,wght@0,7..72,400..600;1,7..72,400..600&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet" />
@@ -95,12 +95,6 @@
     font: 600 var(--type-small)/1 var(--sans); white-space: nowrap;
   }
 
-  /* People: pastel circle with initials. Agents: silhouette + two eyes. */
-  .person {
-    display: inline-flex; align-items: center; justify-content: center;
-    border-radius: 999px; font: 600 38px/1 var(--sans);
-  }
-
   /* ---- entrance animations (only when the slide activates) ---- */
   @media (prefers-reduced-motion: no-preference) {
     [data-deck-active] .in {
@@ -128,26 +122,11 @@
   }
   .s1 .tagline {
     font: 400 var(--type-subtitle)/1.35 var(--serif);
-    color: var(--ink-2); margin: 0 0 58px; max-width: 1240px;
+    color: var(--ink-2); margin: 0; max-width: 1240px;
   }
-  .s1 .badges { display: flex; gap: 20px; }
-  .s1 .badges .pill { background: var(--panel); color: var(--ink-2); box-shadow: var(--shadow-card); }
 
   /* ================= S2 · problem ================= */
   .cols { display: flex; gap: 90px; align-items: flex-start; margin-top: var(--gap-title); }
-  .leaks { display: flex; flex-direction: column; gap: var(--gap-item); max-width: 780px; }
-  .leak { display: flex; gap: 24px; align-items: baseline; }
-  .leak .dot { flex: none; width: 14px; height: 14px; border-radius: 999px; background: var(--ink-4); transform: translateY(-4px); }
-
-  .bignum-card { width: 700px; padding: 44px 56px 40px; }
-  .bignum-card .year { font: 600 var(--type-label)/1.2 var(--sans); letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 6px; text-transform: uppercase; }
-  .bignum-card .num { font: 500 var(--type-display)/1.05 var(--serif); letter-spacing: -0.01em; color: var(--ink); margin: 0 0 10px; font-variant-numeric: tabular-nums; }
-  .bignum-card .cap { font: 400 var(--type-small)/1.4 var(--sans); color: var(--ink-2); margin: 0; }
-  .bignum-card.sun { background: var(--sun); box-shadow: var(--shadow-panel); }
-  .bignum-card.sun .year, .bignum-card.sun .num, .bignum-card.sun .cap { color: var(--sun-ink); }
-  .bignum-card.sun .num { color: #4a3600; }
-
-  /* ================= S3 · the new leak ================= */
   .facts { display: flex; flex-direction: column; gap: var(--gap-item); max-width: 800px; }
   .fact { display: flex; gap: 24px; align-items: baseline; }
   .fact .dot { flex: none; width: 14px; height: 14px; border-radius: 999px; background: var(--ink-4); transform: translateY(-4px); }
@@ -165,12 +144,7 @@
   .bar-row .val.lead { color: var(--ink); }
   .chart-card .chart-cap { font: 400 var(--type-meta)/1.4 var(--sans); color: var(--ink-3); margin: 38px 0 0; }
 
-  /* ================= S4 · solution ================= */
-  .points { display: flex; flex-direction: column; gap: var(--gap-item); max-width: 760px; }
-  .point { display: flex; gap: 24px; align-items: baseline; }
-  .point .dot { flex: none; width: 14px; height: 14px; border-radius: 999px; background: var(--ink-4); transform: translateY(-4px); }
-  .point b { color: var(--ink); font-weight: 600; }
-
+  /* ================= S3 · solution ================= */
   .card-stack { width: 830px; display: flex; flex-direction: column; gap: 34px; }
   .members { display: flex; align-items: center; gap: 26px; margin-bottom: 2px; }
   .members .who { font: 400 var(--type-small)/1.3 var(--sans); color: var(--ink-3); margin-left: 8px; }
@@ -182,44 +156,12 @@
   .demo-card.sun .f-title { color: #4a3600; }
   .demo-card.sun .f-meta { color: var(--sun-ink); }
   .demo-card .new-pill { position: absolute; right: 30px; top: 30px; height: 44px; padding: 0 22px; background: var(--panel); color: var(--sun-ink); font-size: var(--type-meta); }
+  .seal-pill { align-self: flex-start; background: var(--sun); color: var(--sun-ink); box-shadow: var(--shadow-card); }
 
-  /* ================= S5 · mechanism ================= */
-  .flow-panel { margin-top: var(--gap-title); padding: 52px 60px; display: flex; flex-direction: column; gap: 44px; }
-  .lane { display: grid; grid-template-columns: 260px 1fr; gap: 36px; align-items: center; }
-  .lane-label { font: 600 var(--type-label)/1.3 var(--sans); letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-3); }
-  .lane-flow { display: flex; align-items: center; gap: 22px; }
-  .step { display: flex; align-items: center; gap: 18px; background: var(--panel-2); border-radius: 16px; padding: 22px 28px; }
-  .step .txt { font: 400 var(--type-small)/1.35 var(--sans); color: var(--ink); max-width: 330px; }
-  .arrow { flex: none; color: var(--ink-4); }
-  .step.result { background: var(--panel); box-shadow: var(--shadow-card); }
-  .step .mini-tab { display: inline-flex; align-items: center; height: 34px; padding: 0 26px 0 18px; font: 600 21px/1 var(--sans); letter-spacing: 0.06em; text-transform: uppercase; clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 100%, 0 100%); border-radius: 8px 0 0 0; background: var(--tab-answer); color: var(--tab-answer-ink); }
-  .step .f-small { font: 500 27px/1.25 var(--serif); color: var(--ink); }
-  .lane .seal-pill { background: var(--sun); color: var(--sun-ink); box-shadow: var(--shadow-card); }
-  .s5-note { margin-top: 40px; max-width: 1420px; }
-  .s5-note b { color: var(--ink); font-weight: 600; }
-
-  /* ================= S6 · architecture ================= */
-  .term-card { width: 880px; padding: 44px 52px; }
-  .term-card .term-label { font: 600 var(--type-label)/1.3 var(--sans); letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 28px; }
-  .term { font: 400 26px/1.75 var(--mono); margin: 0; }
-  .term .cmd { color: var(--ink); font-weight: 600; }
-  .term .out { color: var(--ink-2); }
-  .term .dim { color: var(--ink-3); }
-
-  .arch { width: 720px; display: flex; flex-direction: column; align-items: stretch; }
-  .arch .node { background: var(--panel); border-radius: 16px; box-shadow: var(--shadow-card); padding: 24px 32px; }
-  .arch .node .n-name { font: 600 var(--type-small)/1.3 var(--sans); color: var(--ink); margin: 0 0 4px; }
-  .arch .node .n-desc { font: 400 var(--type-meta)/1.4 var(--sans); color: var(--ink-3); margin: 0; }
-  .arch .link { align-self: center; height: 34px; width: 4px; border-radius: 2px; background: var(--line-strong); }
-  .arch .quote { font: 400 italic 32px/1.45 var(--serif); color: var(--ink-2); margin: 44px 0 0; }
-
-  /* ================= S7 · close ================= */
+  /* ================= S4 · close ================= */
   .s7 { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
-  .s7 .statement { font: 500 var(--type-statement)/1.22 var(--serif); letter-spacing: -0.015em; color: var(--ink); margin: 0 0 64px; max-width: 1560px; }
+  .s7 .statement { font: 500 var(--type-statement)/1.22 var(--serif); letter-spacing: -0.015em; color: var(--ink); margin: 0; max-width: 1560px; }
   .s7 .hl { background: var(--sun); border-radius: 10px; padding: 2px 20px; box-decoration-break: clone; }
-  .s7 .credits { display: flex; gap: 20px; align-items: center; }
-  .s7 .credits .pill { background: var(--panel); color: var(--ink-2); box-shadow: var(--shadow-card); }
-  .s7 .credits .repo { font-family: var(--mono); font-weight: 400; }
   .s7 .figures { display: flex; align-items: flex-end; gap: 36px; margin-bottom: 44px; }
 </style>
 </head>
@@ -230,7 +172,6 @@
   <!-- ============ 1 · cover ============ -->
   <section data-label="Ada" class="s1">
     <div class="figures in" style="--d:.05s">
-      <span class="person" style="width:96px;height:96px;background:#e9eefc;color:#2552b4;">M</span>
       <svg width="132" height="132" viewBox="0 0 100 100" aria-hidden="true">
         <ellipse cx="50" cy="93" rx="27" ry="5" fill="rgba(27,27,32,.12)"/>
         <g fill="#e8764f">
@@ -248,7 +189,6 @@
         </g>
         <circle cx="39" cy="53" r="5.5" fill="#15151a"/><circle cx="61" cy="53" r="5.5" fill="#15151a"/>
       </svg>
-      <span class="person" style="width:96px;height:96px;background:#eae4f7;color:#5f3fb5;">S</span>
       <svg width="132" height="132" viewBox="0 0 100 100" aria-hidden="true">
         <ellipse cx="50" cy="93" rx="26" ry="5" fill="rgba(27,27,32,.12)"/>
         <g fill="#45bdb5">
@@ -261,54 +201,19 @@
     </div>
     <h1 class="wordmark in" style="--d:.15s"><span>Ada</span></h1>
     <p class="tagline in" style="--d:.25s"><span>Humans and AI agents learn together —</span><br /><span>and what they learn stays with them.</span></p>
-    <div class="badges in" style="--d:.35s">
-      <span class="pill"><span>Aleph Hackathon 2026</span></span>
-      <span class="pill"><span>General Track</span></span>
-      <span class="pill"><span>Open source</span></span>
-    </div>
   </section>
 
   <!-- ============ 2 · problem ============ -->
-  <section data-label="Courses forget">
-    <header class="in">
-      <p class="kicker"><span>The problem</span></p>
-      <h2 class="title"><span>Courses forget what they understand</span></h2>
-    </header>
-    <div class="cols">
-      <div class="leaks">
-        <div class="leak in" style="--d:.15s"><span class="dot"></span><p class="body"><span>The explanation that finally made it click is buried in a chat nobody can read back.</span></p></div>
-        <div class="leak in" style="--d:.25s"><span class="dot"></span><p class="body"><span>Questions move to WhatsApp and private chats — places that keep nothing.</span></p></div>
-        <div class="leak in" style="--d:.35s"><span class="dot"></span><p class="body"><span>When the term ends, nothing survives to the next cohort. The forum is cloned empty.</span></p></div>
-        <p class="meta in" style="--d:.45s; margin-top:18px;"><span>Two consecutive editions of the same intro programming course, 2020–2021. Sources in the repo.</span></p>
-      </div>
-      <div style="display:flex; flex-direction:column; gap:34px;">
-        <div class="card bignum-card in" style="--d:.2s">
-          <p class="year"><span>2020 · course forum</span></p>
-          <p class="num"><span>4,404</span></p>
-          <p class="cap"><span>questions asked and answered over one semester</span></p>
-        </div>
-        <div class="bignum-card sun in" style="--d:.35s; border-radius:24px;">
-          <p class="year"><span>2021 · same course</span></p>
-          <p class="num"><span>3,218</span></p>
-          <p class="cap"><span>questions again — because the course started from zero</span></p>
-        </div>
-      </div>
-    </div>
-    <footer class="foot"><span class="brand">Ada · Aleph 2026</span><span class="num">02 / 07</span></footer>
-  </section>
-
-  <!-- ============ 3 · the new leak ============ -->
   <section data-label="The new leak">
     <header class="in">
-      <p class="kicker"><span>The new leak — since 2025</span></p>
-      <h2 class="title"><span>The questions now go to an AI that doesn't know the course</span></h2>
+      <p class="kicker"><span>The problem</span></p>
+      <h2 class="title"><span>Questions now go to an AI that doesn't know the course</span></h2>
     </header>
     <div class="cols">
       <div class="facts">
-        <div class="fact in" style="--d:.15s"><span class="dot"></span><p class="body"><span><b>88%</b> of students already use AI to learn — only <b>15%</b> say it's integrated in their courses.</span></p></div>
-        <div class="fact in" style="--d:.25s"><span class="dot"></span><p class="body"><span>The AI answers without the teacher's notes or the group — and nothing comes back to either.</span></p></div>
-        <div class="fact in" style="--d:.35s"><span class="dot"></span><p class="body"><span>Used loose, it hurts: students practicing with a generic chatbot scored <b>17% worse</b> on the AI-free exam.</span></p></div>
-        <div class="fact in" style="--d:.45s"><span class="dot"></span><p class="body"><span>Every major AI tutor keeps memory <b>per user</b>. The group's understanding belongs to no one.</span></p></div>
+        <div class="fact in" style="--d:.15s"><span class="dot"></span><p class="body"><span><b>88%</b> of students learn with AI — only <b>15%</b> inside their courses.</span></p></div>
+        <div class="fact in" style="--d:.25s"><span class="dot"></span><p class="body"><span>Loose chatbot practice: <b>17% worse</b> on the AI-free exam.</span></p></div>
+        <div class="fact in" style="--d:.35s"><span class="dot"></span><p class="body"><span>Nothing comes back to the group — each cohort restarts from zero.</span></p></div>
       </div>
       <div class="card chart-card in" style="--d:.25s">
         <p class="chart-title"><span>When stuck, students go first to…</span></p>
@@ -324,28 +229,27 @@
           <div class="bar-head"><span class="bar-label">the course material</span><span class="val">14%</span></div>
           <span class="bar" style="display:block; width:48%;"></span>
         </div>
-        <p class="chart-cap"><span>Global student surveys, 2025–2026. Sources in the repo.</span></p>
+        <p class="chart-cap"><span>Student surveys, 2025–2026. Sources in the repo.</span></p>
       </div>
     </div>
-    <footer class="foot"><span class="brand">Ada · Aleph 2026</span><span class="num">03 / 07</span></footer>
+    <footer class="foot"><span class="brand">Ada</span><span class="num">02 / 04</span></footer>
   </section>
 
-  <!-- ============ 4 · solution ============ -->
+  <!-- ============ 3 · solution ============ -->
   <section data-label="Shared memory">
     <header class="in">
       <p class="kicker"><span>The solution</span></p>
       <h2 class="title"><span>Ada gives the course a shared memory</span></h2>
     </header>
     <div class="cols">
-      <div class="points">
-        <div class="point in" style="--d:.15s"><span class="dot"></span><p class="body"><span><b>Agents are members.</b> The teacher creates them and adds them to channels, like teaching assistants — with a name and a face, not a "bot".</span></p></div>
-        <div class="point in" style="--d:.25s"><span class="dot"></span><p class="body"><span><b>Talk becomes cards.</b> What gets understood compiles into typed, versioned pages with sources — outside the chat flow.</span></p></div>
-        <div class="point in" style="--d:.35s"><span class="dot"></span><p class="body"><span><b>The group owns the files.</b> Plain markdown the course can list, read and take with it — not rows in a vendor's database.</span></p></div>
+      <div class="facts">
+        <div class="fact in" style="--d:.15s"><span class="dot"></span><p class="body"><span><b>Agents are members</b> — a name and a face, like a TA.</span></p></div>
+        <div class="fact in" style="--d:.25s"><span class="dot"></span><p class="body"><span><b>Talk compiles into cards</b> — typed, versioned, with sources.</span></p></div>
+        <div class="fact in" style="--d:.35s"><span class="dot"></span><p class="body"><span><b>Every answer is composed fresh</b> from the file — not a cache.</span></p></div>
+        <div class="fact in" style="--d:.45s"><span class="dot"></span><p class="body"><span><b>The group owns the files</b> — plain markdown, in git.</span></p></div>
       </div>
       <div class="card-stack">
         <div class="members in" style="--d:.2s">
-          <span class="person" style="width:76px;height:76px;background:#e9eefc;color:#2552b4;font-size:30px;">M</span>
-          <span class="person" style="width:76px;height:76px;background:#eae4f7;color:#5f3fb5;font-size:30px;">S</span>
           <svg width="86" height="86" viewBox="0 0 100 100" aria-hidden="true">
             <ellipse cx="50" cy="93" rx="27" ry="5" fill="rgba(27,27,32,.12)"/>
             <g fill="#e8764f">
@@ -368,94 +272,15 @@
           <p class="f-title"><span>Why does the gradient explode?</span></p>
           <p class="f-meta"><span>v1 · composed answering in #questions</span></p>
         </div>
-        <div class="demo-card in" style="--d:.5s">
-          <span class="tab" style="background:var(--tab-decision); color:var(--tab-decision-ink);"><span>Decision</span></span>
-          <p class="f-title"><span>The midterm moves to Sep 12</span></p>
-          <p class="f-meta"><span>v2 · replaces the Sep 5 one · with rationale</span></p>
-        </div>
+        <span class="pill seal-pill seal" style="--d:.95s"><span>already on file · 3 days ago</span></span>
       </div>
     </div>
-    <footer class="foot"><span class="brand">Ada · Aleph 2026</span><span class="num">04 / 07</span></footer>
+    <footer class="foot"><span class="brand">Ada</span><span class="num">03 / 04</span></footer>
   </section>
 
-  <!-- ============ 5 · mechanism ============ -->
-  <section data-label="Composed, not cached">
-    <header class="in">
-      <p class="kicker"><span>The mechanism</span></p>
-      <h2 class="title"><span>Understanding is compiled once — every answer is composed fresh</span></h2>
-    </header>
-    <div class="card flow-panel in" style="--d:.15s">
-      <div class="lane">
-        <span class="lane-label">First time</span>
-        <div class="lane-flow">
-          <div class="step in" style="--d:.25s"><span class="txt">Sofia asks in <b>#questions</b></span></div>
-          <svg class="arrow" width="48" height="24" viewBox="0 0 48 24" aria-hidden="true"><path d="M2 12h34m-8-8 10 8-10 8" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <div class="step in" style="--d:.35s"><span class="txt">the agent reads the course material — <b>once</b></span></div>
-          <svg class="arrow" width="48" height="24" viewBox="0 0 48 24" aria-hidden="true"><path d="M2 12h34m-8-8 10 8-10 8" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <div class="step result in" style="--d:.45s; position:relative; margin-top:34px; border-radius:0 16px 16px 16px;">
-            <span class="mini-tab" style="position:absolute; top:-34px; left:0;"><span>Answer</span></span>
-            <span class="f-small">Why does the gradient explode?</span>
-          </div>
-        </div>
-      </div>
-      <div class="lane">
-        <span class="lane-label">Three days later</span>
-        <div class="lane-flow">
-          <div class="step in" style="--d:.55s"><span class="txt">Ignacio asks "the same" — <b>different words, different gap</b></span></div>
-          <svg class="arrow" width="48" height="24" viewBox="0 0 48 24" aria-hidden="true"><path d="M2 12h34m-8-8 10 8-10 8" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <div class="step in" style="--d:.65s"><span class="txt">a <b>new answer</b>, composed from two cards — no re-reading</span></div>
-          <svg class="arrow" width="48" height="24" viewBox="0 0 48 24" aria-hidden="true"><path d="M2 12h34m-8-8 10 8-10 8" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span class="pill seal-pill seal" style="--d:.95s"><span>already on file · 3 days ago</span></span>
-        </div>
-      </div>
-    </div>
-    <p class="body s5-note in" style="--d:.8s"><span><b>Not a cache of answers:</b> the second answer is new, built from what the group already understood — and the card gains the new angle instead of a duplicate.</span></p>
-    <footer class="foot"><span class="brand">Ada · Aleph 2026</span><span class="num">05 / 07</span></footer>
-  </section>
-
-  <!-- ============ 6 · architecture ============ -->
-  <section data-label="A folder in git">
-    <header class="in">
-      <p class="kicker"><span>Under the hood</span></p>
-      <h2 class="title"><span>The whole course is a folder of markdown</span></h2>
-    </header>
-    <div class="cols">
-      <div class="card term-card in" style="--d:.2s">
-        <p class="term-label"><span>The teacher's laptop</span></p>
-        <pre class="term"><span class="cmd">$ ls data/neural-networks/wiki</span>
-<span class="out">index.md   modules/      questions/</span>
-<span class="out">decisions/ difficulties/</span>
-<span class="cmd">$ git log --oneline</span>
-<span class="out"><span class="dim">f3a91c2</span> card enriched: gradient (new angle)</span>
-<span class="out"><span class="dim">8d24b07</span> decision: midterm moves to Sep 12</span>
-<span class="out"><span class="dim">41c9e5d</span> ingest: backprop.md → 4 cards</span>
-<span class="out"><span class="dim">0b3d112</span> new question: gradient-explosion</span></pre>
-      </div>
-      <div class="arch">
-        <div class="node in" style="--d:.3s">
-          <p class="n-name"><span>Community server</span></p>
-          <p class="n-desc"><span>messages, members, published cards — never runs models</span></p>
-        </div>
-        <span class="link in" style="--d:.35s"></span>
-        <div class="node in" style="--d:.4s">
-          <p class="n-name"><span>Runner</span></p>
-          <p class="n-desc"><span>Claude Code working on the agent's folder, owned by whoever created the agent</span></p>
-        </div>
-        <span class="link in" style="--d:.45s"></span>
-        <div class="node in" style="--d:.5s">
-          <p class="n-name"><span>data/&lt;course&gt;/ — the wiki</span></p>
-          <p class="n-desc"><span>markdown in git: every card has a type, version, sources, and what it replaces</span></p>
-        </div>
-        <p class="quote in" style="--d:.6s"><span>Open source like Moodle, runners like GitHub Actions: any teacher runs it free today — institutions pay for hosted tomorrow.</span></p>
-      </div>
-    </div>
-    <footer class="foot"><span class="brand">Ada · Aleph 2026</span><span class="num">06 / 07</span></footer>
-  </section>
-
-  <!-- ============ 7 · close ============ -->
+  <!-- ============ 4 · close ============ -->
   <section data-label="Stays with them" class="s7">
     <div class="figures in" style="--d:.05s">
-      <span class="person" style="width:72px;height:72px;background:#e9eefc;color:#2552b4;font-size:28px;">M</span>
       <svg width="96" height="96" viewBox="0 0 100 100" aria-hidden="true">
         <ellipse cx="50" cy="93" rx="26" ry="5" fill="rgba(27,27,32,.12)"/>
         <g fill="#45bdb5">
@@ -465,14 +290,8 @@
         </g>
         <circle cx="40" cy="50" r="5.5" fill="#15151a"/><circle cx="60" cy="50" r="5.5" fill="#15151a"/>
       </svg>
-      <span class="person" style="width:72px;height:72px;background:#eae4f7;color:#5f3fb5;font-size:28px;">S</span>
     </div>
     <p class="statement in" style="--d:.15s"><span>Humans and agents learn together — and what they learn </span><span class="hl seal" style="--d:.7s">stays with them.</span></p>
-    <div class="credits in" style="--d:.35s">
-      <span class="pill"><span>Built at Aleph 2026 — all code this weekend</span></span>
-      <span class="pill"><span>Apache-2.0</span></span>
-      <span class="pill repo"><span>github.com/…</span></span>
-    </div>
   </section>
 
 </deck-stage>
