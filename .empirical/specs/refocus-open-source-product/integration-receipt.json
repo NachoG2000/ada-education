@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "feature": "refocus-open-source-product",
+  "claimId": "refocus-open-source-product-3e0a805bd26d",
+  "repositoryId": "sha256:5ec6f3c476f2e40bbacdcf2c39af35f7b9a3ba3e39dcaea1b038f04ae0131813",
+  "baseCommit": "8b90df68510bb49a2990f9c1fab6d0c067fd3f4a",
+  "baseTree": "fa117d091291be4d7c6881f829017f53db530bb0",
+  "featureTree": "sha256:66ad110da7f7183b449fc62187441944e895bb6243a3ceb2b57bfc51153b612c",
+  "targetCommit": "0cc35849e209f0245bca977538f28b3baaa8c58b",
+  "targetTree": "720ae73a36273a511f538d642885f4990a3cd240",
+  "capabilityBaseDigests": {
+    "project-positioning": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "deltaDigest": "sha256:b92318a3d33bbe362e3c1ff6f9662e59d4d9a91370018f72b5eb3affcf366b34",
+  "resultDigests": {
+    "project-positioning": "sha256:010f530989793b36415064e0493a8bbf49d1931aa67209e39c9cf3957306a4c1"
+  },
+  "verificationReceiptDigests": [
+    "sha256:0b4681a59b647f56f2b219fa15892de30f53748f8de7970db61e96a8ea1c1613",
+    "sha256:7cbbc8758687a23c03ae48218abbf8e27aac50a69252376276f339a56e28aefe",
+    "sha256:845278058e22d57fc0392b03006ed94e9980312c68f5b95d9781a2c015145379",
+    "sha256:ab84f00ec9826151e71b3d5daec93eb53c1a13cbb52e0a7b9d0ba10c621b8f11",
+    "sha256:abbafe7094863aba1d02d059f6734999c35132f8c55c6e689466922f056a56a4",
+    "sha256:bbfddc11af285ddc692527c2c9fab9fa392790c79aeebadf27a8c3f45d120aec",
+    "sha256:be553f0adf37e0159fd4db03fe1ef4d9531da74a1a8c5b504f87ef55a68d7d52",
+    "sha256:d4dd2165f0520b911e4892c3278f21756a4a769fd15c9098bd27aaef460d3bd3",
+    "sha256:e2c6841eacfb4d2af4c4960dcd9755d696005db1e0932754b7e41b5cb089c955",
+    "sha256:fa25a21440c34c3f5ca3ddc24b43b89c0b865cce4f034a8d0170a58f36b7ce49"
+  ],
+  "integratedAt": "2026-08-23T22:59:10.187Z",
+  "digest": "sha256:d0bc59e795f02672904ef30a8accfeca6f80238928f28442adbb9919a3b6969e"
+}

@@ -1,25 +1,21 @@
 {
   "schemaVersion": 1,
-  "sequence": 10,
-  "previousDigest": "sha256:ca97b8a1a99df48595b55eeff84e4742c7ed6c921f927d41a931a9c648cc13dd",
-  "actor": "agent",
-  "type": "transition",
-  "summary": "Context: refreshed repository knowledge after the review remediation; overview already carries the §19 positioning; no stale, missing, or refinement-required paths.",
-  "createdAt": "2026-08-23T22:57:45.740Z",
-  "stateBeforeDigest": "sha256:bcbd093b4d97e84748e5e58f546c1233f4cfd7699f64f515fea4d7b03d17da29",
-  "stateAfterDigest": "sha256:f8d318500cec081a2faaf501fd4202e75944e5112087858b78e83a11ec82f620",
+  "feature": "refocus-open-source-product",
+  "lastSequence": 13,
+  "lastEventDigest": "sha256:e2e87adfc8026b96d2a4d65578a3d409e2ee44afaee82f439c0e900459d753ec",
+  "stateDigest": "sha256:b2d0c164f024eb5c4e5d36234d3a8d5d3d8f6e44e15eb948c892af4b23d33419",
   "state": {
     "schemaVersion": 5,
-    "revision": 10,
+    "revision": 13,
     "activeFeature": "refocus-open-source-product",
     "request": "Refocus the repository from the hackathon demo to the open-source product. Close the demo era in the documents of truth and reposition Ada as an open-source course-community product aimed at organizations that run cohort-based courses (bootcamps, academies, corporate training programs), without naming any specific organization anywhere. Concretely: (1) DECISIONS.md gains a dated decision that supersedes the 08/22 hackathon scope (one teacher, fully local, demo): the hackathon phase closed on 2026-08-23 and the project's direction is now an open-source product for course-running organizations; license choice is recorded as an open question, not decided. (2) README.md drops the hackathon/Aleph framing and leads with what Ada is, who it is for (course-running organizations, described generically), the open-source vision, and how to run it. (3) AGENTS.md 'What this repo is' reflects the new scope so agents stop treating the demo as the current goal. (4) PRODUCT.md names the audience in the same generic terms. (5) The stray slide1.png at the repo root moves under pitch/, and pitch/ is marked as history of the hackathon, not current direction. No code behavior changes; demo mode (npm run dev:demo) and the scripted runtime stay as they are.",
     "profile": "complex",
     "workflow": "complex",
     "mode": "normal",
-    "phase": "verify",
-    "status": "waiting",
-    "repairAttempts": 1,
-    "message": "Context: refreshed repository knowledge after the review remediation; overview already carries the §19 positioning; no stale, missing, or refinement-required paths.",
+    "phase": "done",
+    "status": "done",
+    "repairAttempts": 0,
+    "message": "Integrated capability changes: project-positioning",
     "implementationActor": "agent",
     "specDigest": "sha256:7ef588020fa59ec0edad8335f376961b914a6ef6c39736baef403ab2bac5600a",
     "approvedSpecRevision": 2,
@@ -29,23 +25,30 @@
     "capabilityClaimId": "refocus-open-source-product-3e0a805bd26d",
     "authorizationDigest": null,
     "evidence": [],
-    "evidenceReceiptIds": [],
+    "evidenceReceiptIds": [
+      "executed-f916bfcde10a816971c76d91",
+      "executed-9012ab29053d79908a6a15b1",
+      "executed-c0f5ab92b05b5d008f4d90a2",
+      "executed-83233d197427713c142aeb5b",
+      "executed-26956893871c7790cbe2a277",
+      "executed-3ff38893b797dacd306e4cf1",
+      "collected-387de769197f15aee500b699"
+    ],
     "legacyEvidenceCount": 0,
     "completion": {
       "implemented": true,
-      "verified": false,
-      "integrated": false,
+      "verified": true,
+      "integrated": true,
       "delivered": false,
       "published": false,
-      "highest": "implemented",
+      "highest": "integrated",
       "reasons": {
-        "verified": "verified has not been proven by a durable receipt.",
-        "integrated": "integrated has not been proven by a durable receipt.",
         "delivered": "delivered has not been proven by a durable receipt.",
         "published": "published has not been proven by a durable receipt."
       }
     },
-    "updatedAt": "2026-08-23T22:57:45.740Z"
+    "updatedAt": "2026-08-23T22:59:10.235Z"
   },
-  "digest": "sha256:5d8f57d640c2fc6a45775ce3ce43d0bf7353b2f07ff61a322895c8f427c19891"
+  "compactedAt": "2026-08-23T22:59:10.259Z",
+  "digest": "sha256:417cfc9017ed778cb1ba496a69ba1fcd9f3ce4b6017275741bb14a283477b760"
 }
