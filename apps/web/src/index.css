@@ -43,6 +43,7 @@
   --color-seal-soft: #e9eefc;
   --color-alert: #e0493f;
   --color-alert-soft: #fde9e7;
+  --color-alert-ink: #b4342a; /* text over alert-soft: 5.2:1 (alert itself is 3.5:1, too low for a pill) */
 
   /* tabs by card type (background / ink) */
   --color-tab-note: #d9e8ff;

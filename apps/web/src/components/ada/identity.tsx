@@ -20,7 +20,9 @@ const PRESENCE_DOT: Record<Presence, string> = {
   publishing: "bg-seal animate-pulse motion-reduce:animate-none",
 }
 
-/** The presence dot attached to an avatar. */
+/** The presence dot attached to an avatar. Decorative on purpose: the avatar
+    that carries it is a `role="img"` and names the presence in its label, so
+    the state is announced once, in words, and never only as a color. */
 export function PresenceDot({ presence, className }: { presence: Presence; className?: string }) {
   return <span aria-hidden className={cn("absolute right-0 bottom-0 block size-2 rounded-full ring-2 ring-panel", PRESENCE_DOT[presence], className)} />
 }
@@ -81,7 +83,8 @@ export function PersonAvatar({
         className,
       )}
       style={{ width: size, height: size, fontSize: Math.round(size * 0.42) }}
-      aria-label={person.name}
+      role="img"
+      aria-label={presence ? `${person.name} · ${presenceLabel(person)}` : person.name}
     >
       {person.initials}
       {presence && <PresenceDot presence={person.presence} />}

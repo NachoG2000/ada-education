@@ -27,7 +27,10 @@ export function FolderTab({
       aria-current={active ? "true" : undefined}
       style={{ height: TAB_H, marginRight: CURVE_W - 4 }}
       className={cn(
-        "group/tab relative flex max-w-[260px] shrink-0 items-center gap-2 rounded-tl-xl pr-2 pl-4 font-sans text-[13.5px] outline-none transition-colors",
+        /* The tab yields before the actions do (shrink + truncate): two tabs and a
+           "Close panel" used to overlap in a narrow panel, and the click landed on
+           the wrong one. It never shrinks past 5.5rem, which still reads as a tab. */
+        "group/tab relative flex min-w-[5.5rem] max-w-[260px] shrink items-center gap-2 rounded-tl-xl pr-2 pl-4 font-sans text-[13.5px] outline-none transition-colors",
         active ? "bg-panel font-semibold text-ink" : "bg-panel/55 font-medium text-ink-3 hover:bg-panel hover:text-ink",
         "focus-visible:bg-panel focus-visible:text-ink focus-visible:underline focus-visible:decoration-seal focus-visible:underline-offset-4",
         className,

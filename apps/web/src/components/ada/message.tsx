@@ -1,11 +1,12 @@
 /* Conversation stays conversation: plain text, name, time. No bubbles. */
 
-import { Fragment, useMemo, type ReactNode } from "react"
+import { Fragment, useMemo, useState, type ReactNode } from "react"
 import { cn } from "@/lib/utils"
 import { formatTime, isNew, useCommunity } from "@/lib/community"
 import type { Member, Message, MessageBlock } from "@/lib/types"
 import { agentInk, MemberAvatar, MemberName } from "./identity"
 import { CardMessage, Cite, Pill } from "./card"
+import { ErrorBoundary } from "./boundary"
 
 /* Mentions: the server detects `@<id>` over kind:"text" blocks
    (openspec/changes/demo-local-backend/goal-2-api.md §1); here it highlights
@@ -51,7 +52,7 @@ export function Inline({ blocks, onOpenCard }: { blocks: MessageBlock[]; onOpenC
         if (b.kind === "text") return <Fragment key={i}>{withMentions(b.text, byId)}</Fragment>
         if (b.kind === "code")
           return (
-            <code key={i} className="rounded-[6px] bg-panel-3 px-1.5 py-px font-mono text-[12.5px] break-words text-ink-2">
+            <code key={i} className="rounded-control bg-panel-3 px-1.5 py-px font-mono text-[12.5px] break-words text-ink-2">
               {b.text}
             </code>
           )
@@ -61,22 +62,38 @@ export function Inline({ blocks, onOpenCard }: { blocks: MessageBlock[]; onOpenC
   )
 }
 
-export function MessageRow({
-  message,
-  compact = false,
-  showThreadLink = true,
-  className,
-  highlight = false,
-  id,
-}: {
+interface MessageRowProps {
   message: Message
   compact?: boolean
   showThreadLink?: boolean
   className?: string
   highlight?: boolean
   id?: string
-}) {
-  const { member, card, thread, openThread, openCard, me, community, now } = useCommunity()
+}
+
+/** A message that points at something the client doesn't have takes only its own
+    row down: everything above and below it keeps working. */
+export function MessageRow(props: MessageRowProps) {
+  return (
+    <ErrorBoundary fallback={(error) => <BrokenMessage id={props.id} detail={error.message} />}>
+      <MessageBody {...props} />
+    </ErrorBoundary>
+  )
+}
+
+function BrokenMessage({ id, detail }: { id?: string; detail: string }) {
+  return (
+    <div id={id} className="mx-3 my-1 rounded-card bg-panel-2 px-3.5 py-2.5">
+      <p className="font-sans text-[13px] leading-[1.45] text-ink-2">
+        This message can't be shown: it points at something that isn't in the course file.
+      </p>
+      <p className="meta mt-1 text-ink-3">{detail}</p>
+    </div>
+  )
+}
+
+function MessageBody({ message, compact = false, showThreadLink = true, className, highlight = false, id }: MessageRowProps) {
+  const { member, card, thread, openThread, openCard, me, community, now, mode } = useCommunity()
   const author = member(message.authorId)
   const th = message.threadId ? thread(message.threadId) : undefined
   const isRoot = th?.rootMessageId === message.id
@@ -102,6 +119,7 @@ export function MessageRow({
             onOpen={() => openCard(c.id)}
             animate={isNew(c, now)}
             fresh={isNew(c, now)}
+            mine={c.authorId === me.id}
           />
         </div>
       </div>
@@ -120,10 +138,11 @@ export function MessageRow({
     >
       <MemberAvatar member={author} size={avatar} />
       <div className="min-w-0">
-        <div className="flex items-baseline gap-2">
+        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
           <MemberName member={author} />
           {author.id === me.id && <span className="font-sans text-[11.5px] text-ink-3">you</span>}
           <span className="font-sans text-[11.5px] text-ink-3 tabular-nums">{formatTime(message.at)}</span>
+          {showThreadLink && !th && mode === "connected" && <ReplyInThread messageId={message.id} />}
         </div>
 
         {message.fromCard && <FromCard cardId={message.fromCard.cardId} ago={message.fromCard.ago} />}
@@ -165,15 +184,63 @@ export function MessageRow({
   )
 }
 
+/** Opening a thread on a message that doesn't have one yet. Quiet: every
+    message in the channel carries this action, so it only shows on hover, on
+    keyboard focus, and while it's working — the same restraint as the "N
+    replies" button it turns into once the thread exists. Connected mode only:
+    in demo there's no server to create the thread on. */
+function ReplyInThread({ messageId }: { messageId: string }) {
+  const { replyInThread } = useCommunity()
+  const [pending, setPending] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const start = async () => {
+    if (pending) return
+    setPending(true)
+    setError(null)
+    try {
+      await replyInThread(messageId)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn't open the thread.")
+    } finally {
+      setPending(false)
+    }
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={start}
+        disabled={pending}
+        className={cn(
+          "meta -mx-1 inline-flex h-6 items-center gap-1.5 rounded-full px-2 font-medium text-ink-3 outline-none transition hover:bg-panel hover:text-ink focus-visible:ring-2 focus-visible:ring-seal disabled:hover:bg-transparent disabled:hover:text-ink-3",
+          pending || error ? "opacity-100" : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
+        )}
+      >
+        <ThreadIcon />
+        {pending ? "Opening the thread\u2026" : "Reply in thread"}
+      </button>
+      {error && (
+        <span role="alert" className="meta inline-flex items-center gap-1.5 text-ink-2">
+          <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-alert" />
+          {error}
+        </span>
+      )}
+    </>
+  )
+}
+
 /** The "from the card file" marker: the demo's key moment. */
 function FromCard({ cardId, ago }: { cardId: string; ago: string }) {
   const { card, member, openCard } = useCommunity()
   const c = card(cardId)
   return (
     <div className="my-2 flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
+      {/* Decided copy, lowercase: openspec/changes/demo-local-backend/specs/web-client/spec.md. */}
       <Pill tone="sun" animate>
         <CheckIcon />
-        Already on file · {ago}
+        already on file · {ago}
       </Pill>
       <Cite card={c} onOpen={openCard} />
       <span className="meta text-ink-3">

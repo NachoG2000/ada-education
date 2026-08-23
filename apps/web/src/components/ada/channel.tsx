@@ -3,7 +3,7 @@
 import { Fragment, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { cn } from "@/lib/utils"
 import { dayLabel, isAgent, isNew, useCommunity } from "@/lib/community"
-import type { Agent, Channel, Member, Message, MessageBlock } from "@/lib/types"
+import type { Agent, Card, Channel, Member, Message, MessageBlock } from "@/lib/types"
 import { CardTab } from "./card"
 import { MemberAvatar, PresenceTag, agentInk, presenceLabel } from "./identity"
 import { MessageRow } from "./message"
@@ -96,12 +96,50 @@ export function IconButton({
   )
 }
 
-/** The channel's card row: cards peeking through their tabs; the new one, in yellow. */
+/** Floor for a card in the row: below this the title clips mid-word and the
+    meta line stops being readable. */
+const CARD_MIN_W = 160
+/** `gap-3` between cards, and the width of the "+N" button (`w-12`). */
+const CARD_GAP = 12
+const MORE_W = 48
+
+/** How many cards fit at the legible floor. Never zero: one card, even tight,
+    beats an empty row. */
+function fit(available: number) {
+  return Math.max(1, Math.floor((available + CARD_GAP) / (CARD_MIN_W + CARD_GAP)))
+}
+
+/** The channel's card row: cards peeking through their tabs; the newest one, in yellow. */
 export function CardRow({ channel }: { channel: Channel }) {
   const { community, member, openCard, panels, now } = useCommunity()
   const [expanded, setExpanded] = useState(false)
+  /* The row measures itself: with the contextual panel open there's room for
+     one or two cards, not three, and squeezing them into 140 px slivers was
+     what clipped the titles. What doesn't fit goes behind the "+N". */
+  const row = useRef<HTMLDivElement>(null)
+  const [width, setWidth] = useState<number | null>(null)
+  useLayoutEffect(() => {
+    const el = row.current
+    if (!el) return
+    setWidth(el.clientWidth)
+    const observer = new ResizeObserver(() => setWidth(el.clientWidth))
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
   const cards = community.cards.filter((c) => c.channelId === channel.id)
-  const shown = expanded ? cards : cards.slice(0, 3)
+  // Before the first measurement, the design's three: the layout effect
+  // corrects it before the browser paints.
+  const capacity = width === null ? 3 : fit(width) >= cards.length ? cards.length : fit(width - MORE_W - CARD_GAP)
+  const limit = expanded ? cards.length : Math.min(3, capacity)
+  /* One Sun Rule (DESIGN.md): the full yellow is one large surface per screen.
+     In a live channel several cards are `new` at once, so the sun goes to the
+     newest of them — the others say "New" in the same ink, without the field. */
+  const newest = cards.reduce<Card | null>((best, c) => (isNew(c, now) && (!best || c.publishedAt > best.publishedAt) ? c : best), null)
+  const head = cards.slice(0, limit)
+  // And the row exists to show what's new: if the newest card fell behind the
+  // "+N" because there was no room, it takes the last slot.
+  const shown = newest && !head.includes(newest) ? [...head.slice(0, limit - 1), newest] : head
   const more = cards.length - shown.length
   const openId = panels.find((p) => p.kind === "card")?.cardId
   const news = cards.filter((c) => isNew(c, now)).length
@@ -123,25 +161,31 @@ export function CardRow({ channel }: { channel: Channel }) {
           <span className="meta mt-1 text-ink-3">{cards.length} in the channel</span>
           {news > 0 && <span className="meta mt-auto font-semibold text-sun-ink">{news} new</span>}
         </div>
-        <div className={cn("flex min-w-0 flex-1 items-end gap-3 pt-2", expanded && "flex-wrap gap-y-4")}>
-          {shown.map((c, i) => (
-            <CardTab
-              key={c.id}
-              card={c}
-              authorName={member(c.authorId).name}
-              active={openId === c.id}
-              fresh={isNew(c, now)}
-              animate={isNew(c, now)}
-              onOpen={() => openCard(c.id)}
-              style={{ animationDelay: `${i * 40}ms` }}
-            />
-          ))}
-          {cards.length > 3 && (
+        <div ref={row} className="flex min-w-0 flex-1 items-end gap-3">
+          {/* `pb-3 -mb-3` gives the shadow and the archive animation room
+              without moving the row; the expand button stays outside it,
+              because it's the way out. */}
+          <div className={cn("-mb-3 flex min-w-0 flex-1 items-end gap-3 pt-2 pb-3", expanded ? "flex-wrap gap-y-4" : "overflow-x-auto")}>
+            {shown.map((c, i) => (
+              <CardTab
+                key={c.id}
+                card={c}
+                authorName={member(c.authorId).name}
+                active={openId === c.id}
+                fresh={isNew(c, now)}
+                sun={c.id === newest?.id}
+                animate={isNew(c, now)}
+                onOpen={() => openCard(c.id)}
+                style={{ animationDelay: `${i * 40}ms`, minWidth: CARD_MIN_W }}
+              />
+            ))}
+          </div>
+          {(more > 0 || expanded) && (
             <button
               type="button"
               onClick={() => setExpanded((v) => !v)}
               aria-expanded={expanded}
-              aria-label={expanded ? "Show only the first three cards" : `Show the ${more} remaining cards`}
+              aria-label={expanded ? "Show only the cards that fit" : `Show the ${more} remaining cards`}
               className="meta mb-px flex h-[82px] w-12 shrink-0 items-center justify-center rounded-card-tab bg-panel text-ink-3 shadow-card outline-none transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-seal"
             >
               {expanded ? "Less" : `+${more}`}
@@ -384,7 +428,7 @@ export function Composer({ placeholder, compact = false, threadId }: { placehold
 
   return (
     <form
-      className="relative mx-4 mt-2 mb-4 rounded-[16px] bg-panel-2 ring-1 ring-line ring-inset transition-shadow focus-within:bg-panel focus-within:ring-2 focus-within:ring-seal"
+      className="relative mx-4 mt-2 mb-4 rounded-card bg-panel-2 ring-1 ring-line ring-inset transition-shadow focus-within:bg-panel focus-within:ring-2 focus-within:ring-seal"
       onSubmit={(e) => {
         e.preventDefault()
         void send()
@@ -455,7 +499,10 @@ export function Composer({ placeholder, compact = false, threadId }: { placehold
               <span aria-hidden className="mt-[5px] size-1.5 shrink-0 rounded-full bg-ink-4" />
               <span>
                 <span className="font-semibold text-ink">{a.name}</span> is disconnected: its runner isn't running.{" "}
-                <span className="text-ink-3">The message goes out anyway.</span>
+                {/* Only what we know: the server stores the message and the
+                    channel shows it. Whether the mention reaches the agent when
+                    its runner comes back isn't the client's promise to make. */}
+                <span className="text-ink-3">The message still goes into the channel.</span>
               </span>
             </p>
           ))}

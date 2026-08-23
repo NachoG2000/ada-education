@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/sidebar"
 import { cn } from "@/lib/utils"
 import { isAgent, useCommunity } from "@/lib/community"
-import type { Channel, WorkStatus } from "@/lib/types"
+import type { Channel, Member, WorkStatus } from "@/lib/types"
 import { MemberAvatar, PRESENCE_LABEL, agentInk } from "@/components/ada/identity"
 
 const STATUS: Record<WorkStatus, { dot: string; label: string }> = {
@@ -44,15 +44,19 @@ function ChannelItem({ channel }: { channel: Channel }) {
         ) : dm ? (
           <MemberAvatar member={dm} size={18} />
         ) : (
-          <span aria-hidden className="w-3 text-center text-[13px] text-ink-4">
+          <span aria-hidden className="w-3 text-center text-[13px] text-ink-3">
             #
           </span>
         )}
         <span className="min-w-0 flex-1 truncate">{channel.name}</span>
         {channel.unread && !active && <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-ink" />}
-        {active && cardsCount > 0 && <span className="meta shrink-0 text-ink-3">{cardsCount} cards</span>}
+        {active && cardsCount > 0 && (
+          <span className="meta shrink-0 text-ink-3">
+            {cardsCount} {cardsCount === 1 ? "card" : "cards"}
+          </span>
+        )}
         {channel.work && !active && (
-          <span className="meta shrink-0 text-ink-4">
+          <span className="meta shrink-0 text-ink-3">
             {channel.work.status === "active" && channel.work.due ? `active · ${channel.work.due}` : STATUS[channel.work.status].label}
           </span>
         )}
@@ -81,8 +85,61 @@ function Drawer({ label, count, action, children }: { label: string; count?: num
   )
 }
 
+/** A member in the drawer. An agent's row opens its sheet in the contextual
+    panel — the only place the sheet can be reached from a channel with no cards
+    and no threads. A person has no sheet yet, so their row informs and doesn't
+    pretend to be a button. */
+function MemberItem({ member: m }: { member: Member }) {
+  const { me, member, panels, openAgent } = useCommunity()
+  const open = panels.some((p) => p.kind === "agent" && p.agentId === m.id)
+  const note =
+    m.kind === "person"
+      ? m.id === me.id
+        ? "you"
+        : m.role === "teacher"
+          ? "teacher"
+          : ""
+      : m.presence === "publishing" || m.presence === "thinking"
+        ? PRESENCE_LABEL[m.presence]
+        : m.scope === "personal"
+          ? "your agent"
+          : `${member(m.createdBy).name}'s`
+  const content = (
+    <>
+      <MemberAvatar member={m} size={isAgent(m) ? 22 : 18} presence />
+      <span className={cn("min-w-0 flex-1 truncate", isAgent(m) && "font-medium")} style={isAgent(m) ? { color: agentInk(m) } : undefined}>
+        {m.name}
+      </span>
+      <span className="meta shrink-0 truncate text-ink-3">{note}</span>
+    </>
+  )
+
+  return (
+    <SidebarMenuItem>
+      {isAgent(m) ? (
+        <SidebarMenuButton
+          className="text-ink-2"
+          isActive={open}
+          aria-current={open ? "page" : undefined}
+          title={`Open ${m.name}'s sheet`}
+          onClick={() => openAgent(m.id)}
+        >
+          {content}
+        </SidebarMenuButton>
+      ) : (
+        <SidebarMenuButton
+          render={<div />}
+          className="cursor-default text-ink-2 hover:bg-transparent hover:text-ink-2 active:bg-transparent active:text-ink-2"
+        >
+          {content}
+        </SidebarMenuButton>
+      )}
+    </SidebarMenuItem>
+  )
+}
+
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { community, me, member } = useCommunity()
+  const { community, me } = useCommunity()
   const groups = (g: Channel["group"]) => community.channels.filter((c) => c.group === g)
   const presenceOrder = { publishing: 0, thinking: 1, online: 2, away: 3 } as const
   const members = [...community.members].sort((a, b) => presenceOrder[a.presence] - presenceOrder[b.presence])
@@ -122,29 +179,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <ChannelItem key={c.id} channel={c} />
           ))}
         </Drawer>
-        <Drawer label="Members" count={31}>
+        <Drawer label="Members" count={members.length}>
           {members.map((m) => (
-            <SidebarMenuItem key={m.id}>
-              <SidebarMenuButton className="text-ink-2">
-                <MemberAvatar member={m} size={isAgent(m) ? 22 : 18} presence />
-                <span className={cn("min-w-0 flex-1 truncate", isAgent(m) && "font-medium")} style={isAgent(m) ? { color: agentInk(m) } : undefined}>
-                  {m.name}
-                </span>
-                <span className="meta shrink-0 truncate text-ink-4">
-                  {m.kind === "person"
-                  ? m.id === me.id
-                    ? "you"
-                    : m.role === "teacher"
-                      ? "teacher"
-                      : ""
-                  : m.presence === "publishing" || m.presence === "thinking"
-                    ? PRESENCE_LABEL[m.presence]
-                    : m.scope === "personal"
-                      ? "your agent"
-                      : `${member(m.createdBy).name}'s`}
-                </span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+            <MemberItem key={m.id} member={m} />
           ))}
         </Drawer>
       </SidebarContent>

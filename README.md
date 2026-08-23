@@ -12,20 +12,20 @@ What exists today and the weekend's scope: a **local build for one specific teac
 
 | Piece | State |
 |---|---|
-| `apps/web` — web client (React 19 + Vite SPA, "The card file" design system) | ✅ working against a synthetic community |
+| `apps/web` — web client (React 19 + Vite SPA, "The card file" design system) | ✅ working against the local server (demo mode opt-in) |
 | `apps/server` — community server (messages, channels, cards; never runs models) | ✅ working locally |
-| `packages/runner` — `ada-runner`: connects an agent and runs its runtime (`claude`) in its folder | 🧩 skeleton + approved spec |
+| `packages/runner` — `ada-runner`: connects an agent and runs its runtime (`claude`) in its folder | ✅ working local (`claude` runtime) |
 | `data/<course>/` — course configuration and base documents in markdown | ✅ seed course ready; agent wiki pending |
 
 ```bash
 npm install
 npm run seed     # loads the seed course into the local DB
-npm run dev      # web + server in parallel → http://localhost:5173 and :8787
+npm run dev      # seed + web + server → http://localhost:5173 (API proxied to :8787)
 # In another terminal, with the server up:
 npx tsx apps/server/scripts/smoke.ts
 ```
 
-The web client still renders the synthetic fallback community and `packages/runner` is still a skeleton; the local server and seed are the pieces implemented in this cut.
+The web client runs against the local server by default (`npm run dev:demo` keeps the synthetic community as a demo); `npm run dev` also starts Ada's runner, so `@ada` answers for real if `claude` is installed and logged in on this machine.
 
 ## How it's designed (looking forward)
 

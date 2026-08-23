@@ -1,6 +1,8 @@
+import { useSyncExternalStore } from "react"
 import { CommunityProvider, useConnectedCommunity } from "@/lib/community"
 import { configuredServer } from "@/lib/api"
 import { demo } from "@/lib/demo"
+import { ErrorBoundary } from "@/components/ada/boundary"
 import { WhoAreYou } from "@/components/ada/who-are-you"
 import { ChannelScreen } from "@/screens/Channel"
 import { FigureSheet } from "@/screens/FigureSheet"
@@ -11,13 +13,51 @@ const NOW = new Date("2026-08-22T12:00:00-03:00")
 /* With VITE_ADA_SERVER set the app runs connected; without it, the usual demo. */
 const SERVER = configuredServer()
 
+/* The hash is the whole router. Read live, not once: pointing an open tab at
+   #figures switches the screen without a reload, and coming back lands on the
+   course again. The boundary is keyed by it so a screen that broke doesn't
+   survive the navigation away from it. */
+const subscribeToHash = (onChange: () => void) => {
+  window.addEventListener("hashchange", onChange)
+  return () => window.removeEventListener("hashchange", onChange)
+}
+const readHash = () => location.hash
+
 export default function App() {
-  if (location.hash === "#figures") return <FigureSheet />
+  const hash = useSyncExternalStore(subscribeToHash, readHash)
+
+  /* Last resort: whatever breaks, the person gets a screen that says so and a
+     way to try again — never a blank page. The boundaries further in
+     (message rows, contextual panel) catch what they can before this. */
+  return <ErrorBoundary key={hash} fallback={(error) => <AppBroken detail={error.message} />}>{screen(hash)}</ErrorBoundary>
+}
+
+function screen(hash: string) {
+  if (hash === "#figures") return <FigureSheet />
   if (SERVER) return <ConnectedApp server={SERVER} />
   return (
     <CommunityProvider community={demo} initialChannelId="questions" initialPanels={[{ kind: "thread", threadId: "t-explodes" }]} now={NOW}>
       <ChannelScreen />
     </CommunityProvider>
+  )
+}
+
+function AppBroken({ detail }: { detail: string }) {
+  return (
+    <GroundScreen>
+      <h1 className="font-sans text-[19px] font-semibold tracking-[-0.012em] text-ink">The course couldn't be drawn</h1>
+      <p className="mt-2 font-sans text-[13.5px] leading-[1.55] text-ink-2">
+        Something in what the server sent doesn't fit together. Reloading usually brings the course back; if it doesn't, the console has the detail.
+      </p>
+      <p className="meta mt-3 text-ink-3">{detail}</p>
+      <button
+        type="button"
+        onClick={() => location.reload()}
+        className="mt-5 inline-flex h-8 items-center rounded-full bg-ink px-4 font-sans text-[12.5px] font-medium text-panel outline-none hover:bg-ink/85 focus-visible:ring-2 focus-visible:ring-seal"
+      >
+        Reload
+      </button>
+    </GroundScreen>
   )
 }
 
@@ -32,7 +72,7 @@ function ConnectedApp({ server }: { server: string }) {
         <p className="font-sans text-[14.5px] text-ink-2" role="status">
           Connecting to the course…
         </p>
-        <p className="meta mt-1.5 text-ink-4">{server}</p>
+        <p className="meta mt-1.5 text-ink-3">{server}</p>
       </GroundScreen>
     )
   }
@@ -65,6 +105,7 @@ function ConnectedApp({ server }: { server: string }) {
       mode="connected"
       connected={con.connected}
       sendMessage={con.sendMessage}
+      startThread={con.startThread}
       runnerInfo={con.runnerInfo}
     >
       <ChannelScreen />

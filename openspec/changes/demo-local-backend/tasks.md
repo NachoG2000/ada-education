@@ -22,17 +22,17 @@
 
 - [x] 3.1 `data/neural-networks-2026/community.json` (course, channels, people, `ada` agent, fixed demo token so it isn't copied live).
 - [ ] 3.2 `raw/martin/modules/03-backprop/backprop.md`: base document, ~3 pages, fictional.
-- [ ] 3.3 `packages/runner/templates/CLAUDE.md` with the six `agent-wiki` rules, `[[path]]` syntax, ingest, answer format; `agents/ada/CLAUDE.md` = template + Ada's instructions; empty `wiki/index.md`, `wiki/log.md`.
-- [ ] 3.4 `git init` inside `agents/ada/` (the runner does it in 5.6; here just verify).
+- [x] 3.3 `packages/runner/templates/CLAUDE.md` with the six `agent-wiki` rules, `[[path]]` syntax, ingest, answer format; `agents/ada/CLAUDE.md` = template + Ada's instructions; empty `wiki/index.md`, `wiki/log.md`.
+- [x] 3.4 `git init` inside `agents/ada/` (the runner does it in 5.6; here just verify).
 
 ## 4. Runner (≈2 h)
 
-- [ ] 4.1 `packages/runner` CLI (`commander`), flags + env vars, `--cwd` validation, runtime `detect()`, WS connection with simple reconnection.
-- [ ] 4.2 `claude` runtime: try `claude -p` by hand with the `design.md` §8 flags against `agents/ada` (reads `index.md`, writes a card, returns text). Adjust flags until it works without interactive prompts.
-- [ ] 4.3 Prompt assembly from `agent.mention` (channel, who, chronological context, question).
-- [ ] 4.4 Answer parser: paragraphs, `[[path]]` → `cite`, code blocks → `code`.
-- [ ] 4.5 `wiki/` snapshot before/after; frontmatter reading; `type` mapping; `supersedes` → `replaces`; publishing over WS; `fromCard` when nothing changed and there's a citation.
-- [ ] 4.6 `git init` if missing; one commit per run; serial queue; timeout and agent error message; `thinking`/`publishing` presence.
+- [x] 4.1 `packages/runner` CLI (`commander`), flags + env vars, `--cwd` validation, runtime `detect()`, WS connection with simple reconnection.
+- [x] 4.2 `claude` runtime: try `claude -p` by hand with the `design.md` §8 flags against `agents/ada` (reads `index.md`, writes a card, returns text). Adjust flags until it works without interactive prompts.
+- [x] 4.3 Prompt assembly from `agent.mention` (channel, who, chronological context, question).
+- [x] 4.4 Answer parser: paragraphs, `[[path]]` → `cite`, code blocks → `code`.
+- [x] 4.5 `wiki/` snapshot before/after; frontmatter reading; `type` mapping; `supersedes` → `replaces`; publishing over WS; `fromCard` when nothing changed and there's a citation.
+- [x] 4.6 `git init` if missing; one commit per run; serial queue; timeout and agent error message; `thinking`/`publishing` presence.
 - [ ] 4.7 `codex` and `pi` adapters with the same interface (written, untested), and the runner's `README` explaining where credentials live.
 
 ## 5. Connected web client (≈1.5 h)

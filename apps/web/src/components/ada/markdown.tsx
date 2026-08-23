@@ -14,7 +14,7 @@ function inline(text: string): ReactNode[] {
     if (tok.startsWith("**")) out.push(<strong key={k++}>{tok.slice(2, -2)}</strong>)
     else if (tok.startsWith("`"))
       out.push(
-        <code key={k++} className="rounded-[3px] bg-panel-3 px-1 py-px font-mono text-[13px] break-words text-ink-2">
+        <code key={k++} className="rounded-control bg-panel-3 px-1 py-px font-mono text-[13px] break-words text-ink-2">
           {tok.slice(1, -1)}
         </code>,
       )
@@ -60,15 +60,19 @@ function parse(source: string): Block[] {
   return blocks
 }
 
-export function Markdown({ source }: { source: string }) {
+/** `headingLevel` is where the body's `##` lands in the page outline: a card
+    opened in the panel already has its title as the heading above, so the body
+    starts one level below it instead of repeating that level. */
+export function Markdown({ source, headingLevel = 2 }: { source: string; headingLevel?: 2 | 3 | 4 }) {
+  const Heading = `h${headingLevel}` as "h2" | "h3" | "h4"
   return (
     <div className="font-serif text-[15.5px] leading-[1.6] break-words text-ink [&_strong]:font-semibold">
       {parse(source).map((b, i) => {
         if (b.kind === "h2")
           return (
-            <h2 key={i} className="mt-5 mb-1.5 font-serif text-[17px] leading-tight font-semibold first:mt-0">
+            <Heading key={i} className="mt-5 mb-1.5 font-serif text-[17px] leading-tight font-semibold first:mt-0">
               {b.text}
-            </h2>
+            </Heading>
           )
         if (b.kind === "ol")
           return (

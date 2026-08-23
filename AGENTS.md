@@ -8,7 +8,7 @@ Repo rules for any agent working here (Claude Code, Codex, Cursor, whichever). `
 
 **Current scope (08/22 pivot, `DECISIONS.md` §15):** this weekend Ada is built as a custom deployment for **one specific teacher, fully local on their machine**. The full architecture (remote runners, hosted, tiers) is future direction, not code.
 
-**Actual state of the code today:** a Vite + React 19 SPA (`apps/web/`) still running against a synthetic community (`apps/web/src/lib/demo.ts`), a local server implemented in `apps/server/`, shared types/events in `packages/protocol/`, the example seed in `data/neural-networks-2026/` and `packages/runner/` as a documented skeleton. The plan to fork Buzz was discarded (`DECISIONS.md` §7 → §14). Read `DECISIONS.md` §14-§15 before touching architecture, agent memory or scope.
+**Actual state of the code today:** a Vite + React 19 SPA (`apps/web/`) that runs by default against the local server (`apps/web/.env` sets `VITE_ADA_SERVER=/`, proxied by Vite; the synthetic community in `apps/web/src/lib/demo.ts` is the opt-in demo mode via `npm run dev:demo`), a local server implemented in `apps/server/`, shared types/events in `packages/protocol/`, the example seed in `data/neural-networks-2026/` (with `agents/ada/CLAUDE.md`, the agent's rules) and `packages/runner/` (working `claude` runtime: mentions → `claude -p` in the agent's folder → cards + answer). The plan to fork Buzz was discarded (`DECISIONS.md` §7 → §14). Read `DECISIONS.md` §14-§15 before touching architecture, agent memory or scope.
 
 **Every area of the repo has its own short `AGENTS.md`** with what it is today and how it grows tomorrow (`apps/web/`, `docs/`, and every new workspace must bring its own). If you touch an area, keep its file up to date.
 
@@ -49,7 +49,9 @@ Monorepo with **npm workspaces** (no Turborepo): `apps/web` (SPA), `apps/server`
 ```bash
 npm install            # once, at the root (installs all workspaces)
 npm run seed           # loads data/neural-networks-2026 into the local DB
-npm run dev            # web + server in parallel → http://localhost:5173 and :8787
+npm run dev            # seed (idempotent) + web + server + ada's runner → http://localhost:5173 (proxied to :8787)
+npm run runner         # ada's runner alone (needs `claude` installed and logged in; see packages/runner/AGENTS.md)
+npm run dev:demo       # SPA only against the synthetic demo community (no server)
 npm run dev:web        # SPA only, with HMR → http://localhost:5173
 npm run dev:server     # server only → http://localhost:8787
 npm run check -w @ada/server # server typecheck
@@ -66,9 +68,9 @@ No tests. Figure-generator dev screen: open `http://localhost:5173/#figures`.
 
 > Paths in this section are relative to `apps/web/` (the SPA lived at the repo root until 08/22). The types (`types.ts`) now live in `packages/protocol` and `apps/web/src/lib/types.ts` re-exports them.
 
-**No router.** `src/App.tsx` picks the screen from `location.hash` (`#figures` → `FigureSheet`; otherwise `ChannelScreen`) and pins the demo `NOW` (`2026-08-22T12:00-03:00`): messages with `at > now` are filtered out and the "today/yesterday" labels are computed against that date, not the real clock.
+**No router.** `src/App.tsx` picks the screen from `location.hash` (`#figures` → `FigureSheet`; otherwise `ChannelScreen`). In demo mode it pins `NOW` (`2026-08-22T12:00-03:00`): messages with `at > now` are filtered out and the "today/yesterday" labels are computed against that date; in connected mode `now` is the real clock.
 
-**State = a single context.** `src/lib/community.tsx` → `CommunityProvider` / `useCommunity()`. It receives the full `Community` (immutable in the demo) and exposes:
+**State = a single context.** `src/lib/community.tsx` → `CommunityProvider` / `useCommunity()`. It receives the full `Community` (immutable in demo mode; hydrated from `GET /api/community` and updated by WS events through `src/lib/api.ts` in connected mode) and exposes:
 - `activeChannelId` + `setActiveChannelId`.
 - `panels`: the right contextual panel stack, **max 2** (`{kind:"thread"}` | `{kind:"card"}`). `openThread` replaces the previous thread; `openCard` dedupes by `cardId`; the top of the stack is `panels[0]`. `popPanel` goes back, `closePanel` empties it (and the channel takes the full width).
 - `member/card/thread/message(id)` lookups that **throw** if the id doesn't exist: one broken id in `demo.ts` takes the whole screen down.
@@ -87,7 +89,7 @@ No tests. Figure-generator dev screen: open `http://localhost:5173/#figures`.
 - `src/components/ui/` — shadcn-generated primitives. They can be touched, but prefer composing from `components/ada`.
 - `src/lib/figure.ts` — **deterministic, seed-based** generator of agent figures (solid silhouette + crown + feet + two eyes; `FIGURE_COLORS` palette). `figureParams(seed)` → `silhouette(p)` (SVG). A new agent = a new seed; "roll another" = change the seed.
 
-**Data:** `src/lib/demo.ts` is the only source (course "Neural Networks 2026"; people `martin`, `sofia`, agents `ada`, `tutor-sofia`; initial channel `questions`, thread `t-explodes`). Everything is fictional and presented as a demo; don't invent figures, testimonials or customers. `CARD_TYPE_LABEL` (type labels) also lives there.
+**Data:** in connected mode the source is the server (seed in `data/<course>/community.json`); `src/lib/demo.ts` is the demo-mode source (course "Neural Networks 2026"; people `martin`, `sofia`, agents `ada`, `tutor-sofia`; initial channel `questions`, thread `t-explodes`). Everything is fictional and presented as a demo; don't invent figures, testimonials or customers. `CARD_TYPE_LABEL` (type labels) also lives there.
 
 ## Design system in the code
 

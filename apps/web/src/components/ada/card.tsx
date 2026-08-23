@@ -60,15 +60,16 @@ export function Tab({ type, className, size = "md" }: { type: CardType; classNam
 
 /* ---- Status pills ----------------------------------------------------- */
 
-type PillTone = "sun" | "ok" | "gray" | "blue" | "alert" | "ink"
+type PillTone = "sun" | "ok" | "gray" | "blue" | "alert"
 
+/* Every pair is a pastel background with its own darker ink, ≥4.5:1: pill text
+   is 12px semibold, so it reads as body text, not as large text. */
 const PILL: Record<PillTone, string> = {
   sun: "bg-sun text-sun-ink",
   ok: "bg-ok text-ok-ink",
   gray: "bg-panel-3 text-ink-2",
   blue: "bg-seal-soft text-seal",
-  alert: "bg-alert-soft text-alert",
-  ink: "bg-ink text-panel",
+  alert: "bg-alert-soft text-alert-ink",
 }
 
 export function Pill({
@@ -122,6 +123,7 @@ export function CardTab({
   authorName,
   active = false,
   fresh = false,
+  sun = false,
   animate = false,
   onOpen,
   style,
@@ -129,7 +131,10 @@ export function CardTab({
   card: Card
   authorName: string
   active?: boolean
+  /** the card is still new: it says so */
   fresh?: boolean
+  /** and it's the one that wears the full yellow (One Sun Rule: one per screen) */
+  sun?: boolean
   animate?: boolean
   onOpen?: () => void
   style?: CSSProperties
@@ -151,19 +156,21 @@ export function CardTab({
       <span
         className={cn(
           "relative flex h-[82px] flex-col justify-between rounded-card-tab rounded-tl-none px-3.5 pt-2.5 pb-2.5 shadow-card transition-shadow",
-          fresh ? "bg-sun" : "bg-panel",
+          sun ? "bg-sun" : "bg-panel",
           active && "ring-2 ring-ink",
           card.base && "bg-panel-2 shadow-none ring-1 ring-inset ring-line-strong",
         )}
       >
-        <span className={cn("line-clamp-2 font-serif text-[14.5px] leading-[18px] font-medium", fresh ? "text-sun-ink" : "text-ink")}>
+        <span className={cn("line-clamp-2 font-serif text-[14.5px] leading-[18px] font-medium", sun ? "text-sun-ink" : "text-ink")}>
           {card.title}
         </span>
-        <span className={cn("meta flex items-center gap-1.5", fresh ? "text-sun-ink" : "text-ink-3")}>
+        <span className={cn("meta flex items-center gap-1.5", sun ? "text-sun-ink" : "text-ink-3")}>
           <span className="font-mono text-[11px]">v{card.version}</span>
           <span aria-hidden>·</span>
           <span className="truncate">{authorName}</span>
-          {fresh && <span className="ml-auto font-semibold">New</span>}
+          {/* On the yellow card the word is already in sun ink; on a white one
+              it takes that same ink so "new" always reads the same. */}
+          {fresh && <span className={cn("ml-auto font-semibold", !sun && "text-sun-ink")}>New</span>}
           {card.state && card.state !== "new" && (
             <span className="ml-auto">
               <CardState card={card} />
@@ -203,6 +210,7 @@ export function CardMessage({
   onOpen,
   animate = false,
   fresh = false,
+  mine = false,
 }: {
   card: Card
   authorName: string
@@ -210,6 +218,8 @@ export function CardMessage({
   onOpen?: () => void
   animate?: boolean
   fresh?: boolean
+  /** whether the viewer is the author: visibility belongs to the card, not to whoever is reading it */
+  mine?: boolean
 }) {
   return (
     <div className={cn("relative mt-2 w-[520px] max-w-full", animate && "animate-archive")}>
@@ -236,7 +246,7 @@ export function CardMessage({
                 {sourcesCount} {sourcesCount === 1 ? "source" : "sources"}
               </span>
               <span aria-hidden>·</span>
-              <span>{card.visibility === "channel" ? "channel members" : "only you"}</span>
+              <span>{card.visibility === "channel" ? "channel members" : mine ? "only me" : `only ${authorName}`}</span>
             </div>
           </div>
           <button
