@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "feature": "build-the-hackathon-demo-flow-for-ada-one-teacher-fully",
+  "claimId": "build-the-hackathon-demo-flow-for-ada-one-teacher-fully-57609fad9478",
+  "repositoryId": "sha256:5ec6f3c476f2e40bbacdcf2c39af35f7b9a3ba3e39dcaea1b038f04ae0131813",
+  "baseCommit": "c373ebbbb74431d6c658a87ba9159e3da9bc5239",
+  "baseTree": "e3b59410199e4d200bc7dd3ea86afdc3930fdd15",
+  "featureTree": "sha256:36d6da1abbde78b99a0163862dbda8875127c40970459f3f5fc0c07a2b817c38",
+  "targetCommit": "546fb608e2e7033779eac6e584853b91989c9cfc",
+  "targetTree": "fe5c68c44f5f43402576df5a401e6f8e94d1210d",
+  "capabilityBaseDigests": {
+    "agent-reports": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "course-modules": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "scripted-runtime": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "student-study": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "deltaDigest": "sha256:9cb153e72d9778b8625e62111747ea7001f6cdcf7d8c34a5aa9f4863a44b2a57",
+  "resultDigests": {
+    "agent-reports": "sha256:d0c8196c6b152bdd8a7730a9335ca1af6b988e464761162ede769f47923b7e28",
+    "course-modules": "sha256:15a9ba0efe1ac9c60d88464024b8692ae2357d64d7c31b4fff374d4d8933381d",
+    "scripted-runtime": "sha256:c67d3a9d3ec9d6929e4c856ecb151affe8b30133de01cb2fcfebbdf2664d73cf",
+    "student-study": "sha256:d6e21ec291296ecedc9d9b459a3365bc324452b2cbe01cb4b63909c37a54f548"
+  },
+  "verificationReceiptDigests": [
+    "sha256:2baff3c26a7a72f51023e1b68afa1e22514f1f18b447fb6007233e37a10339b2",
+    "sha256:304b4422d8f9313fb13f58f6f622a57880dcca6a67ddfba562c64f020acb4a65",
+    "sha256:4bcb7ca3b429e0a62ea621ef332ff5aec376a10c0d6e4cccc8d324963bb7f9a2",
+    "sha256:60cadd739f5bd67db66d6460843a9d4552fe06d396da1b7889eac66954268bc0",
+    "sha256:6cc6fd2763d9ff013d3cacc36185bf13726fe7728b0c9137ab05bdda963db23b",
+    "sha256:6d7f6c962d01c510b82431404156ee40ca161e7222ee3511765b44d0c57ba9b8",
+    "sha256:8ec9f45f73113928a646adb0bf130989ce0b98b3a5490ebb13458581d55297cc",
+    "sha256:a18225bc9be424192ce32963314ff183826c76065b37426420fa5d8833fc776a",
+    "sha256:c11aa7da488cf1a3d775ed738f3aba13ddf532adace272086bb62ef5ff4952e6",
+    "sha256:d59db1ad550a91eca5d9e4f5d0f39266356475402b71365050b60e3398349fb8"
+  ],
+  "integratedAt": "2026-08-23T14:10:27.108Z",
+  "digest": "sha256:46860a6a60721ebd7205cff06cd670e0b63b3a2260f9570434c907189d536106"
+}

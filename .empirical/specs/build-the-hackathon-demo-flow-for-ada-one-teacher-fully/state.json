@@ -1,15 +1,15 @@
 {
   "schemaVersion": 5,
-  "revision": 12,
+  "revision": 13,
   "activeFeature": "build-the-hackathon-demo-flow-for-ada-one-teacher-fully",
   "request": "Build the hackathon demo flow for Ada (one teacher, fully local, everything mocked but convincing):\n(1) Teacher (Martin) loads modules and study material on a dedicated full page, with a difficulty level adapted to the course and its students; the course agent (Ada) derives the adequate study plan from the material plus student context.\n(2) Student (Sofia) logs in and sees the agent's feedback on her last assignment; if she failed module X she can learn that module; she asks the agent how to advance and prioritize in module X and gets a plan.\n(3) The agent notifies the teacher what it told the student and what it recommended.\n(4) The teacher sees that report and reconciles it, improving the subject without leaving its learning goals.\nMock: pressing Enter must produce a context-aware scripted agent response with a realistic delay, and prior seeded conversation so it doesn't feel empty or hardcoded.",
   "profile": "complex",
   "workflow": "complex",
   "mode": "normal",
-  "phase": "integrate",
-  "status": "waiting",
-  "repairAttempts": 1,
-  "message": "Review passed: independent multi-angle review found 11 issues (1 high path traversal, 2 medium auth gaps, 8 low), all fixed and re-verified on the final tree; decisions D-001..D-003 audited with no contradictions; full report in evidence/review.md.",
+  "phase": "done",
+  "status": "done",
+  "repairAttempts": 0,
+  "message": "Integrated capability changes: agent-reports, course-modules, scripted-runtime, student-study",
   "implementationActor": "agent",
   "specDigest": "sha256:e715bb9f81378d19838d16870686eebead495c581dc9c26e76432ff7b33c31d2",
   "approvedSpecRevision": 2,
@@ -38,15 +38,14 @@
   "completion": {
     "implemented": true,
     "verified": true,
-    "integrated": false,
+    "integrated": true,
     "delivered": false,
     "published": false,
-    "highest": "verified",
+    "highest": "integrated",
     "reasons": {
-      "integrated": "integrated has not been proven by a durable receipt.",
       "delivered": "delivered has not been proven by a durable receipt.",
       "published": "published has not been proven by a durable receipt."
     }
   },
-  "updatedAt": "2026-08-23T08:48:32.769Z"
+  "updatedAt": "2026-08-23T14:10:27.169Z"
 }
