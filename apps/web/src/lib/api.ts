@@ -11,7 +11,8 @@
    keeps its text); only what can't be drawn at all is dropped. Always with a
    console.warn, because it means the server sent something inconsistent. */
 
-import type { Card, Community, DifficultyLevel, Feedback, Material, Message, MessageBlock, Module, Presence, Report, Thread } from "./types"
+import type { Card, Community, DifficultyLevel, Feedback, Material, Member, Message, MessageBlock, Module, Presence, Report, Thread } from "./types"
+import { authHeaders, readStoredToken } from "./auth"
 
 /* ---- Contract mirror types ----------------------------------------- */
 
@@ -27,6 +28,7 @@ export type ServerEvent =
   | { type: "module.updated"; payload: { module: Module } }
   | { type: "feedback.created"; payload: { feedback: Feedback } }
   | { type: "report.updated"; payload: { report: Report } }
+  | { type: "member.joined"; payload: { member: Member } }
 
 /** What an agent's runner reports (arrives in `member.presence`). */
 export interface RunnerInfo {
@@ -60,17 +62,21 @@ export function configuredServer(): string | undefined {
 const unreachable = (server: string) =>
   `Couldn't reach the server at ${server}. Is it running? Try \`npm run dev:server\`.`
 
+/** 401 from a gated course: not an outage — the person has to join or claim. */
+export class UnauthorizedError extends Error {}
+
 /** GET /api/community → full snapshot to hydrate the provider. */
 export async function fetchCommunity(server: string): Promise<CommunitySnapshot> {
   let res: Response
   try {
     // Short timeout: an error screen with retry beats an endless spinner.
-    res = await fetch(`${server}/api/community`, { signal: AbortSignal.timeout(8000) })
+    res = await fetch(`${server}/api/community`, { signal: AbortSignal.timeout(8000), headers: authHeaders() })
   } catch {
     throw new Error(unreachable(server))
   }
   // Behind the Vite proxy a server that isn't running answers 502/503/504, not a network error.
   if (res.status >= 502 && res.status <= 504) throw new Error(unreachable(server))
+  if (res.status === 401) throw new UnauthorizedError("This course requires membership.")
   if (!res.ok) throw new Error(`The server responded ${res.status} when asking for the community.`)
   const data = (await res.json()) as CommunitySnapshot
   if (!data || !Array.isArray(data.members) || !Array.isArray(data.channels) || !Array.isArray(data.messages) || !Array.isArray(data.cards) || !Array.isArray(data.threads)) {
@@ -91,7 +97,7 @@ export async function postMessage(
   try {
     res = await fetch(`${server}/api/channels/${encodeURIComponent(channelId)}/messages`, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "application/json", ...authHeaders() },
       body: JSON.stringify(body),
     })
   } catch {
@@ -109,7 +115,7 @@ export async function createThread(server: string, rootMessageId: string): Promi
   try {
     res = await fetch(`${server}/api/threads`, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "application/json", ...authHeaders() },
       body: JSON.stringify({ rootMessageId }),
     })
   } catch {
@@ -148,7 +154,7 @@ export async function uploadMaterial(
   try {
     res = await fetch(`${server}/api/modules/${encodeURIComponent(moduleId)}/materials`, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "application/json", ...authHeaders() },
       body: JSON.stringify(input),
     })
   } catch {
@@ -169,7 +175,7 @@ export async function patchModule(
   try {
     res = await fetch(`${server}/api/modules/${encodeURIComponent(moduleId)}`, {
       method: "PATCH",
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "application/json", ...authHeaders() },
       body: JSON.stringify(input),
     })
   } catch {
@@ -190,7 +196,7 @@ export async function reconcileReport(
   try {
     res = await fetch(`${server}/api/reports/${encodeURIComponent(reportId)}/reconcile`, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "application/json", ...authHeaders() },
       body: JSON.stringify(input),
     })
   } catch {
@@ -198,6 +204,80 @@ export async function reconcileReport(
   }
   if (!res.ok) await throwForStatus(res, `The server rejected the reconciliation (${res.status}).`)
   return (await res.json()) as Report
+}
+
+/* ---- Membership: course info, claim, join, invites (DECISIONS.md §20) ------ */
+
+export interface CourseInfo {
+  name: string
+  subtitle: string
+  requireMembership: boolean
+}
+
+/** GET /api/course — the course's public face; never needs a token. */
+export async function fetchCourseInfo(server: string): Promise<CourseInfo> {
+  let res: Response
+  try {
+    res = await fetch(`${server}/api/course`, { signal: AbortSignal.timeout(8000) })
+  } catch {
+    throw new Error(unreachable(server))
+  }
+  if (!res.ok) await throwForStatus(res, `The server responded ${res.status} when asking about the course.`)
+  return (await res.json()) as CourseInfo
+}
+
+export interface JoinedAs {
+  personId: string
+  name: string
+  personToken: string
+}
+
+/** POST /api/claim — the deploy's owner token binds the teacher. */
+export async function claimOwner(server: string, token: string): Promise<JoinedAs> {
+  let res: Response
+  try {
+    res = await fetch(`${server}/api/claim`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ token }),
+    })
+  } catch {
+    throw new Error(unreachable(server))
+  }
+  if (!res.ok) await throwForStatus(res, `The server rejected the claim (${res.status}).`)
+  return (await res.json()) as JoinedAs
+}
+
+/** POST /api/join — a single-use invite becomes a person. */
+export async function joinCourse(server: string, token: string, name: string): Promise<JoinedAs> {
+  let res: Response
+  try {
+    res = await fetch(`${server}/api/join`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ token, name }),
+    })
+  } catch {
+    throw new Error(unreachable(server))
+  }
+  if (!res.ok) await throwForStatus(res, `The server rejected the join (${res.status}).`)
+  return (await res.json()) as JoinedAs
+}
+
+/** POST /api/invites — teacher mints a single-use invite link. */
+export async function createInvite(server: string, authorId: string): Promise<{ token: string; joinHash: string }> {
+  let res: Response
+  try {
+    res = await fetch(`${server}/api/invites`, {
+      method: "POST",
+      headers: { "content-type": "application/json", ...authHeaders() },
+      body: JSON.stringify({ authorId }),
+    })
+  } catch {
+    throw new Error(unreachable(server))
+  }
+  if (!res.ok) await throwForStatus(res, `The server rejected the invite (${res.status}).`)
+  return (await res.json()) as { token: string; joinHash: string }
 }
 
 /* ---- WS: defensive parsing ------------------------------------------------ */
@@ -210,6 +290,7 @@ const EVENT_TYPES = new Set([
   "module.updated",
   "feedback.created",
   "report.updated",
+  "member.joined",
 ])
 
 /** Turns whatever arrived over WS into a `ServerEvent`, or `null` if it isn't
@@ -251,7 +332,8 @@ export function parseEvent(raw: unknown): ServerEvent | null {
     (ev.type === "member.presence" && typeof p.memberId === "string" && typeof p.presence === "string") ||
     (ev.type === "module.updated" && isObjectWithId(p.module)) ||
     (ev.type === "feedback.created" && isObjectWithId(p.feedback)) ||
-    (ev.type === "report.updated" && isObjectWithId(p.report))
+    (ev.type === "report.updated" && isObjectWithId(p.report)) ||
+    (ev.type === "member.joined" && isObjectWithId(p.member))
   if (!valid) {
     console.warn(`ada: event "${ev.type}" with a payload I don't recognize; ignoring it.`, p)
     return null
@@ -270,7 +352,8 @@ export function connectEvents(
     onStatus: (connected: boolean) => void
   },
 ): () => void {
-  const url = `${server.replace(/^http/, "ws")}/ws`
+  const stored = readStoredToken()
+  const url = `${server.replace(/^http/, "ws")}/ws${stored ? `?token=${encodeURIComponent(stored)}` : ""}`
   let ws: WebSocket | null = null
   let closed = false
   let attempts = 0
@@ -528,6 +611,15 @@ export function applyEvent(snap: CommunitySnapshot, event: ServerEvent): Communi
       return {
         ...snap,
         feedback: exists ? snap.feedback.map((f) => (f.id === feedback.id ? feedback : f)) : [...snap.feedback, feedback],
+      }
+    }
+
+    case "member.joined": {
+      const { member } = event.payload
+      const exists = snap.members.some((m) => m.id === member.id)
+      return {
+        ...snap,
+        members: exists ? snap.members.map((m) => (m.id === member.id ? member : m)) : [...snap.members, member],
       }
     }
 

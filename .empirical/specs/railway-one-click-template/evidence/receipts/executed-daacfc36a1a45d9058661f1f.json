@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "id": "executed-daacfc36a1a45d9058661f1f",
+  "criteria": [
+    "AC-11"
+  ],
+  "evidenceKinds": [
+    "test"
+  ],
+  "summary": "Seed check passes: double seed still idempotent with token-preserving upserts.",
+  "passed": true,
+  "startedAt": "2026-08-24T00:35:09.027Z",
+  "completedAt": "2026-08-24T00:35:09.349Z",
+  "provenance": {
+    "repositoryId": "sha256:5ec6f3c476f2e40bbacdcf2c39af35f7b9a3ba3e39dcaea1b038f04ae0131813",
+    "feature": "railway-one-click-template",
+    "specRevision": 2,
+    "specDigest": "sha256:90618b4b7b8720d0b27bf0c427c4b6ae93bb8125041792bbc6774a9e7a1086c6",
+    "treeDigest": "sha256:2033db010edeb2e5c7d86f18c77c314bc714c5c086a889e80b08ce16358be9d6",
+    "policyDigest": "sha256:ea0433e8cc3146d0139bcfa01e8f6711be73a9ee583d24cda48efbb6ffce1b63"
+  },
+  "digest": "sha256:3cba42958903a2d5451f1507a2643e562739b3c8de66e1baa8d3f5435513f0c8",
+  "kind": "executed",
+  "command": {
+    "argv": [
+      "npm",
+      "run",
+      "check:seed",
+      "-w",
+      "@ada/server"
+    ],
+    "cwd": ".",
+    "timeoutMs": 300000,
+    "maxOutputBytes": 262144,
+    "environmentKeys": [
+      "PATH",
+      "TMPDIR"
+    ]
+  },
+  "result": {
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "stdoutDigest": "sha256:9f3d33a24b7fbd4037076f0b676b91de256f86cdda1a09f05f4b47a5b826aa91",
+    "stderrDigest": "sha256:8b62e29c949b8723104a6641b1356f691eae24621a242c51a736e7582dc77790",
+    "stdoutTail": "\n> @ada/server@0.0.0 check:seed\n> tsx scripts/seed-check.ts\n\nSeed complete: Neural Networks 2026 (11 channels, 5 members). Repeatable without duplicating.\nSeed complete: Neural Networks 2026 (11 channels, 5 members). Repeatable without duplicating.\nok  snapshot has modules[]\nok  snapshot has assignments[]\nok  snapshot has feedback[]\nok  snapshot has reports[]\nok  module 01-perceptron is ready with ≥2 resolving cards\nok  module 01-perceptron links to an existing channel\nok  module 01-perceptron has material\nok  module 02-mlp is ready with ≥2 resolving cards\nok  module 02-mlp links to an existing channel\nok  module 02-mlp has material\nok  module 03-backprop is ready with ≥2 resolving cards\nok  module 03-backprop links to an existing channel\nok  module 03-backprop has material\nok  an assignment on 03-backprop\nok  Sofia's feedback on it with a gap pointing at a 03-backprop card\nok  feedback.at is an ISO timestamp (ago resolved)\nok  prior messages in sofia-ada\nok  prior messages in #teachers\nok  seeded messages carry resolving citations\nok  a seeded answer carries the 'from the file' seal\nok  Ada's seeded cards have deterministic ids and paths\nok  re-seeding doesn't mark cards as updated\nok  private channels hold exactly the student and Ada\nok  #teachers holds only Martin and Ada\nok  a reconciled report pointing at its decision card\nok  no dangling references (none)\n\nSeed OK\n",
+    "stderrTail": "(node:35501) ExperimentalWarning: SQLite is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n",
+    "stdoutTruncated": false,
+    "stderrTruncated": false
+  }
+}

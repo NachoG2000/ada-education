@@ -8,18 +8,24 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState, useSyncExternalStore, type ReactNode } from "react"
 import {
   applyEvent,
+  claimOwner,
   connectEvents,
+  createInvite as createInviteRest,
   createThread,
   fetchCommunity,
+  fetchCourseInfo,
+  joinCourse,
   patchModule as patchModuleRest,
   postMessage,
   reconcileReport as reconcileReportRest,
+  UnauthorizedError,
   uploadMaterial as uploadMaterialRest,
   type CommunitySnapshot,
   type MessageInput,
   type RunnerInfo,
   type ServerEvent,
 } from "./api"
+import { clearToken, storeToken } from "./auth"
 import { subscribeToHash } from "./hash"
 import type { Agent, Card, Community, DifficultyLevel, Feedback, Material, Member, Message, Module, Person, Presence, Report, Thread } from "./types"
 
@@ -69,6 +75,8 @@ interface CommunityCtx {
   goTo: (view: "modules" | "home") => void
   /** forgets the local identity and reloads into "who are you?" */
   switchPerson: () => void
+  /** teacher mints a single-use invite link; undefined in demo mode */
+  createInvite?: () => Promise<{ token: string; joinHash: string }>
   /** uploads one material to a module; rejects in demo */
   uploadMaterial: (moduleId: string, input: { name: string; kind: Material["kind"]; size?: number; text?: string }) => Promise<Module>
   /** sets a module's difficulty (by hand) and/or objectives; rejects in demo */
@@ -125,6 +133,7 @@ export function CommunityProvider({
   uploadMaterial = uploadMaterialDemo,
   patchModule = patchModuleDemo,
   reconcileReport = reconcileReportDemo,
+  createInvite,
   children,
 }: {
   community: Community
@@ -145,6 +154,7 @@ export function CommunityProvider({
     input: { difficulty?: { level: DifficultyLevel; rationale?: string }; objectives?: string[] },
   ) => Promise<Module>
   reconcileReport?: (reportId: string, input: { accepted: string[]; note: string }) => Promise<Report>
+  createInvite?: () => Promise<{ token: string; joinHash: string }>
   children: ReactNode
 }) {
   const view = useSyncExternalStore(subscribeToHash, readView)
@@ -205,9 +215,11 @@ export function CommunityProvider({
     location.hash = v === "modules" ? "#modules" : "#home"
   }, [])
 
-  /** Forgets the local identity and reloads into "who are you?". */
+  /** Forgets the local identity (and its token) and reloads into the door:
+      "who are you?" ungated, the join screen when the course is gated. */
   const switchPerson = useCallback(() => {
     clearMe()
+    clearToken()
     location.reload()
   }, [])
 
@@ -323,6 +335,7 @@ export function CommunityProvider({
       showChannel,
       goTo,
       switchPerson,
+      createInvite,
       uploadMaterial,
       patchModule,
       reconcileReport,
@@ -356,6 +369,7 @@ export function CommunityProvider({
     showChannel,
     goTo,
     switchPerson,
+    createInvite,
     uploadMaterial,
     patchModule,
     reconcileReport,
@@ -469,6 +483,16 @@ export type ConnectionState =
   | { phase: "error"; detail: string; retry: () => void }
   | { phase: "choosing-person"; courseName: string; people: Person[]; choose: (p: Person) => void }
   | {
+      /** gated course, no valid token yet: the door (DECISIONS.md §20) */
+      phase: "join"
+      courseName: string
+      subtitle: string
+      /** token parsed from a #join?token=… invite link, if the person came by one */
+      inviteToken: string | null
+      claim: (ownerToken: string) => Promise<void>
+      join: (name: string) => Promise<void>
+    }
+  | {
       phase: "ready"
       community: Community
       initialChannelId: string
@@ -483,14 +507,15 @@ export type ConnectionState =
         input: { difficulty?: { level: DifficultyLevel; rationale?: string }; objectives?: string[] },
       ) => Promise<Module>
       reconcileReport: (reportId: string, input: { accepted: string[]; note: string }) => Promise<Report>
+      createInvite: () => Promise<{ token: string; joinHash: string }>
     }
 
 /** The connected source: hydrates with GET /api/community, applies WS events
     with the reducer, and resolves the local identity (localStorage["ada:me"]). */
 export function useConnectedCommunity(server: string): ConnectionState {
-  const [loadState, setLoadState] = useState<{ phase: "loading" } | { phase: "error"; detail: string } | { phase: "ready" }>({
-    phase: "loading",
-  })
+  const [loadState, setLoadState] = useState<
+    { phase: "loading" } | { phase: "error"; detail: string } | { phase: "unauthorized"; courseName: string; subtitle: string } | { phase: "ready" }
+  >({ phase: "loading" })
   const [live, dispatch] = useReducer(reduceLive, null)
   const [meId, setMeId] = useState<string | null>(readStoredMe)
   const [connected, setConnected] = useState(false)
@@ -562,8 +587,20 @@ export function useConnectedCommunity(server: string): ConnectionState {
           closeEvents()
         }
       })
-      .catch((e: unknown) => {
-        if (isActive) setLoadState({ phase: "error", detail: e instanceof Error ? e.message : String(e) })
+      .catch(async (e: unknown) => {
+        if (!isActive) return
+        if (e instanceof UnauthorizedError) {
+          // A gated course: not an outage — show the door, with the course's
+          // public face on it when the server can say who it is.
+          try {
+            const info = await fetchCourseInfo(server)
+            if (isActive) setLoadState({ phase: "unauthorized", courseName: info.name, subtitle: info.subtitle })
+          } catch {
+            if (isActive) setLoadState({ phase: "unauthorized", courseName: "This course", subtitle: "" })
+          }
+          return
+        }
+        setLoadState({ phase: "error", detail: e instanceof Error ? e.message : String(e) })
       })
     return () => {
       isActive = false
@@ -643,12 +680,46 @@ export function useConnectedCommunity(server: string): ConnectionState {
     [server, meId],
   )
 
+  /* The two doors of a gated course. Success stores the person token and the
+     identity, then re-runs the bootstrap (which now authenticates). */
+  const enter = useCallback((joined: { personId: string; personToken: string }) => {
+    storeToken(joined.personToken)
+    storeMe(joined.personId)
+    setMeId(joined.personId)
+    // Land on your role's home: the role gate turns #home into #modules for a
+    // teacher, so one destination serves both doors.
+    location.hash = "#home"
+    setLoadState({ phase: "loading" })
+    setAttempt((n) => n + 1)
+  }, [])
+  const claim = useCallback(
+    async (ownerToken: string) => {
+      enter(await claimOwner(server, ownerToken))
+    },
+    [server, enter],
+  )
+  const inviteToken = useMemo(() => parseJoinToken(location.hash), [])
+  const join = useCallback(
+    async (name: string) => {
+      if (!inviteToken) throw new Error("This link has no invite token.")
+      enter(await joinCourse(server, inviteToken, name))
+    },
+    [server, inviteToken, enter],
+  )
+  const createInvite = useCallback(async () => {
+    if (!meId) throw new Error("You haven't chosen who you are yet.")
+    return createInviteRest(server, meId)
+  }, [server, meId])
+
   const community = useMemo<Community | null>(
     () => (live && meId !== null ? { ...live.snapshot, meId } : null),
     [live, meId],
   )
 
   if (loadState.phase === "error") return { phase: "error", detail: loadState.detail, retry }
+  if (loadState.phase === "unauthorized") {
+    return { phase: "join", courseName: loadState.courseName, subtitle: loadState.subtitle, inviteToken, claim, join }
+  }
   if (loadState.phase === "loading" || !live) return { phase: "loading" }
   if (live.snapshot.channels.length === 0) {
     return { phase: "error", detail: "The course doesn't have any channels yet. Run `npm run seed` in the server.", retry }
@@ -674,7 +745,16 @@ export function useConnectedCommunity(server: string): ConnectionState {
     uploadMaterial,
     patchModule,
     reconcileReport,
+    createInvite,
   }
+}
+
+/** `#join?token=…` from an invite link; null for every other hash. */
+function parseJoinToken(hash: string): string | null {
+  if (!hash.startsWith("#join")) return null
+  const query = hash.slice(hash.indexOf("?") + 1)
+  if (!hash.includes("?")) return null
+  return new URLSearchParams(query).get("token")
 }
 
 /** A card is "new" during the first 24 h since it was published. */

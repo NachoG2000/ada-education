@@ -19,6 +19,15 @@ const checks = [
   ["PRODUCT.md", [/cohort-based/]],
   ["pitch/AGENTS.md", [/kept as history/, /§19/]],
   ["PROBLEM.md", [/What the 08\/23 demo proved/]],
+  // Railway template (railway-one-click-template): §20 decisions, runbook, badge.
+  ["DECISIONS.md", [/## 20\. Railway one-click template.*\(08\/23/, /owner token/, /single-use\s+invite/i]],
+  ["deploy/README.md", [/ADA_OWNER_TOKEN/, /\/health/, /Generate Template from Project/]],
+  ["deploy/AGENTS.md", [/first[- ]boot/i, /never echo/i]],
+  ["README.md", [/railway\.com\/button\.svg/, /owner token/]],
+  ["AGENTS.md", [/check:gated/]],
+  ["apps/server/AGENTS.md", [/ADA_REQUIRE_MEMBERSHIP/, /api\/claim/]],
+  ["packages/runner/AGENTS.md", [/materials\b.*raw|raw.*materials/i]],
+  ["apps/web/AGENTS.md", [/ada:token/, /join\.tsx/]],
 ]
 // The hackathon cover slide lives with the pitch history, not at the root.
 const mustExist = ["pitch/slide1.png"]

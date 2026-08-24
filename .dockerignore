@@ -1,0 +1,15 @@
+.git
+node_modules
+**/node_modules
+**/dist
+apps/server/data
+.empirical
+.claude
+.agents
+research
+pitch
+docs
+design
+openspec
+slide1.png
+*.md

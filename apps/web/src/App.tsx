@@ -5,6 +5,7 @@ import { configuredServer } from "@/lib/api"
 import { demo } from "@/lib/demo"
 import { ErrorBoundary } from "@/components/ada/boundary"
 import { WhoAreYou } from "@/components/ada/who-are-you"
+import { JoinCourse } from "@/components/ada/join"
 import { ChannelScreen } from "@/screens/Channel"
 import { FigureSheet } from "@/screens/FigureSheet"
 
@@ -94,6 +95,18 @@ function ConnectedApp({ server }: { server: string }) {
     return <WhoAreYou course={con.courseName} people={con.people} onChoose={con.choose} />
   }
 
+  if (con.phase === "join") {
+    return (
+      <JoinCourse
+        courseName={con.courseName}
+        subtitle={con.subtitle}
+        inviteToken={con.inviteToken}
+        onClaim={con.claim}
+        onJoin={con.join}
+      />
+    )
+  }
+
   return (
     <CommunityProvider
       community={con.community}
@@ -107,6 +120,7 @@ function ConnectedApp({ server }: { server: string }) {
       uploadMaterial={con.uploadMaterial}
       patchModule={con.patchModule}
       reconcileReport={con.reconcileReport}
+      createInvite={con.createInvite}
     >
       <ChannelScreen />
     </CommunityProvider>

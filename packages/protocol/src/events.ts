@@ -259,6 +259,10 @@ export const serverEventSchema = z.discriminatedUnion("type", [
     type: z.literal("report.updated"),
     payload: z.object({ report: reportSchema }),
   }),
+  z.object({
+    type: z.literal("member.joined"),
+    payload: z.object({ member: memberSchema }),
+  }),
 ])
 
 export const mentionIntentSchema = z.enum(["ingest", "plan", "question"])

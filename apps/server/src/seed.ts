@@ -142,7 +142,14 @@ export function seedCourse(options: SeedOptions = {}): void {
       upsertPerson(database, person)
       for (const channelId of person.channelIds ?? openChannelIds) addChannelMember(database, channelId, person.id)
     }
-    for (const agent of config.agents ?? []) upsertAgent(database, agent)
+    // A deploy rotates the committed demo token by env: with exactly one agent
+    // in the course, ADA_AGENT_TOKEN wins over the JSON (deploy/README.md).
+    const agentTokenOverride = process.env.ADA_AGENT_TOKEN
+    const agents = config.agents ?? []
+    if (agentTokenOverride && agents.length > 1) console.warn("ADA_AGENT_TOKEN is set but the course has several agents; ignoring the override.")
+    for (const agent of agents) {
+      upsertAgent(database, agentTokenOverride && agents.length === 1 ? { ...agent, token: agentTokenOverride } : agent)
+    }
     for (const channel of config.channels) {
       for (const memberId of channel.memberIds ?? []) addChannelMember(database, channel.id, memberId)
     }

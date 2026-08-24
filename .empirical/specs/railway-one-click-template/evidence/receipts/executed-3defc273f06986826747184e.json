@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "id": "executed-3defc273f06986826747184e",
+  "criteria": [
+    "AC-11"
+  ],
+  "evidenceKinds": [
+    "test"
+  ],
+  "summary": "WS/REST smoke passes ungated.",
+  "passed": true,
+  "startedAt": "2026-08-24T01:26:23.593Z",
+  "completedAt": "2026-08-24T01:26:24.687Z",
+  "provenance": {
+    "repositoryId": "sha256:5ec6f3c476f2e40bbacdcf2c39af35f7b9a3ba3e39dcaea1b038f04ae0131813",
+    "feature": "railway-one-click-template",
+    "specRevision": 2,
+    "specDigest": "sha256:90618b4b7b8720d0b27bf0c427c4b6ae93bb8125041792bbc6774a9e7a1086c6",
+    "treeDigest": "sha256:7e45818779b6536e644410005ee4c2290472e4abc62ddb5d8a6390f4e935409c",
+    "policyDigest": "sha256:3fc9128c9cdce89cc25f1cbc401f5b0993218ba2e9b8e6c9882151e1aa2079c3"
+  },
+  "digest": "sha256:75b8deac0e13614c43e1415f85b4749ca13568634b2c02240f6fb3c7bdc9f749",
+  "kind": "executed",
+  "command": {
+    "argv": [
+      "npm",
+      "run",
+      "smoke"
+    ],
+    "cwd": ".",
+    "timeoutMs": 600000,
+    "maxOutputBytes": 262144,
+    "environmentKeys": [
+      "PATH",
+      "TMPDIR"
+    ]
+  },
+  "result": {
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "stdoutDigest": "sha256:64a97972230801e8efb9f1cdf80f4ddd377db91f2b770122741bb9a7f4333159",
+    "stderrDigest": "sha256:21e9556e66be5fee1cc39be7664309b682cb5f7a7db264f7078fc8a36539f86f",
+    "stdoutTail": "\n> ada@0.0.0 smoke\n> npm run smoke -w @ada/server\n\n\n> @ada/server@0.0.0 smoke\n> tsx scripts/smoke-run.ts\n\nSeed complete: Neural Networks 2026 (11 channels, 5 members). Repeatable without duplicating.\nAda server listening on http://localhost:8799\nSmoke OK (modules/reports): PATCH difficulty, material upload with ingest mention, and report reconcile with a decision card.\nSmoke OK: presence, mention with context, card.publish, message.create with cite, and invalid token (4401).\nReceived SIGTERM; shutting down Ada server...\nAda server closed.\n",
+    "stderrTail": "(node:73753) ExperimentalWarning: SQLite is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:73755) ExperimentalWarning: SQLite is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:73757) ExperimentalWarning: SQLite is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n",
+    "stdoutTruncated": false,
+    "stderrTruncated": false
+  }
+}

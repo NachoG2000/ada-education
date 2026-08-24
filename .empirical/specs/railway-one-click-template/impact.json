@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "classification": "behavioral",
+  "capabilities": [
+    "course-membership",
+    "course-modules",
+    "deployment"
+  ],
+  "surfaces": [
+    "workflow"
+  ],
+  "regressionRationale": null,
+  "digest": "sha256:aa766b44d1f4afca7ea6610390410035027af0f1b4e2271f5d13eff8aa44a47a"
+}

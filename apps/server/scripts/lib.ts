@@ -43,11 +43,11 @@ export async function until<T>(what: string, probe: () => Promise<T | undefined>
   }
 }
 
-/** True once GET /api/community answers ok. */
+/** True once GET /health answers ok (auth-free in gated mode too). */
 export async function serverUp(base: string): Promise<true> {
   return until("server up", async () => {
     try {
-      return (await fetch(`${base}/api/community`)).ok ? (true as const) : undefined
+      return (await fetch(`${base}/health`)).ok ? (true as const) : undefined
     } catch {
       return undefined
     }

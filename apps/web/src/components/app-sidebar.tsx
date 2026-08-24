@@ -1,6 +1,6 @@
 /* Ada's sidebar over the shadcn primitives (inset variant). Drawers: Course · Work · Private · Members. */
 
-import { ChevronsUpDownIcon, GraduationCapIcon, LayersIcon, PlusIcon } from "lucide-react"
+import { ChevronsUpDownIcon, GraduationCapIcon, LayersIcon, LinkIcon, PlusIcon } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -15,6 +15,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { cn } from "@/lib/utils"
+import { useState } from "react"
 import { isAgent, isTeacher, useCommunity } from "@/lib/community"
 import type { Channel, Member, WorkStatus } from "@/lib/types"
 import { MemberAvatar, PRESENCE_LABEL, agentInk } from "@/components/ada/identity"
@@ -163,6 +164,57 @@ function MemberItem({ member: m }: { member: Member }) {
   )
 }
 
+/** Teacher-only: mints a single-use invite and puts the full link on the
+    clipboard (DECISIONS.md §20). Connected mode only — demo has no server. */
+function InviteButton() {
+  const { createInvite } = useCommunity()
+  const [state, setState] = useState<"idle" | "busy" | "copied" | "failed">("idle")
+  const [link, setLink] = useState<string | null>(null)
+  if (!createInvite) return null
+  const mint = async () => {
+    if (state === "busy") return
+    setState("busy")
+    setLink(null)
+    try {
+      const { joinHash } = await createInvite()
+      const minted = `${location.origin}${location.pathname}${joinHash}`
+      try {
+        await navigator.clipboard.writeText(minted)
+        setState("copied")
+      } catch {
+        // No clipboard (permissions, plain http): show the link right here
+        // instead. Never a blocking dialog.
+        setLink(minted)
+        setState("idle")
+        return
+      }
+      setTimeout(() => setState("idle"), 2500)
+    } catch {
+      setState("failed")
+      setTimeout(() => setState("idle"), 2500)
+    }
+  }
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton title="Invite a student (single-use link)" onClick={() => void mint()}>
+        <LinkIcon className="size-4" />
+        <span className="text-[13px]">
+          {state === "copied" ? "Invite link copied" : state === "failed" ? "Couldn't mint the invite" : state === "busy" ? "Minting link…" : "Invite a student"}
+        </span>
+      </SidebarMenuButton>
+      {link ? (
+        <input
+          readOnly
+          aria-label="Invite link"
+          value={link}
+          onFocus={(event) => event.currentTarget.select()}
+          className="mt-1 h-7 w-full rounded-control border border-line bg-panel-2 px-2 font-mono text-[11px] text-ink-2 outline-none focus-visible:ring-2 focus-visible:ring-seal"
+        />
+      ) : null}
+    </SidebarMenuItem>
+  )
+}
+
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { community, me, switchPerson } = useCommunity()
   // A channel that names its members is listed only for them (a student's DM
@@ -218,6 +270,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
       <SidebarFooter>
         <SidebarMenu>
+          {isTeacher(me) ? <InviteButton /> : null}
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" title="Switch person" onClick={switchPerson}>
               <MemberAvatar member={me} size={28} presence />

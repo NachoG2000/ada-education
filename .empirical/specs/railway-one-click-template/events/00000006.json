@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "sequence": 6,
+  "previousDigest": "sha256:402b327a74690895230fb53f37cc874e82cfb4eb8d4c7c69b09dcc34918a8fe5",
+  "actor": "agent",
+  "type": "transition",
+  "summary": "Context: refreshed repository knowledge; overview updated to §20 (deployable shape, membership gating, deploy/ area); no stale, missing, or refinement-required paths.",
+  "createdAt": "2026-08-24T00:32:57.411Z",
+  "stateBeforeDigest": "sha256:fb5a8e87466206c22f0f4f4d54074a272a3288d6e17a5abd538b9f38181d8b6c",
+  "stateAfterDigest": "sha256:a8e824fdd5b146fda6df9d944b42c865e6c437ae313fc2591577bd39b963d5e7",
+  "state": {
+    "schemaVersion": 5,
+    "revision": 6,
+    "activeFeature": "railway-one-click-template",
+    "request": "Make Ada deployable as a Railway one-click template: the open-source self-host rung between laptop and hosted (DECISIONS §4b, §16, §19; research/2026-08-23-railway-deploy-template.md, -buzz-identity-and-agents.md, -shared-filesystem-on-railway.md). Decisions taken by Ignacio on 08/23 to record as DECISIONS.md §20: (a) one deploy = one course community; (b) identity copies Buzz's pattern with plain tokens instead of Nostr keys — an owner token bootstrapped from a deploy-time variable claims the teacher, the teacher mints invite links, members live in a server-side table, and membership gating is an explicit flag (off for local dev, on in the template); (c) runners stay outside the deploy by default (teacher's machine, their claude login, wss already works), with an OPTIONAL runner service in the template where the org pastes its own ANTHROPIC_API_KEY — the credential lives in their Railway project, never with us. Build: (1) the server serves apps/web/dist so one public service carries UI+API+WS; (2) minimal identity per (b): person tokens, claim/join flow in the web client replacing the person picker when gating is on, writes and person WS authenticated; (3) Dockerfile for the server service — build web, seed the example course into the volume on first boot (ada.db + data/<course>), env-driven config, runner agent token overridable per deploy via env; (4) Dockerfile/entry for the optional runner service running the claude runtime with the org's API key; (5) README gets the Deploy on Railway button placeholder and a deploy runbook documents creating/publishing the template and connecting a local runner; (6) docs land in the same change (DECISIONS §20, AGENTS.md files of touched areas, PRODUCT.md if terminology changes). Out of scope: multi-course/multi-tenant, permissions screen, SSO, billing, npm-publishing the runner, actually publishing the template in Railway's dashboard (manual step, runbook only), any shared filesystem service.",
+    "profile": "complex",
+    "workflow": "complex",
+    "mode": "normal",
+    "phase": "verify",
+    "status": "waiting",
+    "repairAttempts": 0,
+    "message": "Context: refreshed repository knowledge; overview updated to §20 (deployable shape, membership gating, deploy/ area); no stale, missing, or refinement-required paths.",
+    "implementationActor": "agent",
+    "specDigest": "sha256:90618b4b7b8720d0b27bf0c427c4b6ae93bb8125041792bbc6774a9e7a1086c6",
+    "approvedSpecRevision": 2,
+    "capabilityArchiveRequired": true,
+    "capabilityDeltaDigest": "sha256:9673fbe5c7637636afcc0c13b914d7fe01b8c91c398baae477e9c9aabe2d0ccd",
+    "impactDigest": "sha256:aa766b44d1f4afca7ea6610390410035027af0f1b4e2271f5d13eff8aa44a47a",
+    "capabilityClaimId": "railway-one-click-template-3e0a805bd26d",
+    "authorizationDigest": null,
+    "evidence": [],
+    "evidenceReceiptIds": [],
+    "legacyEvidenceCount": 0,
+    "completion": {
+      "implemented": true,
+      "verified": false,
+      "integrated": false,
+      "delivered": false,
+      "published": false,
+      "highest": "implemented",
+      "reasons": {
+        "verified": "verified has not been proven by a durable receipt.",
+        "integrated": "integrated has not been proven by a durable receipt.",
+        "delivered": "delivered has not been proven by a durable receipt.",
+        "published": "published has not been proven by a durable receipt."
+      }
+    },
+    "updatedAt": "2026-08-24T00:32:57.411Z"
+  },
+  "digest": "sha256:fe5ae41082ec7ef6a493e89ad26bf2671522e680611be72f38453d53d7dcf626"
+}

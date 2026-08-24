@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "id": "executed-f2a20ae0ed199a638da406eb",
+  "criteria": [
+    "AC-11"
+  ],
+  "evidenceKinds": [
+    "test"
+  ],
+  "summary": "tsc -b apps/web passes with the join door, auth plumbing and member.joined reducer.",
+  "passed": true,
+  "startedAt": "2026-08-24T00:35:04.096Z",
+  "completedAt": "2026-08-24T00:35:05.949Z",
+  "provenance": {
+    "repositoryId": "sha256:5ec6f3c476f2e40bbacdcf2c39af35f7b9a3ba3e39dcaea1b038f04ae0131813",
+    "feature": "railway-one-click-template",
+    "specRevision": 2,
+    "specDigest": "sha256:90618b4b7b8720d0b27bf0c427c4b6ae93bb8125041792bbc6774a9e7a1086c6",
+    "treeDigest": "sha256:2033db010edeb2e5c7d86f18c77c314bc714c5c086a889e80b08ce16358be9d6",
+    "policyDigest": "sha256:ea0433e8cc3146d0139bcfa01e8f6711be73a9ee583d24cda48efbb6ffce1b63"
+  },
+  "digest": "sha256:cb396abfccc294b77668f773903a29237f150d6d0fd4086cfb4c94133d3c0572",
+  "kind": "executed",
+  "command": {
+    "argv": [
+      "npm",
+      "run",
+      "typecheck"
+    ],
+    "cwd": ".",
+    "timeoutMs": 300000,
+    "maxOutputBytes": 262144,
+    "environmentKeys": [
+      "PATH",
+      "TMPDIR"
+    ]
+  },
+  "result": {
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "stdoutDigest": "sha256:731f74238bae1fbf83aa2cdf21d88c7de1edc675536ed3d0c016fc11791c462a",
+    "stderrDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdoutTail": "\n> ada@0.0.0 typecheck\n> tsc -b apps/web\n\n",
+    "stderrTail": "",
+    "stdoutTruncated": false,
+    "stderrTruncated": false
+  }
+}

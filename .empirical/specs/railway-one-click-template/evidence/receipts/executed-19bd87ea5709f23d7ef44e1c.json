@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "id": "executed-19bd87ea5709f23d7ef44e1c",
+  "criteria": [
+    "AC-1",
+    "AC-10"
+  ],
+  "evidenceKinds": [
+    "test"
+  ],
+  "summary": "Doc invariants: DECISIONS has dated §20 with owner token and single-use invites; deploy/README.md runbook has ADA_OWNER_TOKEN, /health and the template-publish step; deploy/AGENTS.md states first-boot and never-echo rules; README carries the Railway badge; area AGENTS files name check:gated, ADA_REQUIRE_MEMBERSHIP, api/claim, material sync, ada:token and join.tsx. 21 files OK.",
+  "passed": true,
+  "startedAt": "2026-08-24T00:35:03.545Z",
+  "completedAt": "2026-08-24T00:35:03.589Z",
+  "provenance": {
+    "repositoryId": "sha256:5ec6f3c476f2e40bbacdcf2c39af35f7b9a3ba3e39dcaea1b038f04ae0131813",
+    "feature": "railway-one-click-template",
+    "specRevision": 2,
+    "specDigest": "sha256:90618b4b7b8720d0b27bf0c427c4b6ae93bb8125041792bbc6774a9e7a1086c6",
+    "treeDigest": "sha256:2033db010edeb2e5c7d86f18c77c314bc714c5c086a889e80b08ce16358be9d6",
+    "policyDigest": "sha256:ea0433e8cc3146d0139bcfa01e8f6711be73a9ee583d24cda48efbb6ffce1b63"
+  },
+  "digest": "sha256:e7158e8aeeed2b18adc772ba386871b91f17aec3c1acaaf3c8865d68adeac463",
+  "kind": "executed",
+  "command": {
+    "argv": [
+      "node",
+      "scripts/docs-check.mjs"
+    ],
+    "cwd": ".",
+    "timeoutMs": 60000,
+    "maxOutputBytes": 262144,
+    "environmentKeys": [
+      "PATH",
+      "TMPDIR"
+    ]
+  },
+  "result": {
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "stdoutDigest": "sha256:7d8c91d1f06039beb51817ef190800e7c7237ee5f2a3534765cd1311538c4a9d",
+    "stderrDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdoutTail": "Docs OK (21 files)\n",
+    "stderrTail": "",
+    "stdoutTruncated": false,
+    "stderrTruncated": false
+  }
+}

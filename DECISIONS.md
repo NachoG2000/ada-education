@@ -315,3 +315,40 @@ The Aleph 2026 hackathon phase closed on 08/23: the code cutoff passed and the d
 **What §15 keeps:** the deployment shape. The code today still runs fully local on one machine (server + runner + web client), and local-first remains the free tier of §14/§16. What changes is the frame: it stops being "a custom build for one specific teacher this weekend" and becomes the open-source product any of these organizations can run.
 
 Backing: `research/2026-08-22-open-source-vs-premium.md` (open source vs premium evidence), §4 (license), §16 (positioning line and counterexamples).
+
+## 20. Railway one-click template: identity by tokens, runner outside (08/23, night)
+
+Decided with Ignacio after verifying how Buzz ships its relay template and what
+Railway allows (`research/2026-08-23-railway-deploy-template.md`,
+`research/2026-08-23-buzz-identity-and-agents.md`,
+`research/2026-08-23-shared-filesystem-on-railway.md`). This is §4(b) made
+concrete: the self-host rung between the laptop and hosted.
+
+1. **One deploy = one course community.** An organization runs N cohorts as N
+   deploys. Multi-course stays future direction (§9, §14).
+2. **Identity copies Buzz's pattern, with plain tokens instead of Nostr keys.**
+   A deploy-time **owner token** claims the teacher (`POST /api/claim`, always
+   recoverable, rotates the teacher's token); the teacher mints **single-use
+   invite links** (`#join?token=…` → name → student); members live in the
+   server's DB and **membership gating is an explicit flag**
+   (`ADA_REQUIRE_MEMBERSHIP`, off for local dev, on in the template — Buzz
+   ships open-by-default, we don't). Students don't manage keypairs: a
+   bootcamp student who loses an `nsec` loses the identity; a lost Ada token
+   is one invite away.
+3. **Runners stay outside the deploy by default** (the teacher's machine,
+   their own `claude` login; `https://` → `wss://` already works). The
+   template offers an **optional runner service** where the org pastes its own
+   `ANTHROPIC_API_KEY`: the credential lives in *their* Railway project,
+   never with us — §14's "the server never runs models" holds in every shape.
+4. **No shared filesystem.** Railway forbids FUSE/privileged mounts and
+   volumes are one-per-service, so the Archil-style composed view stays in the
+   hosted tier (§14.7 layer 3). What crosses machines crosses over HTTP: the
+   server serves material content and the runner syncs its local `raw/`
+   before an ingest. Git remains the folder's own sync/audit layer.
+
+**What this changed in the code:** the server serves the built SPA same-origin
+(one public service) plus `/health`; claim/invite/join endpoints and
+token-derived authorship under the gating flag; `member.joined` in the
+protocol; the runner's material sync; `deploy/` (Dockerfiles, entrypoints,
+runbook); `npm run check:gated` covering all of it. Publishing the template in
+Railway's dashboard is a manual step in `deploy/README.md`.

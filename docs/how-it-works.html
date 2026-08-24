@@ -254,7 +254,7 @@ data/neural-…/    <b>sample course</b> (seed)</pre>
 
   <h2 id="faq">7. Questions we've already asked ourselves</h2>
   <div class="faq">
-    <details><summary>Can a professor use their Claude subscription on Railway?</summary><p>Yes, as long as what's running is the unmodified <code>claude</code> binary and they log in through Anthropic's own flow (<code>claude setup-token</code>). Claude Code's legal page says it outright: «<i>Nor does it prevent an end user from signing in to the unmodified Claude Code binary with their own Claude subscription, including where a platform hosts Claude Code</i>». What we can't do is request, store, or route that token. Source and detail: <code>research/2026-08-22-suscripciones-runners-buzz-pi.md</code>.</p></details>
+    <details><summary>Can a professor use their Claude subscription on Railway?</summary><p>Yes, as long as what's running is the unmodified <code>claude</code> binary and they log in through Anthropic's own flow (<code>claude setup-token</code>). Claude Code's legal page says it outright: «<i>Nor does it prevent an end user from signing in to the unmodified Claude Code binary with their own Claude subscription, including where a platform hosts Claude Code</i>». What we can't do is request, store, or route that token. Source and detail: <code>research/2026-08-22-subscriptions-runners-buzz-pi.md</code>.</p></details>
     <details><summary>What about pi.dev? I wanted to avoid depending on a single provider.</summary><p>pi is the right harness for that: 15+ providers, open models via Ollama/OpenRouter, headless mode, reads <code>CLAUDE.md</code>. What it <b>doesn't</b> give you is subscriptions: its OAuth login with Claude is exactly what Anthropic banned (since April 2026 it responds "Third-party apps now draw from your extra usage"). So: pi = runtime with API keys and open models; claude/codex = runtime with a subscription. The runner treats them the same.</p></details>
     <details><summary>Why doesn't the server call the model, "even just for the demo"?</summary><p>Because it's the decision you can't undo later. The moment the server holds an API key, you have to store it, rotate it, bill for it, and the local tier stops being free and private. Keeping server and runner separate costs an afternoon today and nothing tomorrow.</p></details>
     <details><summary>What happens if the student turns off their computer?</summary><p>Their personal agent shows as "offline" in the UI. Mentions don't get queued: they're lost, with a warning shown when writing. That's exactly what Buzz does. If they want it always on, they move it to the hosted tier.</p></details>
@@ -279,7 +279,7 @@ data/neural-…/    <b>sample course</b> (seed)</pre>
   </dl>
 
   <footer>
-    This page is direction, not status: the code, <code>openspec/</code>, and <code>DECISIONS.md</code> §14-§15 are what govern. Implementation spec: <code>openspec/changes/demo-local-backend/</code>. Sourced research: <code>research/2026-08-22-suscripciones-runners-buzz-pi.md</code>. If anything on this page contradicts those files, this page is out of date.
+    This page is direction, not status: the code, <code>openspec/</code>, and <code>DECISIONS.md</code> §14-§15 are what govern. Implementation spec: <code>openspec/changes/demo-local-backend/</code>. Sourced research: <code>research/2026-08-22-subscriptions-runners-buzz-pi.md</code>. If anything on this page contradicts those files, this page is out of date.
   </footer>
 </main>
 </body>

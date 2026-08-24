@@ -10,7 +10,7 @@ Maintained from repository evidence. Source of truth for rules: `AGENTS.md` (imp
 
 ## Boundaries
 
-- Current scope (`DECISIONS.md` §19): the open-source product for course-running organizations; the code today is a **fully local deployment on one machine** (the shape §15 set). Remote runners, hosting, tiers and multi-course are future direction, not code.
+- Current scope (`DECISIONS.md` §19-§20): the open-source product for course-running organizations. The code runs fully local by default, and deploys as one public service + optional runner service (`deploy/`, Railway template runbook): membership gating behind `ADA_REQUIRE_MEMBERSHIP` (owner token claims the teacher, single-use invite links mint students), runners connect from wherever the org's provider access lives. Multi-course, tiers and channel-level read filtering are future direction, not code.
 - Explicitly out of scope for now (`AGENTS.md` "Decisions and open questions"): permissions, submission grading, collaborative editing, vector/global search, multi-course, mobile, notifications, work channels beyond the design, gamification, per-student algorithmic personalization (`PROBLEM.md` §9).
 - Open questions not to be resolved unilaterally: the "already on file" seal semantics, the plural `fromFile` API, the example agent's name ("Ada" vs the product name).
 - Language: everything (UI, content, comments, docs, names) in **English**.

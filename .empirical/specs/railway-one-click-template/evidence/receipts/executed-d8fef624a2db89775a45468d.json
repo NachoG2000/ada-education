@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "id": "executed-d8fef624a2db89775a45468d",
+  "criteria": [
+    "AC-11"
+  ],
+  "evidenceKinds": [
+    "test"
+  ],
+  "summary": "Full teacher/student e2e passes ungated, 15 checks.",
+  "passed": true,
+  "startedAt": "2026-08-24T01:22:04.140Z",
+  "completedAt": "2026-08-24T01:22:08.995Z",
+  "provenance": {
+    "repositoryId": "sha256:5ec6f3c476f2e40bbacdcf2c39af35f7b9a3ba3e39dcaea1b038f04ae0131813",
+    "feature": "railway-one-click-template",
+    "specRevision": 2,
+    "specDigest": "sha256:90618b4b7b8720d0b27bf0c427c4b6ae93bb8125041792bbc6774a9e7a1086c6",
+    "treeDigest": "sha256:7e45818779b6536e644410005ee4c2290472e4abc62ddb5d8a6390f4e935409c",
+    "policyDigest": "sha256:3fc9128c9cdce89cc25f1cbc401f5b0993218ba2e9b8e6c9882151e1aa2079c3"
+  },
+  "digest": "sha256:dee54125224d383a5d279067a6872b89b0bea24e6b2e1d0af5f8dcc62e626b5e",
+  "kind": "executed",
+  "command": {
+    "argv": [
+      "npm",
+      "run",
+      "check:e2e",
+      "-w",
+      "@ada/server"
+    ],
+    "cwd": ".",
+    "timeoutMs": 300000,
+    "maxOutputBytes": 262144,
+    "environmentKeys": [
+      "PATH",
+      "TMPDIR"
+    ]
+  },
+  "result": {
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "stdoutDigest": "sha256:238e54b61ec8064eeba95480ca18025524a14e7c6382e81c32165755939eae33",
+    "stderrDigest": "sha256:497a64dacca76015c963bb41b80895409720a7e19720bd370429e5beb780b885",
+    "stdoutTail": "\n> @ada/server@0.0.0 check:e2e\n> tsx scripts/e2e-flow.ts\n\nok  Modules screen data: 03-backprop ready, cards, difficulty rationale + cohort evidence\nok  Study screen data: Sofia's 6/10 feedback with gap card and next-step citations\nok  seeded history in sofia-ada and #teachers\nok  upload: material listed and module compiling\nok  ingest: Ada suggested a difficulty with a rationale naming the material\nok  ingest: answer in the channel cites the three new cards\nok  plan: Ada showed thinking before answering\nok  plan: cites at least two cards\nok  plan: names Sofia's feedback gap\nok  report: filed for the teacher with three recommendations\nok  report: carries Ada's summary, not the student's message\nok  report: #teachers note cites the plan card\nok  reconcile: report marked reconciled with the accepted items\nok  reconcile: decision card by the teacher in the module channel with the note\nok  reconcile: module shows the revision line\n\nE2E flow OK\n",
+    "stderrTail": "(node:63314) ExperimentalWarning: SQLite is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:63316) ExperimentalWarning: SQLite is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:63318) ExperimentalWarning: SQLite is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n",
+    "stdoutTruncated": false,
+    "stderrTruncated": false
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "collected-233c7af94e929f396420c874",
+  "criteria": [
+    "AC-1",
+    "AC-10",
+    "AC-11",
+    "AC-2",
+    "AC-3",
+    "AC-4",
+    "AC-5",
+    "AC-6",
+    "AC-7",
+    "AC-8",
+    "AC-9",
+    "AC-UI-1",
+    "AC-UI-2"
+  ],
+  "evidenceKinds": [
+    "review"
+  ],
+  "summary": "Independent security review plus an orchestrating-agent pass. Four findings, all fixed and re-verified on this tree: HIGH the image would have shipped the synthetic demo (untracked apps/web/.env + build-time inlining) — fixed three ways and confirmed by an A/B build; MEDIUM runner wrote synced material without a traversal guard; MEDIUM first invited student could land in #teachers; LOW gated check shared smoke port. Verified-clean list covers allowlist bypasses, timing-safe comparison, token scoping across all four WS combinations, token leakage, a ten-way invite race, role escalation, static traversal, fail-closed claim, .dockerignore depth and re-seed token preservation. No contradictions with D-001..D-006.",
+  "passed": true,
+  "startedAt": "2026-08-24T01:27:10.444Z",
+  "completedAt": "2026-08-24T01:27:10.444Z",
+  "provenance": {
+    "repositoryId": "sha256:5ec6f3c476f2e40bbacdcf2c39af35f7b9a3ba3e39dcaea1b038f04ae0131813",
+    "feature": "railway-one-click-template",
+    "specRevision": 2,
+    "specDigest": "sha256:90618b4b7b8720d0b27bf0c427c4b6ae93bb8125041792bbc6774a9e7a1086c6",
+    "treeDigest": "sha256:7e45818779b6536e644410005ee4c2290472e4abc62ddb5d8a6390f4e935409c",
+    "policyDigest": "sha256:3fc9128c9cdce89cc25f1cbc401f5b0993218ba2e9b8e6c9882151e1aa2079c3"
+  },
+  "digest": "sha256:e4b8d55c35cee534f4552e88dfa816bddfb7cbda93d502c24e3b4756b769b9f5",
+  "kind": "collected",
+  "collector": "Independent security reviewer agent + orchestrating-agent verification",
+  "artifacts": [
+    {
+      "path": ".empirical/specs/railway-one-click-template/evidence/review.md",
+      "mediaType": "text/markdown",
+      "bytes": 4573,
+      "digest": "sha256:fd6807c70a023e35af0e87b609f0b723ab0ab07d3c828e2816e4c79f367a6aec"
+    }
+  ]
+}

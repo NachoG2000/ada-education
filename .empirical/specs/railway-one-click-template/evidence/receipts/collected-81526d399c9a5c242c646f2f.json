@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "id": "collected-81526d399c9a5c242c646f2f",
+  "criteria": [
+    "AC-UI-2"
+  ],
+  "evidenceKinds": [
+    "browser",
+    "screenshot"
+  ],
+  "summary": "Invite flow across two browser origins (fresh storage for the student): the teacher minted the link from the sidebar button; the invite link showed the name form (You are invited to · Neural Networks 2026); joining as Debug Person landed on #home (My study); their message in #questions and the new member appeared in the teacher open tab without reload.",
+  "passed": true,
+  "startedAt": "2026-08-24T00:40:05.333Z",
+  "completedAt": "2026-08-24T00:40:05.333Z",
+  "provenance": {
+    "repositoryId": "sha256:5ec6f3c476f2e40bbacdcf2c39af35f7b9a3ba3e39dcaea1b038f04ae0131813",
+    "feature": "railway-one-click-template",
+    "specRevision": 2,
+    "specDigest": "sha256:90618b4b7b8720d0b27bf0c427c4b6ae93bb8125041792bbc6774a9e7a1086c6",
+    "treeDigest": "sha256:2033db010edeb2e5c7d86f18c77c314bc714c5c086a889e80b08ce16358be9d6",
+    "policyDigest": "sha256:ea0433e8cc3146d0139bcfa01e8f6711be73a9ee583d24cda48efbb6ffce1b63"
+  },
+  "digest": "sha256:19abd9845b9f47090d16f1b2e2dfe1d20173b20842ea081435f4b66890ad521f",
+  "kind": "collected",
+  "collector": "Playwright (chromium) driven pass with screenshots",
+  "artifacts": [
+    {
+      "path": ".empirical/specs/railway-one-click-template/evidence/ac-ui-2a-invite-name-form.png",
+      "mediaType": "image/png",
+      "bytes": 30337,
+      "digest": "sha256:46ac0351f842e899805854724c215a858a195f8ca97dff3a4758b9af0fc79e91"
+    },
+    {
+      "path": ".empirical/specs/railway-one-click-template/evidence/ac-ui-2b-student-home.png",
+      "mediaType": "image/png",
+      "bytes": 77192,
+      "digest": "sha256:02813ad95333c212ed03ed7f8a0ab527802b5fec56b64904acbd109afe6f2329"
+    },
+    {
+      "path": ".empirical/specs/railway-one-click-template/evidence/ac-ui-2c-teacher-sees-join-live.png",
+      "mediaType": "image/png",
+      "bytes": 146526,
+      "digest": "sha256:be4e9bd9977955365d8d583ec1c53ff104b09fc49d0b8286965256f85b5b4802"
+    }
+  ]
+}

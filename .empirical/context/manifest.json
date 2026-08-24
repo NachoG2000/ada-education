@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "generator": "empirical-0.27.0",
-  "sourceDigest": "sha256:11e5cc5f538b1b14b42f67e2d54c5ade72c840615bbb4d8cf1637cf11a2abe32",
+  "sourceDigest": "sha256:c7f73a91ae815492812a462faf1fc6c1537f18e86440b46889af4c1e596542d1",
   "files": [
     {
       "path": ".agents/skills/.openspec-target",
@@ -114,14 +114,19 @@
       "digest": "sha256:a4d50e5110c610d398e04657e81a2c2db9328cd131f5c28995aaf4e213a9c90b"
     },
     {
+      "path": ".dockerignore",
+      "size": 138,
+      "digest": "sha256:66548a4b5f6edd6c3b595a252ec162b86599f5f11e5f0b5f9f2f71c60f76d941"
+    },
+    {
       "path": ".gemini/settings.json",
       "size": 137,
       "digest": "sha256:58b7bc1fef265b214425ef17eeb67f9f9ad687e049cc8d65c368c01ef5bb8780"
     },
     {
       "path": ".gitignore",
-      "size": 596,
-      "digest": "sha256:e3025f573b506b4392c239ff78050d73f88ea7ba4d593b861edb8836dfe8a37d"
+      "size": 900,
+      "digest": "sha256:12fdc33fb32e7bcac1b145c830071e23ba4c6ea834f4f89a677055c149f16e54"
     },
     {
       "path": ".mcp.json",
@@ -135,8 +140,8 @@
     },
     {
       "path": "AGENTS.md",
-      "size": 15631,
-      "digest": "sha256:b4a349688528d2bcd53a7c936d3ccfda2e252ef82d67836725b914accd08cd6e"
+      "size": 15861,
+      "digest": "sha256:ce0bd6ed86a7b7c2f75a0ae52f937db7b640d54572816e5705a432f6f9dc49d0"
     },
     {
       "path": "CLAUDE.md",
@@ -145,8 +150,8 @@
     },
     {
       "path": "DECISIONS.md",
-      "size": 31657,
-      "digest": "sha256:5f5f383c30fd05a0ca9604bfa3c6f8fb287f524816b22b557eaa7723a71a8784"
+      "size": 34025,
+      "digest": "sha256:1ef16816407c55ac4b46883823d51b40acd89b2c705557b7e5dd71f17ce21944"
     },
     {
       "path": "DESIGN.md",
@@ -170,23 +175,23 @@
     },
     {
       "path": "PRODUCT.md",
-      "size": 11561,
-      "digest": "sha256:a43a7626dd998d09ad56fef89131463a0ef8755b06bd2778d2a0ff0776633047"
+      "size": 11650,
+      "digest": "sha256:b8656f35afef6a7129a484c7adb3d5a52eceee701b01993c927637f19e6b56a1"
     },
     {
       "path": "README.md",
-      "size": 4424,
-      "digest": "sha256:4cb7e30d3dcc5b383647d5a00bcc6ccae9d922d0be04b5602c0c06b2fd51a765"
+      "size": 5076,
+      "digest": "sha256:79ef726acc4aeb961b6403e09e2fc12888298f10f45055551d1d9444688c3ffc"
     },
     {
       "path": "apps/server/AGENTS.md",
-      "size": 7845,
-      "digest": "sha256:8497aa6b78a7feb6593575e2e84cc84d2e2dd2f3002064b7145f6d1123553cf7"
+      "size": 9007,
+      "digest": "sha256:cb04ca23394fadccf321053e3369bec0e4e5b20bea694e536ee0ea833f410c84"
     },
     {
       "path": "apps/server/package.json",
-      "size": 551,
-      "digest": "sha256:4955d7b717c963842d2316b4c103207e5aed883b0e4aa8685980b39c37a54d4f"
+      "size": 639,
+      "digest": "sha256:91d245c906e7fa66a992afd6204f585b04bd3dbed0d72e39f26a84d30dcc3bbf"
     },
     {
       "path": "apps/server/scripts/e2e-flow.ts",
@@ -194,9 +199,14 @@
       "digest": "sha256:51eb417f5409862404b201be3fd6aa8f0768c1ed540a17ad4b9f8a6493f99a90"
     },
     {
+      "path": "apps/server/scripts/gated-check.ts",
+      "size": 10890,
+      "digest": "sha256:a8ccf7c24a98ad5ec9815465d0e7bb9718cd17445e9dc3bb4a37205bd3b9c3fe"
+    },
+    {
       "path": "apps/server/scripts/lib.ts",
-      "size": 1972,
-      "digest": "sha256:8775ef079f9d4e4637254a06fdac5b125195f053e7c582505c2328e00d571424"
+      "size": 1988,
+      "digest": "sha256:930adf6509d6bb72ba2c1c6b3d32741179397eaec66ba751eaa066e326b36313"
     },
     {
       "path": "apps/server/scripts/seed-check.ts",
@@ -215,18 +225,18 @@
     },
     {
       "path": "apps/server/src/api.ts",
-      "size": 13233,
-      "digest": "sha256:36acc52e2c98bea8c4cb3fc82386f9e5770fabd8784eb41954b62202c59b00d7"
+      "size": 21278,
+      "digest": "sha256:c900233afd3e4a8431d8b90b572f7113e7ff8f4b659fdd531ff4c8f1f5cb5860"
     },
     {
       "path": "apps/server/src/db.ts",
-      "size": 39194,
-      "digest": "sha256:25d9c0d3dbfc75ff601e296ab33e09a4dd00a55115a095863b9ad68c96e84077"
+      "size": 44924,
+      "digest": "sha256:7033157d992f56948660195cf3cda2f8dbab1ba0d930decb3d00d3006cfbf7ea"
     },
     {
       "path": "apps/server/src/index.ts",
-      "size": 4254,
-      "digest": "sha256:6015400abc992574db226e6e57d741acc3d1d483a3ed11dc18361b965da62460"
+      "size": 4613,
+      "digest": "sha256:a396c78570ebe851691242346e6c6f4b58d043131ebb190ea9ee67d0676ee903"
     },
     {
       "path": "apps/server/src/mentions.ts",
@@ -235,18 +245,23 @@
     },
     {
       "path": "apps/server/src/schema.sql",
-      "size": 3715,
-      "digest": "sha256:b9ba91ccb9208ba0adac77a19b3b099290bf59719696a6fe16ebcbc2e2d4a0a1"
+      "size": 4152,
+      "digest": "sha256:c980384c579e4781147cf004e650a5c2d5a3e8e9b63347e056c0e62a81393682"
     },
     {
       "path": "apps/server/src/seed.ts",
-      "size": 15428,
-      "digest": "sha256:0973e8e1159643323793b465df9e868b40beab506574487fef02e2988a829199"
+      "size": 15916,
+      "digest": "sha256:c64b32d951d905f0f9982fe15426130d591ab2fbe2a67ce555387fad2ac91825"
+    },
+    {
+      "path": "apps/server/src/static.ts",
+      "size": 1966,
+      "digest": "sha256:c4ed07195d2852bc34c12bdece55abb9464967c458df32bd74673ccf734fc392"
     },
     {
       "path": "apps/server/src/ws.ts",
-      "size": 9668,
-      "digest": "sha256:015abcdd93661f5c942ed7543fc44d52c4f837a3ac0d1de02d6150ac7b2df478"
+      "size": 10044,
+      "digest": "sha256:c6c10c5bc0f42cf0d2a93232883354ddf4a82048f82e3ea0c0ad31b64ae0b2ee"
     },
     {
       "path": "apps/server/tsconfig.json",
@@ -255,8 +270,8 @@
     },
     {
       "path": "apps/web/AGENTS.md",
-      "size": 6322,
-      "digest": "sha256:b056e365aa57992792ddb2f5b06c0cbbdf161dcfd91f3f02fbf3761865a2eea7"
+      "size": 7359,
+      "digest": "sha256:d55ff72feab42892818127531f92517530830344f6376976e4a96aaf9366662a"
     },
     {
       "path": "apps/web/components.json",
@@ -270,8 +285,8 @@
     },
     {
       "path": "apps/web/package.json",
-      "size": 1056,
-      "digest": "sha256:e27acd9d7bd21a386bf20b5e7a4475b4f7f718916731e45c3867a52731e15c58"
+      "size": 1095,
+      "digest": "sha256:a98fabf13344d549333db7ebf3babebc4a837ed0551afac0f898e9e3c459447d"
     },
     {
       "path": "apps/web/public/favicon.svg",
@@ -280,8 +295,8 @@
     },
     {
       "path": "apps/web/src/App.tsx",
-      "size": 4803,
-      "digest": "sha256:1893eb5f3ba886b70c84dba0707f9d3ebbc9decaa705506679c942f0d095a009"
+      "size": 5133,
+      "digest": "sha256:24a6a7cf947041da42f184f085acb6b6a8a24aaaf418cf0faa31205249a51366"
     },
     {
       "path": "apps/web/src/components/ada/boundary.tsx",
@@ -307,6 +322,11 @@
       "path": "apps/web/src/components/ada/identity.tsx",
       "size": 7445,
       "digest": "sha256:bdf4d9cb8056f70097fbb93c514a9e7b6585c81514c5fea1abf4282a349f8567"
+    },
+    {
+      "path": "apps/web/src/components/ada/join.tsx",
+      "size": 3138,
+      "digest": "sha256:64cbe6fa9f693205f959887e0555fac0d3391aa37b5c10ba9a2bc8ea0455b96c"
     },
     {
       "path": "apps/web/src/components/ada/markdown.tsx",
@@ -345,8 +365,8 @@
     },
     {
       "path": "apps/web/src/components/app-sidebar.tsx",
-      "size": 9058,
-      "digest": "sha256:d4d478736d263918ba29c568e06c605dbf64e1af9402458ef5f76cc4a1e2988a"
+      "size": 11046,
+      "digest": "sha256:34fc98c814f94f37c266b0930246a0bba577eec97ba0af94c2ee2e8840dbdfce"
     },
     {
       "path": "apps/web/src/components/ui/avatar.tsx",
@@ -460,13 +480,18 @@
     },
     {
       "path": "apps/web/src/lib/api.ts",
-      "size": 24922,
-      "digest": "sha256:caef636e780144f4c44c7498e6dc2417fece95bbab69524947010cf521a59f6b"
+      "size": 28317,
+      "digest": "sha256:447526fdcc7b5c452bb54c3bce2cada29ae8737a238a26983e37cf6206e00133"
+    },
+    {
+      "path": "apps/web/src/lib/auth.ts",
+      "size": 892,
+      "digest": "sha256:8b7d217c35b2332620a5fd1e9a24ef1edf12e368271c3ebfe47db0e0b01b7504"
     },
     {
       "path": "apps/web/src/lib/community.tsx",
-      "size": 27436,
-      "digest": "sha256:9843dd7853b207c714f9ea8a3b7f3a920aa174fde5cf964941f8779612596fb0"
+      "size": 30724,
+      "digest": "sha256:1ffc853cfb68f1814394d87da0d4e913681ab3529ebf3468ebaceadfdd1e11c0"
     },
     {
       "path": "apps/web/src/lib/demo.ts",
@@ -674,6 +699,41 @@
       "digest": "sha256:a3db6d0dd34746a4634e32eb32fc67ebb8eb9f58126e2fa5a618320365510ca1"
     },
     {
+      "path": "deploy/AGENTS.md",
+      "size": 1756,
+      "digest": "sha256:220bd7209f0334bba332f72adcf30e035e734d78f80f495fe9c2efd425015713"
+    },
+    {
+      "path": "deploy/Dockerfile",
+      "size": 1156,
+      "digest": "sha256:854064c4dc8b2f10a64c05b8977d908fd7ba3e37d7292f13188fd089395de544"
+    },
+    {
+      "path": "deploy/Dockerfile.runner",
+      "size": 1105,
+      "digest": "sha256:0518769f1650cf30f2598605724b2a9f9b439f420e50e844aa04625816a03e4b"
+    },
+    {
+      "path": "deploy/README.md",
+      "size": 4918,
+      "digest": "sha256:b85a05730062384a33a02c44f07927b27c2ec93d942b21b203d5d0fd9a79b173"
+    },
+    {
+      "path": "deploy/check-docker.sh",
+      "size": 6017,
+      "digest": "sha256:606fff5c9f4bef0e73bbe9927f87007c51ff955e6667d619d67f59687e7e39d4"
+    },
+    {
+      "path": "deploy/entrypoint-runner.sh",
+      "size": 939,
+      "digest": "sha256:6077632192c4b2684240b13cfec556607bc5a381630457adf8c1f8fb7d366a38"
+    },
+    {
+      "path": "deploy/entrypoint-server.sh",
+      "size": 714,
+      "digest": "sha256:8d960a3241c4931fd9f9599623d545d209d55bb4c36e8a64758a26d94ae54288"
+    },
+    {
       "path": "design/BRIEF.md",
       "size": 9225,
       "digest": "sha256:44e09d8b4ae677ee9cf64480f0d7872ebb777866541247b77e08a7a2b70098b8"
@@ -716,7 +776,7 @@
     {
       "path": "docs/how-it-works.html",
       "size": 28381,
-      "digest": "sha256:11f8e850d6bada02557e6310217df89b0159d7e0e97a37f1b270e4a80fed4d63"
+      "digest": "sha256:6dd693b1418b0f1f3b8a6714a3d773105b5bef951d2feb87c4ec7ef844a98907"
     },
     {
       "path": "docs/usecases-api.html",
@@ -780,8 +840,8 @@
     },
     {
       "path": "package.json",
-      "size": 905,
-      "digest": "sha256:d383a5b38eafbee3c8adacadf15533908a45da073dc2a4ad49bc8bf8d55b47f1"
+      "size": 995,
+      "digest": "sha256:6810230106e1fcb2daf43dc19421fb14da308a4cacbd29d0283e2b7dedc9dadd"
     },
     {
       "path": "packages/protocol/AGENTS.md",
@@ -790,13 +850,13 @@
     },
     {
       "path": "packages/protocol/package.json",
-      "size": 235,
-      "digest": "sha256:bbd802e9ea9538bd6a0e95948ccfea1cf6b922377361bfc5ae29d36709c9b557"
+      "size": 280,
+      "digest": "sha256:02a1c9ed9d6ad4add5a767821fd908ed37bb400d2f940d96e66a065a2940a078"
     },
     {
       "path": "packages/protocol/src/events.ts",
-      "size": 10435,
-      "digest": "sha256:3ecbde70e0e8af172dab098b4fe6ca5efafb3472a831492cbfc579bc238716a1"
+      "size": 10541,
+      "digest": "sha256:7015cccf574540115405b44ec4752dc1c370bd616f13ac5cd2e495d71b5674b5"
     },
     {
       "path": "packages/protocol/src/index.ts",
@@ -810,13 +870,13 @@
     },
     {
       "path": "packages/runner/AGENTS.md",
-      "size": 4354,
-      "digest": "sha256:a43d82114f863ce1dbf2be368cb24e1f96105caa4efde54fda635b074c81e87b"
+      "size": 4815,
+      "digest": "sha256:1e51f4b3037c7ec8e117a309de7d35e7c0ae358ad0dd64a0844324da8000b72a"
     },
     {
       "path": "packages/runner/package.json",
-      "size": 341,
-      "digest": "sha256:4d4ef5908bff32d6e60a57d33ca746faf65dd3c4c477f05069c485aacc3452a2"
+      "size": 380,
+      "digest": "sha256:eccbbe1714e30608773e56e46a7db2f14e4016d519fdad00d377ce71a05b219f"
     },
     {
       "path": "packages/runner/scripts/scripted-check.ts",
@@ -825,8 +885,8 @@
     },
     {
       "path": "packages/runner/src/cli.ts",
-      "size": 23300,
-      "digest": "sha256:228714597d6ca84c87f8317344b4ce638895451f1fa8400c7d58c1f5f028464b"
+      "size": 25482,
+      "digest": "sha256:a9794f3e58b1497611db6411996355a3a03aaf7218c0bd8f43432f0082e336b9"
     },
     {
       "path": "packages/runner/src/runtimes/scripted.ts",
@@ -899,14 +959,29 @@
       "digest": "sha256:9c9ad41fcd0d5ae5baa116cc18b19b4b96b59bd9752442dbd0411ad11ffcda7b"
     },
     {
+      "path": "research/2026-08-23-buzz-identity-and-agents.md",
+      "size": 4306,
+      "digest": "sha256:9495a12d4023000663f8ca1145a1890e821173a43767a804e1ff66ec0e0b22d7"
+    },
+    {
+      "path": "research/2026-08-23-railway-deploy-template.md",
+      "size": 5569,
+      "digest": "sha256:5ff1255bd3969c8df0b8ecd7262744611536e7a8ce1c452f5921ad8994cd4323"
+    },
+    {
+      "path": "research/2026-08-23-shared-filesystem-on-railway.md",
+      "size": 3697,
+      "digest": "sha256:fd0f74ee1979cc87ffbedd958ec9217e4260caf7cd32c7b5e23e9d5dafc8a119"
+    },
+    {
       "path": "research/README.md",
       "size": 1671,
       "digest": "sha256:6d1f042a44285ffd7a8b1a281179591f44df6a487f39876cf0b16968b2a0cc20"
     },
     {
       "path": "scripts/docs-check.mjs",
-      "size": 2269,
-      "digest": "sha256:27a3e6b96c3861f61dc847b452d047a605c4f2cac70451f9b3caa1a27d241de6"
+      "size": 2905,
+      "digest": "sha256:85268c1b9ef0665c391d826d40916357b55e1f74962ba97828a1e962c236a836"
     },
     {
       "path": "scripts/reset-demo.sh",
@@ -947,6 +1022,7 @@
         ".claude/skills/openspec-update-change/SKILL.md",
         ".codex/config.toml",
         ".cursor/mcp.json",
+        ".dockerignore",
         ".gemini/settings.json",
         ".gitignore",
         ".mcp.json",
@@ -963,6 +1039,7 @@
         "apps/server/AGENTS.md",
         "apps/server/package.json",
         "apps/server/scripts/e2e-flow.ts",
+        "apps/server/scripts/gated-check.ts",
         "apps/server/scripts/lib.ts",
         "apps/server/scripts/seed-check.ts",
         "apps/server/scripts/smoke-run.ts",
@@ -973,6 +1050,7 @@
         "apps/server/src/mentions.ts",
         "apps/server/src/schema.sql",
         "apps/server/src/seed.ts",
+        "apps/server/src/static.ts",
         "apps/server/src/ws.ts",
         "apps/server/tsconfig.json",
         "apps/web/AGENTS.md",
@@ -986,6 +1064,7 @@
         "apps/web/src/components/ada/channel.tsx",
         "apps/web/src/components/ada/folder.tsx",
         "apps/web/src/components/ada/identity.tsx",
+        "apps/web/src/components/ada/join.tsx",
         "apps/web/src/components/ada/markdown.tsx",
         "apps/web/src/components/ada/message.tsx",
         "apps/web/src/components/ada/modules.tsx",
@@ -1017,6 +1096,7 @@
         "apps/web/src/hooks/use-mobile.ts",
         "apps/web/src/index.css",
         "apps/web/src/lib/api.ts",
+        "apps/web/src/lib/auth.ts",
         "apps/web/src/lib/community.tsx",
         "apps/web/src/lib/demo.ts",
         "apps/web/src/lib/figure.ts",
@@ -1059,6 +1139,13 @@
         "data/neural-networks-2026/raw/martin/modules/02-mlp/mlp.md",
         "data/neural-networks-2026/raw/martin/modules/03-backprop/.gitkeep",
         "data/neural-networks-2026/raw/martin/modules/03-backprop/backprop.md",
+        "deploy/AGENTS.md",
+        "deploy/Dockerfile",
+        "deploy/Dockerfile.runner",
+        "deploy/README.md",
+        "deploy/check-docker.sh",
+        "deploy/entrypoint-runner.sh",
+        "deploy/entrypoint-server.sh",
         "design/BRIEF.md",
         "design/mockups/02-dudas-thread-A.html",
         "design/mockups/02-dudas-thread-B.html",
@@ -1104,13 +1191,16 @@
         "research/2026-08-22-problem-impact.md",
         "research/2026-08-22-subscriptions-runners-buzz-pi.md",
         "research/2026-08-22-why-now.md",
+        "research/2026-08-23-buzz-identity-and-agents.md",
+        "research/2026-08-23-railway-deploy-template.md",
+        "research/2026-08-23-shared-filesystem-on-railway.md",
         "research/README.md",
         "scripts/docs-check.mjs",
         "scripts/reset-demo.sh",
         "skills-lock.json"
       ],
-      "sourceDigest": "sha256:11e5cc5f538b1b14b42f67e2d54c5ade72c840615bbb4d8cf1637cf11a2abe32",
-      "digest": "sha256:bf3dfbcf73ead170c64f0f26a0562684d1fa8da61e6e5d0016e71044cad274de",
+      "sourceDigest": "sha256:c7f73a91ae815492812a462faf1fc6c1537f18e86440b46889af4c1e596542d1",
+      "digest": "sha256:7758777b75d219eed4a7b81c2181e55e3d716da098f716c1325a9ec25ed0f84e",
       "freshness": "fresh"
     },
     {
@@ -1123,14 +1213,15 @@
         "apps/server/package.json",
         "apps/web/package.json",
         "data/neural-networks-2026/agents/ada/about/README.md",
+        "deploy/README.md",
         "design/mockups/README.md",
         "package.json",
         "packages/protocol/package.json",
         "packages/runner/package.json",
         "research/README.md"
       ],
-      "sourceDigest": "sha256:6d420969def942058ef5b5ab1087ab740fd11b8bd98f133599df67d7ff2bb60d",
-      "digest": "sha256:b35278ef956b0260b9381fb1f9861dc7df5f8e4192ab92cb92f3363c4f5b1f90",
+      "sourceDigest": "sha256:86b33382f63118bef6b097eb7d7b347fc194da88c54d43c6a5686ee05fe97164",
+      "digest": "sha256:e304f16d98d55a8300ac78041942c4d4293a493a091c1a0d7a1c0c18a56aaff3",
       "freshness": "fresh"
     },
     {
@@ -1155,7 +1246,7 @@
         "packages/runner/src/runtimes/scripted.ts",
         "packages/runner/tsconfig.json"
       ],
-      "sourceDigest": "sha256:f1c6c88f232b7ba5a16c2ae580056660eed8f62d9d14d5976637c12f1997c4c7",
+      "sourceDigest": "sha256:aaa8ecd14574afdf9004ccdca70135db7fa35c0274ef99a58b368d1e58bb6b2d",
       "digest": "sha256:ab48810d2cee3e04ac52e9f03585d3340603c0a66c60f887c6b87bc40891f07f",
       "freshness": "fresh"
     },
@@ -1172,7 +1263,7 @@
         "scripts/docs-check.mjs",
         "scripts/reset-demo.sh"
       ],
-      "sourceDigest": "sha256:8ca6668ac8fbacab8ffec4feac75bcd00c7241e07cd3795c0a994de9d68664a2",
+      "sourceDigest": "sha256:92b5c6a8781fc3566c84740e8b51e33e6d9b2637a9af61a37e29dbec731d7fd3",
       "digest": "sha256:cd0a962b8161fb81ba0e4308dc7a4794a41bd61a9bbc7b1ad37dc4f8d4b32586",
       "freshness": "fresh"
     },
@@ -1190,17 +1281,18 @@
         "apps/web/tsconfig.node.json",
         "data/AGENTS.md",
         "data/neural-networks-2026/agents/ada/AGENTS.md",
+        "deploy/AGENTS.md",
         "docs/AGENTS.md",
         "packages/protocol/AGENTS.md",
         "packages/runner/AGENTS.md",
         "packages/runner/tsconfig.json",
         "pitch/AGENTS.md"
       ],
-      "sourceDigest": "sha256:767c27ace169a000b07ad23db58690340cf3023c023acbf24a11de31d3c307e3",
+      "sourceDigest": "sha256:c7e710264ba0fa5ea7f4991c982d2b3e254a26fc60eb4ad52ccf5e1ff699c77f",
       "digest": "sha256:bcaf300e45ae8e7ae9f2a50cdebdc6e133bf03e06c42636e0e24866f727c1c07",
       "freshness": "fresh"
     }
   ],
   "truncated": false,
-  "digest": "sha256:1fc9e1c2ff2b1aa77d1f952cada752d492b78595ad0cdb8e7d5ac5e7a1a8b0fe"
+  "digest": "sha256:6a40aec399b61a4f9c6918f4908eced7188a8738c08cb3b3b6c8342697916a33"
 }

@@ -17,12 +17,16 @@
     "build": "npm run build -w @ada/web",
     "lint": "oxlint apps packages",
     "typecheck": "tsc -b apps/web",
-    "smoke": "npm run smoke -w @ada/server"
+    "smoke": "npm run smoke -w @ada/server",
+    "check:docker": "bash deploy/check-docker.sh"
   },
   "devDependencies": {
     "concurrently": "^10.0.5",
     "oxlint": "^1.75.0",
     "tsx": "^4.23.12",
     "typescript": "~6.0.2"
+  },
+  "engines": {
+    "node": ">=24"
   }
 }

@@ -1,21 +1,30 @@
-import { randomUUID } from "node:crypto"
+import { createHash, randomUUID, timingSafeEqual } from "node:crypto"
 import { mkdirSync, writeFileSync } from "node:fs"
+import { readFileSync } from "node:fs"
 import { basename, dirname, resolve, sep } from "node:path"
 import { Hono } from "hono"
 import type { Context } from "hono"
 import type { DatabaseSync } from "node:sqlite"
 import { messageBlockSchema, cardPublishInputSchema } from "@ada/protocol"
-import type { DifficultyLevel, Material, MentionIntent, Message, Module, Report, Thread } from "@ada/protocol"
+import type { DifficultyLevel, Material, Member, MentionIntent, Message, Module, Report, Thread } from "@ada/protocol"
 import {
   addMaterial,
+  createInvite,
   createMessage,
   createThread,
+  findAgentByToken,
+  findPersonByToken,
+  findTeacher,
+  generateToken,
   getAssignment,
+  getCommunityInfo,
   getCommunitySnapshot,
   getMember,
   getModule,
   getReport,
+  joinWithInvite,
   publishCard,
+  setMemberToken,
   reconcileReport,
   repoRoot,
   setModuleStatus,
@@ -26,6 +35,7 @@ import {
   type PublishedCard,
   type SeedMaterial,
 } from "./db.js"
+import { hasWebDist, serveWebFile } from "./static.js"
 
 const MATERIAL_KINDS: Material["kind"][] = ["markdown", "pdf", "slides", "link"]
 const DIFFICULTY_LEVELS: DifficultyLevel[] = ["intro", "core", "advanced"]
@@ -51,6 +61,7 @@ function teacherOr403(database: DatabaseSync, context: Context, authorId: string
 
 export interface ApiHooks {
   onMessageCreated?: (message: Message, hint?: { intent: MentionIntent; moduleId: string }) => void
+  onMemberJoined?: (member: Member) => void
   onThreadCreated?: (thread: Thread) => void
   onCardPublished?: (published: PublishedCard) => void
   onModuleUpdated?: (module: Module) => void
@@ -61,13 +72,155 @@ export interface ApiOptions extends ApiHooks {
   presence?: ReadonlyMap<string, "online" | "away" | "thinking" | "publishing">
   /** course directory (defaults to ADA_COURSE, same resolution as the seed) */
   courseDir?: string
+  /** membership gating (DECISIONS.md §20): defaults to ADA_REQUIRE_MEMBERSHIP */
+  requireMembership?: boolean
+  /** the deploy's root token; claiming it binds the teacher (defaults to ADA_OWNER_TOKEN) */
+  ownerToken?: string
+  /** built SPA to serve same-origin (defaults to ADA_WEB_DIST or apps/web/dist) */
+  webDist?: string
 }
 
-export function createApi(database: DatabaseSync, options: ApiOptions = {}): Hono {
-  const app = new Hono()
+/** Equal-length hashing first, so comparing tokens never leaks length or bytes. */
+function safeEqual(a: string, b: string): boolean {
+  return timingSafeEqual(createHash("sha256").update(a).digest(), createHash("sha256").update(b).digest())
+}
+
+function bearerToken(context: Context): string | undefined {
+  const header = context.req.header("authorization")
+  if (!header?.toLowerCase().startsWith("bearer ")) return undefined
+  const token = header.slice(7).trim()
+  return token || undefined
+}
+
+type ApiEnv = { Variables: { me?: Member } }
+
+export function createApi(database: DatabaseSync, options: ApiOptions = {}): Hono<ApiEnv> {
+  const app = new Hono<ApiEnv>()
   const courseDir = resolve(repoRoot, options.courseDir ?? process.env.ADA_COURSE ?? "data/neural-networks-2026")
+  const requireMembership = options.requireMembership ?? ["1", "true"].includes(process.env.ADA_REQUIRE_MEMBERSHIP ?? "")
+  const ownerToken = options.ownerToken ?? process.env.ADA_OWNER_TOKEN
+
+  app.get("/health", (context) => context.json({ ok: true }))
+
+  /** The course's public face: what the join screen may show before any auth. */
+  app.get("/api/course", (context) => {
+    const info = getCommunityInfo(database)
+    if (!info) return context.json({ error: "The course isn't seeded yet" }, 404)
+    return context.json({ ...info, requireMembership })
+  })
+
+  /* Membership gating (DECISIONS.md §20, off for local dev): everything under
+     /api needs a person token except the join doors. Agents (the runner's
+     snapshot fetch and raw sync) authenticate reads with their own token;
+     their writes stay on the runner WS, which has its own check. */
+  app.use("/api/*", async (context, next) => {
+    if (!requireMembership) return next()
+    const path = context.req.path
+    const method = context.req.method
+    if (path === "/api/course" || (method === "POST" && (path === "/api/claim" || path === "/api/join"))) return next()
+    const token = bearerToken(context)
+    if (!token) return context.json({ error: "This course requires membership. Join with an invite link, or claim it with the owner token." }, 401)
+    const person = findPersonByToken(database, token)
+    if (person) {
+      context.set("me", person)
+      return next()
+    }
+    if (method === "GET") {
+      const agent = findAgentByToken(database, token)
+      if (agent) {
+        context.set("me", agent)
+        return next()
+      }
+    }
+    return context.json({ error: "That token doesn't belong to anyone in this course." }, 401)
+  })
+
+  /** Gated writes speak for the token's owner and no one else. Ungated (local
+      dev) keeps trusting the claimed authorId, exactly as before. */
+  const authorOr403 = (context: Context<ApiEnv>, authorId: string): Response | undefined => {
+    if (!requireMembership) return undefined
+    const me = context.get("me")
+    if (me && me.id === authorId) return undefined
+    return context.json({ error: `Your token is "${me?.id ?? "nobody"}"; you can't write as "${authorId}".` }, 403)
+  }
+
+  /** Owner token → the teacher's person token. Re-claiming rotates it: the
+      owner token is the root of trust and must always recover access. */
+  app.post("/api/claim", async (context) => {
+    try {
+      const body = await context.req.json<unknown>()
+      if (!isRecord(body) || typeof body.token !== "string" || !body.token) {
+        return context.json({ error: "token is required" }, 400)
+      }
+      if (!ownerToken || !safeEqual(body.token, ownerToken)) {
+        return context.json({ error: "That isn't this course's owner token." }, 401)
+      }
+      const teacher = findTeacher(database)
+      if (!teacher) return context.json({ error: "The course has no teacher to claim." }, 409)
+      const personToken = generateToken()
+      setMemberToken(database, teacher.id, personToken)
+      return context.json({ personId: teacher.id, name: teacher.name, personToken }, 200)
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  /** Teacher mints a single-use invite link for a student. */
+  app.post("/api/invites", async (context) => {
+    try {
+      let teacherId: string
+      if (requireMembership) {
+        teacherId = context.get("me")?.id ?? ""
+      } else {
+        const body = await context.req.json<unknown>().catch(() => ({}))
+        teacherId = isRecord(body) && typeof body.authorId === "string" ? body.authorId : ""
+      }
+      const denied = teacherOr403(database, context, teacherId)
+      if (denied) return denied
+      const invite = createInvite(database, teacherId)
+      return context.json({ token: invite.token, joinHash: `#join?token=${invite.token}` }, 200)
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  /** A student turns an invite into a person of their own. */
+  app.post("/api/join", async (context) => {
+    try {
+      const body = await context.req.json<unknown>()
+      if (!isRecord(body) || typeof body.token !== "string" || typeof body.name !== "string") {
+        return context.json({ error: "token and name are required" }, 400)
+      }
+      const { person, personToken } = joinWithInvite(database, body.token, body.name)
+      options.onMemberJoined?.(person)
+      return context.json({ personId: person.id, name: person.name, personToken }, 200)
+    } catch (error) {
+      if (error instanceof Error && error.message === "Invite already used") {
+        return context.json({ error: "This invite was already used. Ask for a new link." }, 410)
+      }
+      return errorResponse(context, error)
+    }
+  })
 
   app.get("/api/community", (context) => context.json(getCommunitySnapshot(database, options.presence)))
+
+  /** A material's stored file, for runners (and clients) that don't share the
+      server's disk: the runner syncs its local raw/ from here before an ingest
+      (DECISIONS.md §20; capability delta course-modules). */
+  app.get("/api/modules/:moduleId/materials/:materialId/raw", (context) => {
+    const module = getModule(database, context.req.param("moduleId"))
+    if (!module) return context.json({ error: `Module does not exist: ${context.req.param("moduleId")}` }, 404)
+    const material = module.materials.find((item) => item.id === context.req.param("materialId"))
+    if (!material) return context.json({ error: `Material does not exist: ${context.req.param("materialId")}` }, 404)
+    const rawRoot = resolve(courseDir, "raw")
+    const absolutePath = resolve(rawRoot, material.path)
+    if (!absolutePath.startsWith(rawRoot + sep)) return context.json({ error: "material path resolves outside the course" }, 400)
+    try {
+      return context.text(readFileSync(absolutePath, "utf8"))
+    } catch {
+      return context.json({ error: `The material's file is missing: ${material.path}` }, 404)
+    }
+  })
 
   app.post("/api/channels/:channelId/messages", async (context) => {
     try {
@@ -75,6 +228,8 @@ export function createApi(database: DatabaseSync, options: ApiOptions = {}): Hon
       if (!isRecord(body) || typeof body.authorId !== "string" || !isParagraphs(body.paragraphs)) {
         return context.json({ error: "authorId and paragraphs are required" }, 400)
       }
+      const deniedAuthor = authorOr403(context, body.authorId)
+      if (deniedAuthor) return deniedAuthor
       const input: MessageInput = {
         channelId: context.req.param("channelId"),
         authorId: body.authorId,
@@ -111,6 +266,8 @@ export function createApi(database: DatabaseSync, options: ApiOptions = {}): Hon
       const body = await context.req.json<unknown>()
       const input = cardInput(body)
       if (!input) return context.json({ error: "missing required card fields" }, 400)
+      const deniedAuthor = authorOr403(context, input.authorId)
+      if (deniedAuthor) return deniedAuthor
       const published = publishCard(database, input)
       options.onCardPublished?.(published)
       return context.json(published, 200)
@@ -135,6 +292,8 @@ export function createApi(database: DatabaseSync, options: ApiOptions = {}): Hon
       const text = typeof body.text === "string" ? body.text : undefined
       const size = typeof body.size === "number" ? body.size : undefined
       const authorId = body.authorId
+      const deniedAuthor = authorOr403(context, authorId)
+      if (deniedAuthor) return deniedAuthor
       const denied = teacherOr403(database, context, authorId)
       if (denied) return denied
       const name = safeMaterialName(body.name)
@@ -185,6 +344,8 @@ export function createApi(database: DatabaseSync, options: ApiOptions = {}): Hon
       if (!isRecord(body) || typeof body.authorId !== "string") {
         return context.json({ error: "authorId is required" }, 400)
       }
+      const deniedPatchAuthor = authorOr403(context, body.authorId)
+      if (deniedPatchAuthor) return deniedPatchAuthor
       const deniedPatch = teacherOr403(database, context, body.authorId)
       if (deniedPatch) return deniedPatch
       const patch: ModulePatch = {}
@@ -229,6 +390,8 @@ export function createApi(database: DatabaseSync, options: ApiOptions = {}): Hon
       const accepted = body.accepted as string[]
       const note = body.note
       const authorId = body.authorId
+      const deniedReconcileAuthor = authorOr403(context, authorId)
+      if (deniedReconcileAuthor) return deniedReconcileAuthor
       const deniedReconcile = teacherOr403(database, context, authorId)
       if (deniedReconcile) return deniedReconcile
       const assignment = report.assignmentId ? getAssignment(database, report.assignmentId) : undefined
@@ -269,6 +432,13 @@ export function createApi(database: DatabaseSync, options: ApiOptions = {}): Hon
       return errorResponse(context, error)
     }
   })
+
+  /* The built SPA, same-origin, registered last so it never shadows /api.
+     Absent in dev (Vite serves and proxies); present after `npm run build`. */
+  const webDist = options.webDist ?? resolve(repoRoot, process.env.ADA_WEB_DIST ?? "apps/web/dist")
+  if (hasWebDist(webDist)) {
+    app.get("*", (context) => serveWebFile(webDist, new URL(context.req.url).pathname))
+  }
 
   return app
 }

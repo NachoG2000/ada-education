@@ -142,3 +142,14 @@ CREATE TABLE IF NOT EXISTS reports (
 );
 
 CREATE INDEX IF NOT EXISTS reports_student ON reports(student_id);
+
+-- Single-use invite links (membership gating; DECISIONS.md §20). A used invite
+-- keeps its row: who joined through it is part of the course's audit trail.
+CREATE TABLE IF NOT EXISTS invites (
+  token TEXT PRIMARY KEY,
+  role TEXT NOT NULL DEFAULT 'student' CHECK (role IN ('student', 'teacher')),
+  created_by TEXT NOT NULL REFERENCES members(id),
+  created_at TEXT NOT NULL,
+  used_by TEXT REFERENCES members(id),
+  used_at TEXT
+);

@@ -44,7 +44,7 @@ How an agent applies this:
 
 ## Commands
 
-Monorepo with **npm workspaces** (no Turborepo): `apps/web` (SPA), `apps/server` (local API), `packages/runner` (skeleton), `packages/protocol` (shared types and events), `data/<course>/` (courses). Every area has its `AGENTS.md`.
+Monorepo with **npm workspaces** (no Turborepo): `apps/web` (SPA), `apps/server` (local API), `packages/runner` (skeleton), `packages/protocol` (shared types and events), `data/<course>/` (courses), `deploy/` (Dockerfiles + Railway template runbook, `DECISIONS.md` §20). Every area has its `AGENTS.md`.
 
 ```bash
 npm install            # once, at the root (installs all workspaces)
@@ -57,6 +57,7 @@ npm run dev:web        # SPA only, with HMR → http://localhost:5173
 npm run dev:server     # server only → http://localhost:8787
 npm run check -w @ada/server # server typecheck
 npm run smoke          # WS/REST smoke test against a throwaway copy of the course (seeds a temp DB, spare port; never touches the demo DB)
+npm run check:gated -w @ada/server  # membership gating end to end: claim, invites, token-derived authorship, WS auth, remote material sync (throwaway copy)
 npm run build          # tsc -b && vite build of apps/web → apps/web/dist/
 npm run lint           # oxlint over apps and packages; known warnings: only-export-components (card.tsx, ui/sidebar.tsx, community.tsx, identity.tsx, tabs.tsx, button.tsx) and one set-state-in-effect (community.tsx)
 npm run typecheck      # tsc -b apps/web (noUnusedLocals/Parameters active: one unused variable breaks the build)

@@ -20,7 +20,7 @@
 import { spawn } from "node:child_process"
 import { createHash, randomUUID } from "node:crypto"
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs"
-import { basename, join, relative, resolve } from "node:path"
+import { basename, dirname, join, relative, resolve, sep } from "node:path"
 import WebSocket from "ws"
 import type { Card, CardType, CommunitySnapshot, Member, Message, MessageBlock, Presence, Report, RunnerClientMessage } from "@ada/protocol"
 import { runScripted, thinkingDelay, type Mention, type ScriptedResult } from "./runtimes/scripted.js"
@@ -309,7 +309,11 @@ async function commitRun(summary: string) {
     await git(["init", "-q"])
     commitMode = "own"
   }
-  await git(["add", "-A", "wiki", "log.md"])
+  // A missing pathspec makes `git add` fail whole, staging nothing — and
+  // log.md only exists once a run appended to it. Stage what's there.
+  const paths = ["wiki", "log.md"].filter((path) => existsSync(join(cwd, path)))
+  if (paths.length === 0) return
+  await git(["add", "-A", ...paths])
   await git(["commit", "-q", "-m", summary])
 }
 
@@ -343,7 +347,9 @@ function request(msg: Exclude<RunnerClientMessage, { type: "presence" }>): Promi
 
 async function refreshSnapshot() {
   try {
-    const res = await fetch(`${server}/api/community`)
+    // The agent token authenticates the read when the server gates membership
+    // (DECISIONS.md §20); an ungated server just ignores the header.
+    const res = await fetch(`${server}/api/community`, { headers: { authorization: `Bearer ${token}` } })
     const data = (await res.json()) as CommunitySnapshot
     members = new Map(data.members.map((m) => [m.id, m.name]))
     snapshot = {
@@ -486,6 +492,44 @@ function enqueue(job: () => Promise<void>) {
   })()
 }
 
+/** Before an ingest runs, make sure the mentioned module's materials exist
+    under the LOCAL raw/: server and runner no longer share a filesystem when
+    the course is deployed (DECISIONS.md §20). Files already present are left
+    alone, so the same-machine dev setup neither re-downloads nor changes. */
+async function syncMaterials(moduleId: string) {
+  const module = snapshot?.modules.find((m) => m.id === moduleId)
+  if (!module) return
+  let synced = 0
+  const rawRoot = resolve(rawDir)
+  for (const material of module.materials) {
+    // `material.path` comes from the server's snapshot: a separate trust
+    // domain from this process (the folder is often the teacher's own laptop).
+    // Same resolve+prefix guard the server applies to its own raw/ writes.
+    const local = resolve(rawDir, material.path)
+    if (!local.startsWith(rawRoot + sep)) {
+      log(`material sync: refusing ${material.path} (outside raw/)`)
+      continue
+    }
+    if (existsSync(local)) continue
+    try {
+      const res = await fetch(
+        `${server}/api/modules/${encodeURIComponent(moduleId)}/materials/${encodeURIComponent(material.id)}/raw`,
+        { headers: { authorization: `Bearer ${token}` } },
+      )
+      if (!res.ok) {
+        log(`material sync: ${material.path} -> ${res.status}`)
+        continue
+      }
+      mkdirSync(dirname(local), { recursive: true })
+      writeFileSync(local, await res.text(), "utf8")
+      synced++
+    } catch (e) {
+      log(`material sync failed for ${material.path}:`, (e as Error).message)
+    }
+  }
+  if (synced) log(`synced ${synced} material(s) into raw/`)
+}
+
 function connect() {
   ws = new WebSocket(wsUrl)
   ws.on("open", () => {
@@ -521,6 +565,7 @@ function connect() {
       }
       enqueue(async () => {
         await refreshSnapshot()
+        if (payload.intent === "ingest" && payload.moduleId) await syncMaterials(payload.moduleId)
         await handleMention(payload)
       })
     }

@@ -32,14 +32,28 @@ npm install
 npm run dev      # seeds, then web + server + Ada's runner → http://localhost:5173
 ```
 
+## Host it
+
+[![Deploy on Railway](https://railway.com/button.svg)](deploy/README.md)
+
+One public service (UI + API + WS, SQLite on a volume) plus an optional runner
+service where your own `ANTHROPIC_API_KEY` lives — the server never runs
+models. A deploy is claimed with a generated **owner token**, students join by
+**single-use invite links**, and a runner on your machine can serve a hosted
+course over `wss://`. `deploy/README.md` is the runbook (Dockerfiles,
+Railway template composition, tokens); the one-click template link will land
+here once published.
+
+
 `npm run dev` uses the `scripted` runtime; `ADA_RUNTIME=claude npm run dev` runs the real one (needs `claude` installed and logged in). `npm run dev:demo` runs the SPA alone against a synthetic community, no server.
 
 Verify the whole flow without a browser — it drives a real server and a real runner process against a throwaway copy of the course, and asserts the four steps above at the API:
 
 ```bash
-npm run check:e2e -w @ada/server   # 15 checks
-npm run check:seed -w @ada/server  # the seeded course the screens render
-npm run smoke                      # WS/REST smoke test
+npm run check:e2e -w @ada/server    # 15 checks
+npm run check:gated -w @ada/server  # membership gating + remote runner, 25 checks
+npm run check:seed -w @ada/server   # the seeded course the screens render
+npm run smoke                       # WS/REST smoke test
 ```
 
 `./scripts/reset-demo.sh` puts the course back to a clean state between runs.

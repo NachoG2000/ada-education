@@ -15,6 +15,11 @@ dist-ssr
 # Env files
 .env
 .env.*
+# ...except the web client's, which carries no secret: it only says the SPA
+# talks to its own origin (VITE_ADA_SERVER=/). Without it a fresh clone builds
+# the synthetic demo instead of the real client — Vite inlines this at build
+# time, so a runtime variable can't fix it afterwards.
+!apps/web/.env
 
 # Editor directories and files
 .vscode/*

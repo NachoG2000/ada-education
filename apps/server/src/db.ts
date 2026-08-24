@@ -1,7 +1,7 @@
 import { mkdirSync, readFileSync } from "node:fs"
 import { dirname, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
-import { randomUUID } from "node:crypto"
+import { randomBytes, randomUUID } from "node:crypto"
 import { DatabaseSync } from "node:sqlite"
 import type {
   Agent,
@@ -200,6 +200,13 @@ export function listMembers(database: DatabaseSync, presence: PresenceMap = new 
   })
 }
 
+/** The community's public face: what the join screens may show before auth. */
+export function getCommunityInfo(database: DatabaseSync): { name: string; subtitle: string } | undefined {
+  const row = database.prepare("SELECT name, subtitle FROM community LIMIT 1").get() as Row | undefined
+  if (!row) return undefined
+  return { name: asString(row.name) ?? "", subtitle: asString(row.subtitle) ?? "" }
+}
+
 export function getMember(database: DatabaseSync, memberId: string, presence?: PresenceMap): Member | undefined {
   return listMembers(database, presence).find((member) => member.id === memberId)
 }
@@ -215,6 +222,113 @@ export function findAgentByToken(database: DatabaseSync, token: string): AgentRe
     runtime: asString(row.runtime),
     model: asString(row.model) ?? member.provider.model,
   } : undefined
+}
+
+/* ---- Membership: person tokens and single-use invites (DECISIONS.md §20) ----
+   A person's token lives in the same `members.token` column agents use, scoped
+   by `kind` on lookup. Tokens are minted here (claim/join) and never touched
+   by the seed's upserts, so a re-seed can't lock anyone out. */
+
+export function generateToken(): string {
+  return randomBytes(24).toString("base64url")
+}
+
+export function findPersonByToken(database: DatabaseSync, token: string): Person | undefined {
+  const row = database.prepare("SELECT id FROM members WHERE kind = 'person' AND token = ?").get(token) as Row | undefined
+  const id = row && asString(row.id)
+  if (!id) return undefined
+  const member = getMember(database, id)
+  return member?.kind === "person" ? member : undefined
+}
+
+export function setMemberToken(database: DatabaseSync, memberId: string, token: string): void {
+  database.prepare("UPDATE members SET token = ? WHERE id = ?").run(token, memberId)
+}
+
+/** The course's teacher: the person the owner token claims. */
+export function findTeacher(database: DatabaseSync): Person | undefined {
+  const row = database.prepare("SELECT id FROM members WHERE kind = 'person' AND role = 'teacher' ORDER BY id LIMIT 1").get() as Row | undefined
+  const id = row && asString(row.id)
+  if (!id) return undefined
+  const member = getMember(database, id)
+  return member?.kind === "person" ? member : undefined
+}
+
+export interface Invite {
+  token: string
+  role: "student" | "teacher"
+  createdBy: string
+  createdAt: string
+  usedBy?: string
+  usedAt?: string
+}
+
+export function createInvite(database: DatabaseSync, createdBy: string): Invite {
+  const invite: Invite = { token: generateToken(), role: "student", createdBy, createdAt: new Date().toISOString() }
+  database.prepare("INSERT INTO invites (token, role, created_by, created_at) VALUES (?, ?, ?, ?)")
+    .run(invite.token, invite.role, invite.createdBy, invite.createdAt)
+  return invite
+}
+
+export function getInvite(database: DatabaseSync, token: string): Invite | undefined {
+  const row = database.prepare("SELECT * FROM invites WHERE token = ?").get(token) as Row | undefined
+  if (!row) return undefined
+  return {
+    token: asString(row.token) ?? token,
+    role: (asString(row.role) as Invite["role"]) ?? "student",
+    createdBy: asString(row.created_by) ?? "",
+    createdAt: asString(row.created_at) ?? "",
+    usedBy: asString(row.used_by),
+    usedAt: asString(row.used_at),
+  }
+}
+
+/** Consumes an invite: creates the person, joins them to the open channels
+    (the ones every existing person is already in — private channels list
+    their members explicitly), and returns the person plus their new token. */
+export function joinWithInvite(database: DatabaseSync, inviteToken: string, name: string): { person: Person; personToken: string } {
+  const invite = getInvite(database, inviteToken)
+  if (!invite) throw new Error("Invite does not exist")
+  if (invite.usedAt) throw new Error("Invite already used")
+  const trimmed = name.trim().replace(/\s+/g, " ")
+  if (!trimmed) throw new Error("A name is required")
+
+  const baseId = trimmed.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "member"
+  let id = baseId
+  for (let n = 2; getMember(database, id); n++) id = `${baseId}-${n}`
+  const parts = trimmed.split(" ")
+  const initials = ((parts[0]?.[0] ?? "") + (parts.length > 1 ? parts[parts.length - 1][0] : parts[0]?.[1] ?? "")).toUpperCase()
+  const tones: Person["tone"][] = ["card", "cardstock", "seal-soft", "red-soft"]
+  const personCount = Number((database.prepare("SELECT COUNT(*) AS n FROM members WHERE kind = 'person'").get() as Row).n ?? 0)
+  const tone = tones[personCount % tones.length]
+
+  upsertPerson(database, { id, name: trimmed, initials, tone, role: invite.role })
+  const personToken = generateToken()
+  setMemberToken(database, id, personToken)
+
+  /* Which channels a new student lands in: the `course` group only (work
+     channels belong to an assignment already under way, `private` ones are
+     one-to-one), and never a channel whose people are all teachers — that's
+     what keeps #teachers out even on a course whose only member so far is the
+     teacher. A course with no students yet therefore gives its first student
+     no channels until someone is added by hand; deploy/README.md says so. */
+  const courseChannels = database.prepare("SELECT id FROM channels WHERE group_name = 'course'").all() as Row[]
+  for (const channel of courseChannels) {
+    const channelId = asString(channel.id)
+    if (!channelId) continue
+    const peopleIn = database.prepare(`
+      SELECT members.role AS role FROM channel_members
+      JOIN members ON members.id = channel_members.member_id
+      WHERE channel_members.channel_id = ? AND members.kind = 'person' AND members.id != ?
+    `).all(channelId, id) as Row[]
+    const teachersOnly = peopleIn.length === 0 || peopleIn.every((row) => asString(row.role) === "teacher")
+    if (!teachersOnly) addChannelMember(database, channelId, id)
+  }
+
+  database.prepare("UPDATE invites SET used_by = ?, used_at = ? WHERE token = ?").run(id, new Date().toISOString(), inviteToken)
+  const person = getMember(database, id)
+  if (person?.kind !== "person") throw new Error("Could not create the person")
+  return { person, personToken }
 }
 
 export function listAgentIdsForChannel(database: DatabaseSync, channelId: string): string[] {

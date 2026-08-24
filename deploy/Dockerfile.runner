@@ -1,0 +1,29 @@
+# syntax=docker/dockerfile:1
+# Ada's optional runner service: the agent's process, in the org's OWN deploy,
+# with the org's own provider access — the server never runs models (§14).
+# git: the runner commits each run in the agent's folder. The claude CLI is
+# the default runtime; ANTHROPIC_API_KEY reaches it through the runner's env.
+FROM node:24-slim
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends git ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+COPY apps/web/package.json apps/web/
+COPY apps/server/package.json apps/server/
+COPY packages/protocol/package.json packages/protocol/
+COPY packages/runner/package.json packages/runner/
+RUN npm ci --no-audit --no-fund \
+  && npm install -g --no-audit --no-fund @anthropic-ai/claude-code
+
+COPY . .
+
+# The agent's folder (wiki, CLAUDE.md, one git commit per run) lives on this
+# service's own volume; raw/ fills up via the runner's material sync.
+ENV ADA_RUNTIME=claude ADA_AGENT_CWD=/data/course/agents/ada
+VOLUME /data
+
+ENTRYPOINT ["/app/deploy/entrypoint-runner.sh"]

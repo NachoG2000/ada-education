@@ -7,6 +7,7 @@ import {
   createMessage,
   createReport,
   findAgentByToken,
+  findPersonByToken,
   getMember,
   getMessages,
   getThread,
@@ -30,9 +31,12 @@ export function startServer(): RunningServer {
   const presence = new Map<string, Presence>()
   let hub: WebSocketHub | undefined
 
+  const requireMembership = ["1", "true"].includes(process.env.ADA_REQUIRE_MEMBERSHIP ?? "")
   const app = createApi(database, {
     presence,
+    requireMembership,
     onMessageCreated: (message, hint) => hub?.onMessageCreated(message, hint),
+    onMemberJoined: (member) => hub?.broadcast({ type: "member.joined", payload: { member } }),
     onThreadCreated: (thread) => hub?.onThreadCreated(thread),
     onCardPublished: ({ card, message }) => hub?.onCardPublished(card, message),
     onModuleUpdated: (module) => hub?.broadcast({ type: "module.updated", payload: { module } }),
@@ -40,6 +44,10 @@ export function startServer(): RunningServer {
   })
   const server = createServer(getRequestListener(app.fetch))
   const store: WsStore = {
+    requireMembership,
+    personTokenValid(token): boolean {
+      return Boolean(findPersonByToken(database, token))
+    },
     findAgentByToken(token): AgentRecord | undefined {
       const agent = findAgentByToken(database, token)
       return agent ? { ...agent, token } : undefined

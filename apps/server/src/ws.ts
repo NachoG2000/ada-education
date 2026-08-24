@@ -32,6 +32,9 @@ export type MentionHint = { intent: MentionIntent; moduleId: string }
 /** Functions the hub needs from the SQLite file; it holds no storage of its own. */
 export type WsStore = {
   findAgentByToken(token: string): AgentRecord | undefined
+  /** membership gating (DECISIONS.md §20): when true, /ws needs a person token */
+  requireMembership: boolean
+  personTokenValid(token: string): boolean
   members(): Member[]
   channel(id: string): Channel | undefined
   member(id: string): Member | undefined
@@ -171,13 +174,21 @@ export function createWebSocketHub(server: HttpServer, store: WsStore, onPresenc
   }
 
   const handleConnection = (socket: WebSocket, request: IncomingMessage): void => {
-    const pathname = new URL(request.url ?? "/", "http://localhost").pathname
+    const url = new URL(request.url ?? "/", "http://localhost")
+    const pathname = url.pathname
     if (pathname === "/ws") {
+      if (store.requireMembership) {
+        const personToken = url.searchParams.get("token")
+        if (!personToken || !store.personTokenValid(personToken)) {
+          socket.close(4401, "invalid token")
+          return
+        }
+      }
       web.add(socket)
       socket.once("close", () => web.delete(socket))
       return
     }
-    const token = new URL(request.url ?? "/", "http://localhost").searchParams.get("token")
+    const token = url.searchParams.get("token")
     const agent = token ? store.findAgentByToken(token) : undefined
     if (!agent) {
       socket.close(4401, "invalid token")
