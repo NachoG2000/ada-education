@@ -16,3 +16,4 @@ Convention: one file per session or document, `YYYY-MM-DD-<topic>.md`. Every cla
 | `2026-09-01-strategy-scoped-agents-group-brain.md` | Strategy memo on scoped agents, shared memory, chat adapters, and the proposed course-community position. |
 | `2026-09-01-instinct-thesis-memory-as-compiler.md` | Summary of the supplied “Instinct Thesis” and what it validates or leaves missing in Ada's memory model. |
 | `2026-09-03-codex-local-runner.md` | Official Codex CLI authentication and non-interactive command findings for issue #1's subscription-backed local runner. |
+| `2026-09-03-issue-1-implementation.md` | Scope, architecture boundaries, preservation record, baseline evidence, and primary review log for GitHub issue #1. |
