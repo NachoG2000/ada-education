@@ -2,6 +2,7 @@ import { pathToFileURL } from "node:url"
 import { createServer, type Server } from "node:http"
 import { getRequestListener } from "@hono/node-server"
 import type { Channel, Member, Message, Presence } from "@ada/protocol"
+import type { CommunityMember } from "@ada/protocol"
 import {
   applyAgentTokenOverride,
   applyModuleSuggestion,
@@ -22,6 +23,19 @@ import {
 import { createApi } from "./api.js"
 import { canReadChannel as canReadWorkspaceChannel, getWorkspaceChannel } from "./workspace-access.js"
 import { createWebSocketHub, type AgentRecord, type WebSocketHub, type WsStore } from "./ws.js"
+import {
+  createTenantAgentMessage,
+  findTenantAgentByToken,
+  findTenantUserByToken,
+  getTenantAgentById,
+  getTenantCommunity,
+  listTenantChannelAgents,
+  listTenantAgentContext,
+  listTenantMembers,
+  canReadTenantChannel,
+  publishTenantCard,
+  type TenantMessage,
+} from "./tenant.js"
 
 export type RunningServer = {
   server: Server
@@ -37,6 +51,7 @@ export function startServer(): RunningServer {
     console.log("Applied ADA_AGENT_TOKEN to the course's agent.")
   }
   const presence = new Map<string, Presence>()
+  const hostedPresence = new Map<string, "online" | "offline" | "thinking" | "publishing">()
   const memberKinds = new Map(listMembers(database).map((member) => [member.id, member.kind] as const))
   let hub: WebSocketHub | undefined
 
@@ -47,6 +62,7 @@ export function startServer(): RunningServer {
   const requireMembership = ["1", "true"].includes(process.env.ADA_REQUIRE_MEMBERSHIP ?? "")
   const app = createApi(database, {
     presence,
+    hostedPresence,
     requireMembership,
     onMessageCreated: (message, hint) => hub?.onMessageCreated(message, hint),
     onMemberJoined: (member) => {
@@ -85,6 +101,15 @@ export function startServer(): RunningServer {
     onCardPublished: ({ card, message }) => hub?.onCardPublished(card, message),
     onModuleUpdated: (module) => hub?.broadcast({ type: "module.updated", payload: { module } }),
     onReportUpdated: (report) => hub?.broadcast({ type: "report.updated", payload: { report } }),
+    onTenantEvent: (event) => {
+      hub?.broadcastHosted(event)
+      if (event.type === "message.created") {
+        const payload = event.payload as { message?: TenantMessage }
+        if (payload.message) hub?.dispatchHostedWork(payload.message)
+      }
+    },
+    onTenantMembershipEnded: (userId, communityId) => hub?.revokeHostedUser(userId, communityId),
+    onTenantAgentRevoked: (agentId) => hub?.disconnectHostedRunner(agentId, "agent enrollment revoked"),
   })
   const server = createServer(getRequestListener(app.fetch))
   const store: WsStore = {
@@ -137,6 +162,54 @@ export function startServer(): RunningServer {
     },
     createReport(agentId, input) {
       return createReport(database, agentId, input)
+    },
+    hosted: {
+      userByToken(token) {
+        const user = findTenantUserByToken(database, token)
+        return user ? { id: user.id, displayName: user.displayName, createdAt: user.createdAt, updatedAt: user.updatedAt } : undefined
+      },
+      userInCommunity(userId, communityId) {
+        try { getTenantCommunity(database, communityId, userId); return true } catch { return false }
+      },
+      canReadChannel(userId, communityId, channelId) {
+        return canReadTenantChannel(database, communityId, channelId, userId)
+      },
+      communityUser(userId, communityId): CommunityMember | undefined {
+        try {
+          const member = listTenantMembers(database, communityId, userId).find((item) => item.id === userId)
+          return member ? { id: userId, communityId, displayName: member.displayName, initials: member.initials, role: member.role, status: "active", joinedAt: member.createdAt, presence: "offline" } : undefined
+        } catch { return undefined }
+      },
+      agentByToken(token) {
+        const agent = findTenantAgentByToken(database, token)
+        if (!agent) return undefined
+        return { ...agent, presence: hostedPresence.get(agent.id) ?? "offline" }
+      },
+      agent(agentId, communityId) {
+        const agent = getTenantAgentById(database, communityId, agentId, hostedPresence)
+        return agent ? { ...agent, presence: hostedPresence.get(agent.id) ?? "offline" } : undefined
+      },
+      agentMessage(input) {
+        return createTenantAgentMessage(database, input.communityId, input.agentId, input.channelId, { paragraphs: input.paragraphs, threadId: input.threadId })
+      },
+      setPresence(agentId, nextPresence) {
+        hostedPresence.set(agentId, nextPresence)
+      },
+      contextForMessage(message, agentId) {
+        return listTenantAgentContext(database, message.communityId, agentId, message.channelId, message.threadId)
+      },
+      publishCard(input) {
+        const card = publishTenantCard(database, input.communityId, input.agentId, { channelId: input.channelId, path: input.path, title: input.title, type: input.type, body: input.body, sourceMessageIds: input.sourceMessageIds, replaces: input.replacesCardId })
+        return { cardId: card.id, channelId: card.channelId }
+      },
+      workAgentsForMessage(message) {
+        return listTenantChannelAgents(database, message.communityId, message.channelId, hostedPresence)
+          .filter((agent) => {
+            const mention = `@${agent.name}`.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+            const pattern = new RegExp(`(?:^|\\s)${mention}(?=$|\\s|[.,!?;:])`, "i")
+            return message.paragraphs.flat().some((block) => block.kind === "text" && pattern.test(block.text))
+          })
+      },
     },
   }
   hub = createWebSocketHub(server, store, (agentId, nextPresence) => {

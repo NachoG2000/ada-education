@@ -31,6 +31,7 @@ import type {
 } from "@ada/protocol"
 import type { CardPublishInput as ProtocolCardPublishInput } from "@ada/protocol"
 import { WorkspaceError } from "./workspace-errors.js"
+import { syncLegacyToTenant } from "./tenant.js"
 
 export type PresenceMap = ReadonlyMap<string, Presence>
 
@@ -88,6 +89,10 @@ export function openDatabase(filePath?: string): DatabaseSync {
     // ordered migration path above; a fresh file starts at that same version.
     database.exec(`PRAGMA user_version = ${LATEST_SCHEMA_VERSION}`)
   }
+  // Import an existing singleton database into the hosted-demo projection.
+  // The operation is idempotent and intentionally happens after migrations so
+  // a normal empty startup still needs no community.json.
+  syncLegacyToTenant(database)
   return database
 }
 

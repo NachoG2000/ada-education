@@ -1,7 +1,7 @@
 import type { DatabaseSync } from "node:sqlite"
 
 /** The schema version represented by schema.sql and the migrations below. */
-export const LATEST_SCHEMA_VERSION = 2
+export const LATEST_SCHEMA_VERSION = 4
 
 const BACKFILL_TIME = "1970-01-01T00:00:00.000Z"
 
@@ -111,6 +111,112 @@ const MIGRATIONS: Migration[] = [
         );
         UPDATE channels SET created_at = '${BACKFILL_TIME}' WHERE created_at IS NULL;
         UPDATE channels SET updated_at = '${BACKFILL_TIME}' WHERE updated_at IS NULL;
+      `)
+    },
+  },
+  {
+    version: 3,
+    apply(database) {
+      /* Issue #1 tenancy. Keep this DDL in the migration as well as
+         schema.sql: existing local databases must be upgraded without a
+         destructive reset. */
+      database.exec(`
+        CREATE TABLE IF NOT EXISTS tenant_users (
+          id TEXT PRIMARY KEY, display_name TEXT NOT NULL, initials TEXT NOT NULL,
+          tone TEXT NOT NULL DEFAULT 'card', token_digest TEXT NOT NULL UNIQUE,
+          status TEXT NOT NULL DEFAULT 'active', created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS tenant_communities (
+          id TEXT PRIMARY KEY, name TEXT NOT NULL, term TEXT NOT NULL,
+          created_by TEXT NOT NULL REFERENCES tenant_users(id), created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS tenant_memberships (
+          community_id TEXT NOT NULL REFERENCES tenant_communities(id) ON DELETE CASCADE,
+          user_id TEXT NOT NULL REFERENCES tenant_users(id) ON DELETE CASCADE,
+          role TEXT NOT NULL CHECK (role IN ('teacher', 'student')),
+          status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'removed', 'left')),
+          created_at TEXT NOT NULL, updated_at TEXT NOT NULL, ended_at TEXT, ended_by TEXT,
+          PRIMARY KEY (community_id, user_id)
+        );
+        CREATE INDEX IF NOT EXISTS tenant_memberships_user ON tenant_memberships(user_id, status);
+        CREATE TABLE IF NOT EXISTS tenant_invites (
+          id TEXT PRIMARY KEY, community_id TEXT NOT NULL REFERENCES tenant_communities(id) ON DELETE CASCADE,
+          code_digest TEXT NOT NULL UNIQUE, role TEXT NOT NULL CHECK (role IN ('teacher', 'student')),
+          max_uses INTEGER, uses INTEGER NOT NULL DEFAULT 0,
+          created_by TEXT NOT NULL REFERENCES tenant_users(id), created_at TEXT NOT NULL, expires_at TEXT
+        );
+        CREATE INDEX IF NOT EXISTS tenant_invites_community ON tenant_invites(community_id, created_at);
+        CREATE TABLE IF NOT EXISTS tenant_channels (
+          id TEXT PRIMARY KEY, community_id TEXT NOT NULL REFERENCES tenant_communities(id) ON DELETE CASCADE,
+          name TEXT NOT NULL, description TEXT, visibility TEXT NOT NULL CHECK (visibility IN ('open', 'private')),
+          status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'archived')),
+          kind TEXT NOT NULL DEFAULT 'channel' CHECK (kind IN ('channel', 'dm')), dm_agent_id TEXT,
+          created_by TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, archived_at TEXT
+        );
+        CREATE INDEX IF NOT EXISTS tenant_channels_community ON tenant_channels(community_id, status, created_at);
+        CREATE UNIQUE INDEX IF NOT EXISTS tenant_channels_active_name ON tenant_channels(community_id, lower(name))
+          WHERE status = 'active' AND kind = 'channel';
+        CREATE UNIQUE INDEX IF NOT EXISTS tenant_channels_agent_dm ON tenant_channels(community_id, created_by, dm_agent_id)
+          WHERE kind = 'dm' AND status = 'active';
+        CREATE TABLE IF NOT EXISTS tenant_channel_members (
+          channel_id TEXT NOT NULL REFERENCES tenant_channels(id) ON DELETE CASCADE,
+          community_id TEXT NOT NULL REFERENCES tenant_communities(id) ON DELETE CASCADE,
+          member_id TEXT NOT NULL, member_kind TEXT NOT NULL CHECK (member_kind IN ('user', 'agent')),
+          created_at TEXT NOT NULL, PRIMARY KEY (channel_id, member_id)
+        );
+        CREATE INDEX IF NOT EXISTS tenant_channel_members_community ON tenant_channel_members(community_id, member_id);
+        CREATE TABLE IF NOT EXISTS tenant_agents (
+          id TEXT PRIMARY KEY, community_id TEXT NOT NULL REFERENCES tenant_communities(id) ON DELETE CASCADE,
+          name TEXT NOT NULL, avatar_url TEXT, instructions TEXT NOT NULL,
+          runtime TEXT NOT NULL CHECK (runtime IN ('claude', 'codex')), model TEXT NOT NULL DEFAULT '',
+          created_by TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'deleted')),
+          runner_token_digest TEXT NOT NULL UNIQUE, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, deleted_at TEXT, deleted_by TEXT
+        );
+        CREATE INDEX IF NOT EXISTS tenant_agents_community ON tenant_agents(community_id, status, created_at);
+        CREATE TABLE IF NOT EXISTS tenant_messages (
+          id TEXT PRIMARY KEY, community_id TEXT NOT NULL REFERENCES tenant_communities(id) ON DELETE CASCADE,
+          channel_id TEXT NOT NULL REFERENCES tenant_channels(id), author_id TEXT NOT NULL,
+          author_kind TEXT NOT NULL CHECK (author_kind IN ('user', 'agent')), body TEXT NOT NULL,
+          thread_id TEXT, client_id TEXT, created_at TEXT NOT NULL, edited_at TEXT, deleted_at TEXT, deleted_by TEXT
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS tenant_messages_client ON tenant_messages(community_id, author_id, client_id)
+          WHERE client_id IS NOT NULL;
+        CREATE INDEX IF NOT EXISTS tenant_messages_channel ON tenant_messages(community_id, channel_id, created_at);
+        CREATE TABLE IF NOT EXISTS tenant_threads (
+          id TEXT PRIMARY KEY, community_id TEXT NOT NULL REFERENCES tenant_communities(id) ON DELETE CASCADE,
+          channel_id TEXT NOT NULL REFERENCES tenant_channels(id), root_message_id TEXT NOT NULL UNIQUE REFERENCES tenant_messages(id),
+          created_at TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS tenant_cards (
+          id TEXT PRIMARY KEY, community_id TEXT NOT NULL REFERENCES tenant_communities(id) ON DELETE CASCADE,
+          channel_id TEXT NOT NULL REFERENCES tenant_channels(id), author_id TEXT NOT NULL, path TEXT NOT NULL,
+          title TEXT NOT NULL, type TEXT NOT NULL, body TEXT NOT NULL, version INTEGER NOT NULL DEFAULT 1,
+          replaces TEXT, created_at TEXT NOT NULL, UNIQUE (community_id, author_id, path)
+        );
+        CREATE INDEX IF NOT EXISTS tenant_cards_channel ON tenant_cards(community_id, channel_id, created_at);
+      `)
+    },
+  },
+  {
+    version: 4,
+    apply(database) {
+      /* The original tenant membership key omitted member_kind. Rebuild the
+         small join table so a user and agent with the same external id cannot
+         collide, while retaining all rows on upgrade. */
+      database.exec(`
+        CREATE TABLE tenant_channel_members_v4 (
+          channel_id TEXT NOT NULL REFERENCES tenant_channels(id) ON DELETE CASCADE,
+          community_id TEXT NOT NULL REFERENCES tenant_communities(id) ON DELETE CASCADE,
+          member_id TEXT NOT NULL,
+          member_kind TEXT NOT NULL CHECK (member_kind IN ('user', 'agent')),
+          created_at TEXT NOT NULL,
+          PRIMARY KEY (channel_id, member_id, member_kind)
+        );
+        INSERT OR IGNORE INTO tenant_channel_members_v4 (channel_id, community_id, member_id, member_kind, created_at)
+          SELECT channel_id, community_id, member_id, member_kind, created_at FROM tenant_channel_members;
+        DROP TABLE tenant_channel_members;
+        ALTER TABLE tenant_channel_members_v4 RENAME TO tenant_channel_members;
+        CREATE INDEX tenant_channel_members_community ON tenant_channel_members(community_id, member_id);
       `)
     },
   },

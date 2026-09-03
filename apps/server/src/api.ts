@@ -18,6 +18,18 @@ import {
   replaceChannelMembersInputSchema,
   updateAgentInputSchema,
   updateChannelInputSchema,
+  createCommunityAgentInputSchema,
+  createCommunityChannelInputSchema,
+  createCommunityInputSchema,
+  createInviteInputSchema,
+  createAgentDmInputSchema,
+  createScopedMessageInputSchema,
+  createScopedThreadInputSchema,
+  createUserInputSchema,
+  editScopedMessageInputSchema,
+  redeemInviteInputSchema,
+  updateCommunityAgentInputSchema,
+  updateCommunityChannelInputSchema,
 } from "@ada/protocol"
 import type {
   Agent,
@@ -30,6 +42,7 @@ import type {
   MessageReaction,
   Module,
   Person,
+  Presence,
   Report,
   Thread,
 } from "@ada/protocol"
@@ -98,6 +111,44 @@ import {
 } from "./workspace-attachments.js"
 import { WorkspaceError } from "./workspace-errors.js"
 import { hasWebDist, serveWebFile } from "./static.js"
+import {
+  canReadTenantChannel,
+  createTenantAgent,
+  createTenantAgentDm,
+  createTenantChannel,
+  createTenantCommunity,
+  createTenantInvite,
+  createTenantMessage,
+  createTenantThread,
+  createTenantUser,
+  deleteTenantAgent,
+  deleteTenantMessage,
+  editTenantMessage,
+  findTenantUserByToken,
+  getTenantCommunity,
+  getTenantAgent,
+  getTenantSnapshot,
+  joinTenantChannel,
+  leaveTenantChannel,
+  leaveTenantCommunity,
+  listTenantAgents,
+  listTenantChannelDirectory,
+  listTenantChannels,
+  listTenantCommunities,
+  listTenantMembers,
+  listTenantMessages,
+  redeemTenantInvite,
+  removeTenantMember,
+  rotateTenantAgentToken,
+  sessionForUser,
+  updateTenantAgent,
+  updateTenantChannel,
+  updateTenantCommunity,
+  type TenantChannel,
+  type TenantAgent,
+  type TenantMembership,
+  type TenantUser,
+} from "./tenant.js"
 
 const MATERIAL_KINDS: Material["kind"][] = ["markdown", "pdf", "slides", "link"]
 const DIFFICULTY_LEVELS: DifficultyLevel[] = ["intro", "core", "advanced"]
@@ -129,6 +180,13 @@ function teacherOr403(database: DatabaseSync, context: Context, authorId: string
 }
 
 export interface ApiHooks {
+  /** Versioned, tenant-scoped events for the hosted WebSocket boundary. The
+      callback receives a mutation only after its SQLite transaction succeeds. */
+  onTenantEvent?: (event: { communityId: string; type: string; payload: unknown }) => void
+  onTenantMembershipEnded?: (userId: string, communityId: string) => void
+  onTenantMessageCreated?: (message: ReturnType<typeof createTenantMessage>) => void
+  onTenantWork?: (message: ReturnType<typeof createTenantMessage>) => void
+  onTenantAgentRevoked?: (agentId: string, communityId: string) => void
   onMessageCreated?: (message: Message, hint?: { intent: MentionIntent; moduleId: string }) => void
   onMemberJoined?: (member: Member) => void
   onThreadCreated?: (thread: Thread) => void
@@ -154,6 +212,8 @@ export interface ApiHooks {
 
 export interface ApiOptions extends ApiHooks {
   presence?: ReadonlyMap<string, "online" | "away" | "thinking" | "publishing">
+  /** Hosted runner presence is separate from the legacy seeded-course map. */
+  hostedPresence?: ReadonlyMap<string, "online" | "offline" | "thinking" | "publishing">
   /** course directory (defaults to ADA_COURSE, same resolution as the seed) */
   courseDir?: string
   /** membership gating (DECISIONS.md §20): defaults to ADA_REQUIRE_MEMBERSHIP */
@@ -178,8 +238,140 @@ function bearerToken(context: Context): string | undefined {
 
 type ApiEnv = { Variables: { me?: Member } }
 
+function hostedBearer(context: Context): string | undefined {
+  const header = context.req.header("authorization")
+  if (!header || !/^bearer\s+/i.test(header)) return undefined
+  const value = header.slice(7).trim()
+  return value || undefined
+}
+
+function hostedUser(context: Context, database: DatabaseSync): TenantUser {
+  const raw = hostedBearer(context)
+  if (!raw) throw new WorkspaceError("unauthorized", "A bearer user token is required")
+  const user = findTenantUserByToken(database, raw)
+  if (!user) throw new WorkspaceError("unauthorized", "User token is invalid or expired")
+  return user
+}
+
+function hostedMembership(database: DatabaseSync, communityId: string, userId: string): { id: string; userId: string; communityId: string; role: "teacher" | "student"; status: "active"; joinedAt: string; updatedAt?: string } {
+  const row = database.prepare("SELECT * FROM tenant_memberships WHERE community_id = ? AND user_id = ? AND status = 'active'").get(communityId, userId) as Record<string, unknown> | undefined
+  if (!row) throw new WorkspaceError("forbidden", "You are not an active member of this community")
+  return {
+    id: String(row.community_id) + ":" + String(row.user_id),
+    userId: String(row.user_id),
+    communityId: String(row.community_id),
+    role: (String(row.role) === "teacher" ? "teacher" : "student"),
+    status: "active",
+    joinedAt: String(row.created_at),
+    ...(row.updated_at ? { updatedAt: String(row.updated_at) } : {}),
+  }
+}
+
+function hostedUserProjection(user: TenantUser): { id: string; displayName: string; createdAt: string; updatedAt?: string } {
+  return { id: user.id, displayName: user.displayName, createdAt: user.createdAt, ...(user.updatedAt ? { updatedAt: user.updatedAt } : {}) }
+}
+
+function hostedCommunitySummary(database: DatabaseSync, communityId: string, userId: string): Record<string, unknown> {
+  const community = getTenantCommunity(database, communityId, userId)
+  const membership = hostedMembership(database, communityId, userId)
+  return {
+    id: community.id,
+    name: community.name,
+    term: community.term,
+    initial: community.name.slice(0, 2).toUpperCase(),
+    createdAt: community.createdAt,
+    ...(community.updatedAt ? { updatedAt: community.updatedAt } : {}),
+    membership,
+  }
+}
+
+function hostedChannel(database: DatabaseSync, channel: TenantChannel): Record<string, unknown> {
+  const rows = database.prepare("SELECT member_id, member_kind FROM tenant_channel_members WHERE community_id = ? AND channel_id = ? ORDER BY created_at, member_id, member_kind").all(channel.communityId, channel.id) as Array<Record<string, unknown>>
+  return {
+    id: channel.id,
+    communityId: channel.communityId,
+    name: channel.name,
+    ...(channel.description ? { description: channel.description } : {}),
+    kind: channel.kind,
+    visibility: channel.visibility === "open" ? "public" : "private",
+    status: channel.status ?? "active",
+    createdBy: channel.createdBy ?? "",
+    createdAt: channel.createdAt ?? new Date(0).toISOString(),
+    ...(channel.updatedAt ? { updatedAt: channel.updatedAt } : {}),
+    ...(channel.archivedAt ? { archivedAt: channel.archivedAt } : {}),
+    memberIds: rows.filter((row) => row.member_kind === "user").map((row) => String(row.member_id)),
+    agentIds: rows.filter((row) => row.member_kind === "agent").map((row) => String(row.member_id)),
+    ...(channel.kind === "dm" && channel.dmAgentId ? { agentId: channel.dmAgentId, ownerId: channel.createdBy } : {}),
+  }
+}
+
+function hostedAgent(agent: TenantAgent, viewerId?: string, database?: DatabaseSync): Record<string, unknown> {
+  const visibleChannelIds = viewerId && database
+    ? agent.channelIds.filter((channelId) => canReadTenantChannel(database, agent.communityId, channelId, viewerId))
+    : agent.channelIds
+  const base = {
+    id: agent.id,
+    communityId: agent.communityId,
+    name: agent.name,
+    ...(agent.avatarUrl ? { avatarUrl: agent.avatarUrl } : {}),
+    instructions: agent.instructions,
+    runtime: agent.runtime,
+    model: agent.model || "default",
+    channelIds: visibleChannelIds,
+    createdBy: agent.createdBy,
+    createdAt: agent.createdAt,
+    ...(agent.updatedAt ? { updatedAt: agent.updatedAt } : {}),
+  }
+  return agent.status === "deleted"
+    ? { ...base, status: "deleted", deletedAt: agent.deletedAt ?? agent.updatedAt, deletedBy: agent.deletedBy ?? agent.createdBy }
+    : { ...base, status: "active" }
+}
+
+function hostedCommunityAgent(agent: TenantAgent, viewerId?: string, database?: DatabaseSync): Record<string, unknown> {
+  const presence = agent.presence === "away" ? "offline" : agent.presence
+  return { ...hostedAgent(agent, viewerId, database), presence }
+}
+
+function hostedCommunityMember(communityId: string, member: TenantMembership, presence: ReadonlyMap<string, string> = new Map()): Record<string, unknown> {
+  return {
+    id: member.id,
+    communityId,
+    displayName: member.displayName,
+    initials: member.initials,
+    role: member.role,
+    status: "active",
+    joinedAt: member.createdAt,
+    presence: presence.get(member.id) === "away" ? "offline" : (presence.get(member.id) ?? "offline"),
+  }
+}
+
+function hostedDirectoryAgents(database: DatabaseSync, communityId: string, userId: string, presence: ReadonlyMap<string, Presence | "offline"> = new Map()): Array<Record<string, unknown>> {
+  return listTenantAgents(database, communityId, userId, presence).map((agent) => ({
+    id: agent.id, communityId, name: agent.name, ...(agent.avatarUrl ? { avatarUrl: agent.avatarUrl } : {}),
+    runtime: agent.runtime, model: agent.model || "default", status: agent.status,
+  }))
+}
+
+function hostedMessage(message: ReturnType<typeof createTenantMessage>): Record<string, unknown> {
+  return {
+    id: message.id,
+    communityId: message.communityId,
+    channelId: message.channelId,
+    authorId: message.authorId,
+    at: message.at,
+    paragraphs: message.paragraphs,
+    ...(message.threadId ? { threadId: message.threadId } : {}),
+    ...(message.clientId ? { clientId: message.clientId } : {}),
+    ...(message.editedAt ? { editedAt: message.editedAt } : {}),
+    ...(message.deletedAt ? { deletedAt: message.deletedAt, ...(message.deletedBy ? { deletedBy: message.deletedBy } : {}) } : {}),
+  }
+}
+
 export function createApi(database: DatabaseSync, options: ApiOptions = {}): Hono<ApiEnv> {
   const app = new Hono<ApiEnv>()
+  const tenantEvent = (communityId: string, type: string, payload: unknown): void => {
+    options.onTenantEvent?.({ communityId, type, payload })
+  }
   const courseDir = resolve(repoRoot, options.courseDir ?? process.env.ADA_COURSE ?? "data/neural-networks-2026")
   const requireMembership = options.requireMembership ?? ["1", "true"].includes(process.env.ADA_REQUIRE_MEMBERSHIP ?? "")
   const ownerToken = options.ownerToken ?? process.env.ADA_OWNER_TOKEN
@@ -195,10 +387,14 @@ export function createApi(database: DatabaseSync, options: ApiOptions = {}): Hon
   })
 
   /* Membership gating (DECISIONS.md §20, off for local dev): everything under
-     /api needs a person token except the join doors. Agents (the runner's
-     snapshot fetch and raw sync) authenticate reads with their own token;
-     their writes stay on the runner WS, which has its own check. */
+     /api needs a person token except the join doors. Hosted runner writes are
+     authenticated on their first WebSocket frame and scoped to one agent. */
   app.use("/api/*", async (context, next) => {
+    /* Hosted issue #1 routes have their own global-user authentication and
+       must remain reachable on a fresh, unseeded database. */
+    const hostedPath = context.req.path
+    if (hostedPath === "/api/users" || hostedPath === "/api/session"
+      || hostedPath === "/api/invites/redeem" || hostedPath.startsWith("/api/communities")) return next()
     if (!requireMembership) return next()
     const path = context.req.path
     const method = context.req.method
@@ -271,6 +467,408 @@ export function createApi(database: DatabaseSync, options: ApiOptions = {}): Hon
         || agent.channelIds.some((channelId) => canReadChannel(database, channelId, member)))
       .map((member) => member.id)
   }
+
+  /* -----------------------------------------------------------------------
+     Hosted issue #1 API. These routes deliberately live beside (and do not
+     reinterpret) the legacy course routes below. Every handler resolves the
+     actor from Authorization and the tenant from the path; request bodies
+     never select an acting user or community. */
+  app.post("/api/users", async (context) => {
+    try {
+      const raw = await context.req.json<unknown>()
+      const parsed = parseInput(createUserInputSchema, raw) as { displayName: string }
+      const created = createTenantUser(database, parsed.displayName)
+      return context.json({
+        user: hostedUserProjection(created.user),
+        token: created.token,
+      }, 201)
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.get("/api/session", (context) => {
+    try {
+      const user = hostedUser(context, database)
+      const session = sessionForUser(database, user.id)
+      return context.json({
+        user: hostedUserProjection(session.user),
+        communities: session.communities.map((community) => hostedCommunitySummary(database, community.id, user.id)),
+      })
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.get("/api/communities", (context) => {
+    try {
+      const user = hostedUser(context, database)
+      return context.json(listTenantCommunities(database, user.id).map((community) => hostedCommunitySummary(database, community.id, user.id)))
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.post("/api/communities", async (context) => {
+    try {
+      const user = hostedUser(context, database)
+      const body = parseInput(createCommunityInputSchema, await context.req.json<unknown>()) as { name: string; term: string }
+      const community = createTenantCommunity(database, user.id, body.name, body.term)
+      const summary = hostedCommunitySummary(database, community.id, user.id)
+      const { membership: _membership, ...record } = summary
+      tenantEvent(community.id, "community.updated", { community: record })
+      return context.json({ community: summary, membership: hostedMembership(database, community.id, user.id) }, 201)
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  const hostedCommunityId = (context: Context): string => {
+    const id = context.req.param("communityId")
+    if (!id) throw new WorkspaceError("invalid_input", "communityId is required", "communityId")
+    return id
+  }
+  const hostedMember = (context: Context): { user: TenantUser; communityId: string; role: "teacher" | "student" } => {
+    const user = hostedUser(context, database)
+    const communityId = hostedCommunityId(context)
+    const membership = hostedMembership(database, communityId, user.id)
+    return { user, communityId, role: membership.role }
+  }
+
+  app.get("/api/communities/:communityId", (context) => {
+    try {
+      const { user, communityId } = hostedMember(context)
+      const snapshot = getTenantSnapshot(database, communityId, user.id, options.hostedPresence)
+      const members = listTenantMembers(database, communityId, user.id).map((member) => hostedCommunityMember(communityId, member))
+      const agents = snapshot.agents.map((agent) => hostedCommunityAgent(agent, user.id, database))
+      const directoryChannels = listTenantChannelDirectory(database, communityId, user.id)
+      return context.json({
+        community: {
+          id: communityId,
+          name: snapshot.name,
+          term: snapshot.term,
+          initial: snapshot.name.slice(0, 2).toUpperCase(),
+          createdAt: snapshot.createdAt,
+          ...(snapshot.updatedAt ? { updatedAt: snapshot.updatedAt } : {}),
+        },
+        membership: hostedMembership(database, communityId, user.id),
+        members,
+        agents,
+        channels: snapshot.channels.map((channel) => hostedChannel(database, channel)),
+        directory: {
+          communityId,
+          channels: directoryChannels,
+          agents: snapshot.agents.map((agent) => ({ id: agent.id, communityId, name: agent.name, ...(agent.avatarUrl ? { avatarUrl: agent.avatarUrl } : {}), runtime: agent.runtime, model: agent.model || "default", status: agent.status })),
+          updatedAt: snapshot.updatedAt ?? new Date().toISOString(),
+        },
+        messages: snapshot.messages.map(hostedMessage),
+        threads: snapshot.threads,
+      })
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.patch("/api/communities/:communityId", async (context) => {
+    try {
+      const { user, communityId, role: memberRole } = hostedMember(context)
+      if (memberRole !== "teacher") throw new WorkspaceError("forbidden", "Only a teacher can update a community")
+      const raw = await context.req.json<unknown>()
+      if (!isRecord(raw)) throw new WorkspaceError("invalid_input", "Request body must be an object")
+      const community = updateTenantCommunity(database, communityId, user.id, { name: typeof raw.name === "string" ? raw.name : undefined, term: typeof raw.term === "string" ? raw.term : undefined })
+      const summary = hostedCommunitySummary(database, community.id, user.id)
+      const { membership: _membership, ...record } = summary
+      tenantEvent(community.id, "community.updated", { community: record })
+      return context.json(summary)
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.post("/api/communities/:communityId/invites", async (context) => {
+    try {
+      const { user, communityId } = hostedMember(context)
+      const body = parseInput(createInviteInputSchema, await context.req.json<unknown>()) as { role: "teacher" | "student"; mode: "single-use" | "reusable"; maxUses?: number; expiresAt?: string }
+      const invite = createTenantInvite(database, communityId, user.id, body.role, body.mode === "single-use" ? 1 : body.maxUses ?? null, body.expiresAt)
+      return context.json({ invite: { id: invite.id, communityId, role: invite.role, mode: body.mode, createdBy: invite.createdBy, createdAt: invite.createdAt, ...(invite.expiresAt ? { expiresAt: invite.expiresAt } : {}), uses: invite.uses, ...(invite.maxUses !== null ? { maxUses: invite.maxUses } : {}) }, code: invite.code }, 201)
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.post("/api/invites/redeem", async (context) => {
+    try {
+      const user = hostedUser(context, database)
+      const raw = await context.req.json<unknown>()
+      const body = parseInput(redeemInviteInputSchema, raw) as { code: string }
+      const redeemed = redeemTenantInvite(database, body.code, user.id)
+      const communityId = redeemed.membership.communityId
+      const membership = hostedMembership(database, communityId, user.id)
+      if (redeemed.consumed) tenantEvent(communityId, "membership.created", { membership })
+      return context.json({ community: hostedCommunitySummary(database, communityId, user.id), membership })
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.get("/api/communities/:communityId/members", (context) => {
+    try {
+      const { user, communityId } = hostedMember(context)
+      const members = listTenantMembers(database, communityId, user.id)
+      return context.json(members.map((member) => ({ id: `${communityId}:${member.id}`, userId: member.id, communityId, role: member.role, status: "active", joinedAt: member.createdAt, user: hostedUserProjection(member) })))
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.delete("/api/communities/:communityId/members/:userId", async (context) => {
+    try {
+      const { user, communityId } = hostedMember(context)
+      const removed = removeTenantMember(database, communityId, user.id, context.req.param("userId"))
+      const membership = { id: `${communityId}:${removed.id}`, userId: removed.id, communityId, role: removed.role, status: "removed" as const, joinedAt: removed.createdAt, removedAt: new Date().toISOString(), removedBy: user.id }
+      tenantEvent(communityId, "membership.removed", { membership })
+      options.onTenantMembershipEnded?.(removed.id, communityId)
+      return context.json(membership)
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.delete("/api/communities/:communityId/membership", async (context) => {
+    try {
+      const { user, communityId } = hostedMember(context)
+      const membership = hostedMembership(database, communityId, user.id)
+      leaveTenantCommunity(database, communityId, user.id)
+      const ended = { ...membership, status: "left" as const, leftAt: new Date().toISOString() }
+      tenantEvent(communityId, "membership.left", { membership: ended })
+      options.onTenantMembershipEnded?.(user.id, communityId)
+      return context.json(ended)
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.get("/api/communities/:communityId/channels/browse", (context) => {
+    try {
+      const { user, communityId } = hostedMember(context)
+      return context.json(listTenantChannelDirectory(database, communityId, user.id))
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.get("/api/communities/:communityId/channels", (context) => {
+    try {
+      const { user, communityId } = hostedMember(context)
+      const includeArchived = context.req.query("includeArchived") !== "false"
+      return context.json(listTenantChannels(database, communityId, user.id, includeArchived).map((channel) => hostedChannel(database, channel)))
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.post("/api/communities/:communityId/channels", async (context) => {
+    try {
+      const { user, communityId } = hostedMember(context)
+      const body = parseInput(createCommunityChannelInputSchema, await context.req.json<unknown>()) as { name: string; description?: string; kind: "channel"; visibility: "public" | "private" }
+      const channel = createTenantChannel(database, communityId, user.id, { name: body.name, description: body.description, visibility: body.visibility === "public" ? "open" : "private", memberIds: [user.id] })
+      const projected = hostedChannel(database, channel)
+      tenantEvent(communityId, "channel.created", { channel: projected })
+      tenantEvent(communityId, "directory.updated", { channels: listTenantChannelDirectory(database, communityId, user.id), agents: hostedDirectoryAgents(database, communityId, user.id, options.hostedPresence) })
+      return context.json(projected, 201)
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.post("/api/communities/:communityId/dms", async (context) => {
+    try {
+      const { user, communityId } = hostedMember(context)
+      const body = parseInput(createAgentDmInputSchema, await context.req.json<unknown>()) as { agentId: string }
+      const channel = createTenantAgentDm(database, communityId, user.id, body.agentId)
+      const projected = hostedChannel(database, channel)
+      const dm = { channelId: channel.id, communityId, agentId: body.agentId, ownerId: user.id, createdAt: channel.createdAt, status: (channel.status ?? "active") as "active" | "archived", ...(channel.archivedAt ? { archivedAt: channel.archivedAt } : {}) }
+      tenantEvent(communityId, "agent.dm.created", { dm, channel: projected })
+      return context.json({ channel: projected, dm }, 201)
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.patch("/api/communities/:communityId/channels/:channelId", async (context) => {
+    try {
+      const { user, communityId } = hostedMember(context)
+      const body = parseInput(updateCommunityChannelInputSchema, await context.req.json<unknown>()) as { name?: string; description?: string | null; visibility?: "public" | "private"; status?: "active" | "archived" }
+      const channel = updateTenantChannel(database, communityId, user.id, context.req.param("channelId"), { name: body.name, description: body.description, visibility: body.visibility ? body.visibility === "public" ? "open" : "private" : undefined, status: body.status })
+      const projected = hostedChannel(database, channel)
+      tenantEvent(communityId, channel.status === "archived" ? "channel.archived" : "channel.updated", { channel: projected })
+      tenantEvent(communityId, "directory.updated", { channels: listTenantChannelDirectory(database, communityId, user.id), agents: hostedDirectoryAgents(database, communityId, user.id, options.hostedPresence) })
+      return context.json(projected)
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.post("/api/communities/:communityId/channels/:channelId/join", async (context) => {
+    try {
+      const { user, communityId } = hostedMember(context)
+      const channel = joinTenantChannel(database, communityId, user.id, context.req.param("channelId"))
+      const projected = hostedChannel(database, channel)
+      tenantEvent(communityId, "channel.updated", { channel: projected })
+      tenantEvent(communityId, "directory.updated", { channels: listTenantChannelDirectory(database, communityId, user.id), agents: hostedDirectoryAgents(database, communityId, user.id, options.hostedPresence) })
+      return context.json(projected)
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.delete("/api/communities/:communityId/channels/:channelId/leave", async (context) => {
+    try {
+      const { user, communityId } = hostedMember(context)
+      const channel = leaveTenantChannel(database, communityId, user.id, context.req.param("channelId"))
+      const projected = hostedChannel(database, channel)
+      tenantEvent(communityId, "channel.updated", { channel: projected })
+      tenantEvent(communityId, "directory.updated", { channels: listTenantChannelDirectory(database, communityId, user.id), agents: hostedDirectoryAgents(database, communityId, user.id, options.hostedPresence) })
+      return context.json(projected)
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.get("/api/communities/:communityId/agents", (context) => {
+    try {
+      const { user, communityId } = hostedMember(context)
+      return context.json(listTenantAgents(database, communityId, user.id, options.hostedPresence).map((agent) => hostedAgent(agent, user.id, database)))
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.post("/api/communities/:communityId/agents", async (context) => {
+    try {
+      const { user, communityId } = hostedMember(context)
+      const body = parseInput(createCommunityAgentInputSchema, await context.req.json<unknown>()) as { name: string; avatarUrl?: string | null; instructions: string; runtime: "claude" | "codex"; model: string; channelIds: string[] }
+      const result = createTenantAgent(database, communityId, user.id, body)
+      const agent = hostedAgent(result.agent, user.id, database)
+      tenantEvent(communityId, "agent.created", { agent })
+      tenantEvent(communityId, "directory.updated", { channels: listTenantChannelDirectory(database, communityId, user.id), agents: hostedDirectoryAgents(database, communityId, user.id, options.hostedPresence) })
+      return context.json({ agent, enrollment: { agentId: result.agent.id, communityId, runnerToken: result.enrollment.runnerToken, setupCommand: result.enrollment.setupCommand, issuedAt: new Date().toISOString() } }, 201)
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.get("/api/communities/:communityId/agents/:agentId", (context) => {
+    try {
+      const { user, communityId } = hostedMember(context)
+      return context.json(hostedAgent(getTenantAgent(database, communityId, user.id, context.req.param("agentId"), options.hostedPresence), user.id, database))
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.patch("/api/communities/:communityId/agents/:agentId", async (context) => {
+    try {
+      const { user, communityId } = hostedMember(context)
+      const body = parseInput(updateCommunityAgentInputSchema, await context.req.json<unknown>()) as { name?: string; avatarUrl?: string | null; instructions?: string; runtime?: "claude" | "codex"; model?: string; channelIds?: string[] }
+      const agent = updateTenantAgent(database, communityId, user.id, context.req.param("agentId"), body, options.hostedPresence)
+      const projected = hostedAgent(agent, user.id, database)
+      tenantEvent(communityId, "agent.updated", { agent: projected })
+      tenantEvent(communityId, "directory.updated", { channels: listTenantChannelDirectory(database, communityId, user.id), agents: hostedDirectoryAgents(database, communityId, user.id, options.hostedPresence) })
+      return context.json(projected)
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.post("/api/communities/:communityId/agents/:agentId/enrollment", async (context) => {
+    try {
+      const { user, communityId } = hostedMember(context)
+      const result = rotateTenantAgentToken(database, communityId, user.id, context.req.param("agentId"), options.hostedPresence)
+      const agent = hostedAgent(result.agent, user.id, database)
+      tenantEvent(communityId, "agent.updated", { agent })
+      options.onTenantAgentRevoked?.(result.agent.id, communityId)
+      return context.json({ agent, enrollment: { agentId: result.agent.id, communityId, runnerToken: result.enrollment.runnerToken, setupCommand: result.enrollment.setupCommand, issuedAt: new Date().toISOString() } })
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.delete("/api/communities/:communityId/agents/:agentId", async (context) => {
+    try {
+      const { user, communityId } = hostedMember(context)
+      const agent = deleteTenantAgent(database, communityId, user.id, context.req.param("agentId"), options.hostedPresence)
+      const projected = hostedAgent(agent, user.id, database)
+      tenantEvent(communityId, "agent.deleted", { agent: projected })
+      tenantEvent(communityId, "directory.updated", { channels: listTenantChannelDirectory(database, communityId, user.id), agents: hostedDirectoryAgents(database, communityId, user.id, options.hostedPresence) })
+      options.onTenantAgentRevoked?.(agent.id, communityId)
+      return context.json(projected)
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.get("/api/communities/:communityId/channels/:channelId/messages", (context) => {
+    try {
+      const { user, communityId } = hostedMember(context)
+      if (!canReadTenantChannel(database, communityId, context.req.param("channelId"), user.id)) throw new WorkspaceError("not_found", "Channel does not exist")
+      return context.json(listTenantMessages(database, communityId, user.id, context.req.param("channelId")).map(hostedMessage))
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.post("/api/communities/:communityId/channels/:channelId/messages", async (context) => {
+    try {
+      const { user, communityId } = hostedMember(context)
+      const raw = await context.req.json<unknown>()
+      const body = parseInput(createScopedMessageInputSchema, { ...(isRecord(raw) ? raw : {}), channelId: context.req.param("channelId") }) as { paragraphs: unknown; threadId?: string; clientId?: string }
+      const message = createTenantMessage(database, communityId, user.id, context.req.param("channelId"), body)
+      const projected = hostedMessage(message)
+      tenantEvent(communityId, "message.created", { message: projected })
+      options.onTenantMessageCreated?.(message)
+      options.onTenantWork?.(message)
+      return context.json(projected, 201)
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.patch("/api/communities/:communityId/messages/:messageId", async (context) => {
+    try {
+      const { user, communityId } = hostedMember(context)
+      const body = parseInput(editScopedMessageInputSchema, await context.req.json<unknown>()) as { paragraphs: unknown }
+      const message = editTenantMessage(database, communityId, user.id, context.req.param("messageId"), body.paragraphs)
+      tenantEvent(communityId, "message.updated", { message: hostedMessage(message) })
+      return context.json(hostedMessage(message))
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.delete("/api/communities/:communityId/messages/:messageId", async (context) => {
+    try {
+      const { user, communityId } = hostedMember(context)
+      const deleted = deleteTenantMessage(database, communityId, user.id, context.req.param("messageId"))
+      const tombstone = { id: deleted.id, communityId, channelId: deleted.channelId, authorId: deleted.authorId, status: "deleted" as const, deletedAt: deleted.deletedAt ?? new Date().toISOString(), deletedBy: deleted.deletedBy ?? user.id }
+      tenantEvent(communityId, "message.deleted", { message: tombstone })
+      return context.json(tombstone)
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.post("/api/communities/:communityId/threads", async (context) => {
+    try {
+      const { user, communityId } = hostedMember(context)
+      const body = parseInput(createScopedThreadInputSchema, await context.req.json<unknown>()) as { channelId: string; rootMessageId: string }
+      const thread = createTenantThread(database, communityId, user.id, body.rootMessageId, body.channelId)
+      tenantEvent(communityId, "thread.created", { thread })
+      return context.json(thread)
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
 
   /** Owner token → the teacher's person token. Re-claiming rotates it: the
       owner token is the root of trust and must always recover access. */

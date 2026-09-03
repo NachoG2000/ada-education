@@ -37,13 +37,13 @@ try {
   legacy.close()
 
   const migrated = openDatabase(legacyPath)
-  assert.equal((migrated.prepare("PRAGMA user_version").get() as { user_version: number }).user_version, 2)
+  assert.equal((migrated.prepare("PRAGMA user_version").get() as { user_version: number }).user_version, 4)
   assert.equal((migrated.prepare("SELECT visibility FROM channels WHERE id = 'private-room'").get() as { visibility: string }).visibility, "private")
   assert.equal((migrated.prepare("SELECT token FROM members WHERE id = 'teacher'").get() as { token: string }).token, "person-live-token")
   migrated.close()
 
   const reopened = openDatabase(legacyPath)
-  assert.equal((reopened.prepare("PRAGMA user_version").get() as { user_version: number }).user_version, 2, "second boot leaves the migration complete")
+  assert.equal((reopened.prepare("PRAGMA user_version").get() as { user_version: number }).user_version, 4, "second boot leaves the migration complete")
   assert.equal((reopened.prepare("SELECT COUNT(*) AS count FROM pragma_table_info('channels') WHERE name = 'visibility'").get() as { count: number }).count, 1, "second boot does not duplicate migrated columns")
   reopened.close()
 

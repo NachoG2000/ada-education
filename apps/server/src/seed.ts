@@ -25,6 +25,7 @@ import {
   type SeedPerson,
   type SeedReport,
 } from "./db.js"
+import { syncLegacyToTenant } from "./tenant.js"
 import type { CardType, Difficulty, MessageBlock, ModuleStatus, WorkStatus } from "@ada/protocol"
 import type { DatabaseSync } from "node:sqlite"
 
@@ -222,6 +223,10 @@ export function seedCourse(options: SeedOptions = {}): void {
           : undefined,
       })
     }
+
+    // Keep the hosted-demo projection aligned on the first explicit seed.
+    // Existing tenant edits and additional communities are never overwritten.
+    syncLegacyToTenant(database)
 
     console.log(`Seed complete: ${config.name} (${config.channels.length} channels, ${people.length + (config.agents ?? []).length} members). Repeatable without duplicating.`)
   } finally {
