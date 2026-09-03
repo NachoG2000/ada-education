@@ -619,7 +619,11 @@ export function createWebSocketHub(server: HttpServer, store: WsStore, onPresenc
       return
     }
     if (pathname === "/ws") {
-      if (!url.searchParams.has("token") && store.hosted) {
+      if (
+        !url.searchParams.has("token") &&
+        !url.searchParams.has("memberId") &&
+        store.hosted
+      ) {
         handleHostedBrowserConnection(socket)
         return
       }

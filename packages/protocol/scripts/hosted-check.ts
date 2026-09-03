@@ -2,6 +2,7 @@ import {
   agentEnrollmentResultSchema,
   browserAuthFrameSchema,
   communityWorkspaceSnapshotSchema,
+  createCommunityResultSchema,
   createInviteInputSchema,
   runnerMessageCreateSchema,
   runnerServerFrameSchema,
@@ -84,6 +85,14 @@ check(communityWorkspaceSnapshotSchema.safeParse({
   messages: [],
   threads: [],
 }).success, "the browser workspace snapshot has roster, presence, joined channels, and directory")
+
+check(createCommunityResultSchema.safeParse({
+  community: {
+    ...community,
+    membership: { ...membership, updatedAt: at },
+  },
+  membership: { ...membership, updatedAt: at },
+}).success, "community creation accepts the persisted membership timestamp")
 
 check(agentEnrollmentResultSchema.safeParse({
   agent,

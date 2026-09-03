@@ -1,8 +1,10 @@
 #!/bin/bash
 # Container-level verification of the deploy shape (AC-8, AC-9): builds both
-# images, boots a gated server on a fresh volume, asserts first-boot-once and
-# restart stability, then proves the runner container ingests material across
-# the network with its own volume and commits the run. Needs a docker daemon.
+# images, boots the retained gated fixture server on a fresh volume, asserts
+# first-boot-once and restart stability, then proves its test-only scripted
+# runner still ingests material across the network and commits the run. This
+# is compatibility coverage, not a hosted-service deployment claim. Needs a
+# docker daemon.
 set -euo pipefail
 
 # Verification runs may execute concurrently. Every invocation therefore owns
@@ -55,11 +57,10 @@ curl -s -o /dev/null -w "%{http_code}" "http://localhost:$PORT/api/community" | 
 ok "gated by default env"
 curl -sf "http://localhost:$PORT/" | grep -qi "<!doctype html>" || fail "SPA served"
 ok "SPA served same-origin"
-# The bundle must carry the CONNECTED client, not the synthetic demo: Vite
-# inlines VITE_ADA_SERVER at build time and drops the unused branch, so a
-# missing build variable would silently ship the demo (deploy/Dockerfile).
+# The bundle must carry the current connected hosted client. Vite inlines
+# VITE_ADA_SERVER at build time (deploy/Dockerfile).
 docker run --rm --entrypoint sh "$SERVER_IMAGE" -c \
-  'grep -q "Connecting to the course" /app/apps/web/dist/assets/index-*.js' || fail "image bundles the demo instead of the connected client"
+  'grep -q "Create a community" /app/apps/web/dist/assets/index-*.js' || fail "image does not bundle the hosted client"
 ok "image bundles the connected client"
 
 TT=$(curl -sf -X POST "http://localhost:$PORT/api/claim" -H 'content-type: application/json' -d '{"token":"dc-owner"}' | python3 -c "import json,sys; print(json.load(sys.stdin)['personToken'])")

@@ -187,7 +187,7 @@ async function moduleAndReportChecks(client: WebSocket, runner: WebSocket): Prom
 }
 
 async function main(): Promise<void> {
-  const client = new WebSocket(`${wsUrl}/ws`)
+  const client = new WebSocket(`${wsUrl}/ws?memberId=martin`)
   activeSockets.add(client)
   await opened(client)
   const runner = new WebSocket(`${wsUrl}/ws/runner?token=ada-demo-token`)

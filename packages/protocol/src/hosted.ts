@@ -78,6 +78,7 @@ export const membershipSummarySchema = z.object({
   status: membershipStatusSchema,
   joinedAt: timestampSchema,
   endedAt: timestampSchema.optional(),
+  updatedAt: timestampSchema.optional(),
 }).strict()
 
 export const communitySummarySchema = z.object({

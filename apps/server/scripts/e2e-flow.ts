@@ -46,11 +46,11 @@ async function main(): Promise<void> {
     await serverUp(base)
     runner = spawn(
       tsxBin,
-      ["packages/runner/src/cli.ts", "--cwd", join(courseDir, "agents/ada"), "--token", "ada-demo-token", "--server", base, "--runtime", "scripted"],
+      ["packages/runner/src/legacy-fixture-cli.ts", "--cwd", join(courseDir, "agents/ada"), "--token", "ada-demo-token", "--server", base, "--runtime", "scripted"],
       { cwd: repoRoot, env: { ...env, ADA_RUNTIME: "scripted" }, stdio: ["ignore", "ignore", "inherit"] },
     )
     const events: Array<{ type: string; payload?: Record<string, unknown> }> = []
-    const ws = new WebSocket(`${base.replace(/^http/, "ws")}/ws`)
+    const ws = new WebSocket(`${base.replace(/^http/, "ws")}/ws?memberId=martin`)
     ws.on("message", (raw) => events.push(JSON.parse(String(raw)) as { type: string }))
     await until("runner online", async () => ((await snapshot()).members.find((m) => m.id === "ada")?.presence === "online" ? true : undefined))
 

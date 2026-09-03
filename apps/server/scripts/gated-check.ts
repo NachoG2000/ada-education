@@ -46,6 +46,7 @@ async function req(method: string, path: string, body?: unknown, token?: string)
 function wsCloseCode(url: string): Promise<number> {
   return new Promise((resolvePromise) => {
     const socket = new WebSocket(url)
+    socket.on("open", () => socket.send(JSON.stringify({ type: "auth" })))
     socket.on("close", (code) => resolvePromise(code))
     socket.on("error", () => {})
     setTimeout(() => socket.close(), 4000)
@@ -103,7 +104,7 @@ async function main(): Promise<void> {
     check((await req("GET", "/api/no-such-route", undefined, rotatedTeacherToken)).status === 404, "unknown API routes stay API 404s instead of serving the SPA")
 
     // 3. WS gating.
-    check((await wsCloseCode(`${base.replace(/^http/, "ws")}/ws`)) === 4401, "/ws without a token closes 4401")
+    check((await wsCloseCode(`${base.replace(/^http/, "ws")}/ws`)) === 4401, "/ws without valid first-frame auth closes 4401")
     const events: Array<{ type: string; payload?: Record<string, unknown> }> = []
     const ws = new WebSocket(`${base.replace(/^http/, "ws")}/ws?token=${encodeURIComponent(rotatedTeacherToken)}`)
     ws.on("message", (raw) => events.push(JSON.parse(String(raw)) as { type: string }))
@@ -140,7 +141,7 @@ async function main(): Promise<void> {
     // 6. Remote material sync: runner on its own disk, gated server.
     runner = spawn(
       tsxBin,
-      ["packages/runner/src/cli.ts", "--cwd", join(runnerCourse, "agents/ada"), "--token", AGENT_TOKEN, "--server", base, "--runtime", "scripted"],
+      ["packages/runner/src/legacy-fixture-cli.ts", "--cwd", join(runnerCourse, "agents/ada"), "--token", AGENT_TOKEN, "--server", base, "--runtime", "scripted"],
       { cwd: repoRoot, env: { ...env, ADA_RUNTIME: "scripted" }, stdio: ["ignore", "ignore", "inherit"] },
     )
     await until("runner online", async () =>

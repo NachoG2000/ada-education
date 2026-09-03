@@ -4,10 +4,10 @@
    One agent = one identity (the token) + one folder (`--cwd`, with CLAUDE.md,
    wiki/ and log.md) + this runner. It connects OUTBOUND to the community
    server with the agent's token, receives scoped `work`, runs the provider's
-   unmodified binary (`claude -p` today) with cwd in the agent's folder,
+   unmodified provider binary (`claude -p` or `codex exec`) with cwd in the agent's folder,
    publishes whatever changed in wiki/ as cards, converts `[[path]]` citations
    into cite blocks, and posts the answer. The server never runs a model; this
-   process never handles credentials (they live with the binary).
+   process never handles provider credentials (they stay with the binary).
 
    Usage:
      ada-runner --server http://localhost:8787 --community <id> --agent <id>
