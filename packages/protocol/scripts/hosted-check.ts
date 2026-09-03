@@ -3,6 +3,8 @@ import {
   browserAuthFrameSchema,
   communityWorkspaceSnapshotSchema,
   createInviteInputSchema,
+  runnerMessageCreateSchema,
+  runnerServerFrameSchema,
   scopedServerEventSchema,
 } from "../src/index.js"
 
@@ -94,6 +96,15 @@ check(agentEnrollmentResultSchema.safeParse({
 }).success, "the explicit enrollment response carries the one-time runner credential")
 check(!createInviteInputSchema.safeParse({ role: "student", mode: "single-use", maxUses: 2 }).success,
   "single-use invite contracts reject multiple uses")
+check(!runnerMessageCreateSchema.safeParse({
+  type: "message.create",
+  ref: "request-1",
+  payload: { communityId: "community-1", agentId: "agent-1", channelId: "channel-1", paragraphs: [] },
+}).success, "runner messages reject empty content")
+check(runnerServerFrameSchema.safeParse({ type: "ack", ref: "request-1", ok: true, cardId: "card-1" }).success,
+  "runner success acknowledgements can return the published card id")
+check(runnerServerFrameSchema.safeParse({ type: "ack", ref: "request-1", ok: false, error: "channel access denied" }).success,
+  "runner failures stay correlated to the originating request")
 
 if (failures.length > 0) {
   console.error(`\n${failures.length} hosted protocol check(s) failed`)

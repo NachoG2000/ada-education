@@ -542,7 +542,7 @@ export const runnerMessageCreateSchema = z.object({
     agentId: idSchema,
     channelId: idSchema,
     threadId: idSchema.optional(),
-    paragraphs: z.array(z.array(messageBlockSchemaV2)),
+    paragraphs: z.array(z.array(messageBlockSchemaV2).min(1)).min(1),
   }).strict(),
 }).strict()
 
@@ -575,10 +575,22 @@ export const browserClientFrameSchema = browserAuthFrameSchema
 /** Full envelope alias for callers that need to retain an event generically. */
 export const scopedEventEnvelopeSchema = scopedServerEventSchema
 
-export const runnerServerFrameSchema = z.discriminatedUnion("type", [
+export const runnerServerFrameSchema = z.union([
   runnerReadyFrameSchema,
   runnerWorkSchema,
-  z.object({ type: z.literal("ack"), ref: idSchema, ok: z.literal(true) }).strict(),
+  z.object({
+    type: z.literal("ack"),
+    ref: idSchema,
+    ok: z.literal(true),
+    messageId: idSchema.optional(),
+    cardId: idSchema.optional(),
+  }).strict(),
+  z.object({
+    type: z.literal("ack"),
+    ref: idSchema,
+    ok: z.literal(false),
+    error: z.string().trim().min(1).max(1_200),
+  }).strict(),
   z.object({ type: z.literal("error"), payload: z.object({ code: z.string(), message: z.string() }).strict() }).strict(),
 ])
 
