@@ -7,7 +7,9 @@ const presenceSchema = z.enum(["online", "away", "thinking", "publishing"])
 export const channelVisibilitySchema = z.enum(["open", "private"])
 export const channelStatusSchema = z.enum(["active", "archived"])
 export const agentStatusSchema = z.enum(["active", "inactive"])
-export const agentRuntimeSchema = z.enum(["scripted", "claude"])
+/* `scripted` remains for the local deterministic demo; hosted runners use
+   Claude or Codex subscriptions. */
+export const agentRuntimeSchema = z.enum(["scripted", "claude", "codex"])
 export const apiErrorCodeSchema = z.enum([
   "invalid_input",
   "unauthorized",

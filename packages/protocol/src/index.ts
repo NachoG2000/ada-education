@@ -4,3 +4,4 @@
    (openspec/changes/demo-local-backend/specs/community-server). */
 export * from "./types.js"
 export * from "./events.js"
+export * from "./hosted.js"

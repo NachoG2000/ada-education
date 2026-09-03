@@ -11,6 +11,10 @@
   "exports": {
     ".": "./src/index.ts"
   },
+  "scripts": {
+    "check": "tsc --noEmit --strict --skipLibCheck --module NodeNext --moduleResolution NodeNext --target ES2022 src/index.ts",
+    "check:hosted": "tsx scripts/hosted-check.ts"
+  },
   "engines": {
     "node": ">=24"
   }
