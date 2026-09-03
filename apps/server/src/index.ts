@@ -9,15 +9,17 @@ import {
   findAgentByToken,
   findPersonByToken,
   getMember,
+  getMessage,
+  getModule,
   getMessages,
   getThread,
-  listChannels,
   listMembers,
   openDatabase,
   publishCard,
   type AuthoredCardPublishInput,
 } from "./db.js"
 import { createApi } from "./api.js"
+import { canReadChannel as canReadWorkspaceChannel, getWorkspaceChannel } from "./workspace-access.js"
 import { createWebSocketHub, type AgentRecord, type WebSocketHub, type WsStore } from "./ws.js"
 
 export type RunningServer = {
@@ -29,14 +31,50 @@ export type RunningServer = {
 export function startServer(): RunningServer {
   const database = openDatabase()
   const presence = new Map<string, Presence>()
+  const memberKinds = new Map(listMembers(database).map((member) => [member.id, member.kind] as const))
   let hub: WebSocketHub | undefined
+
+  const rememberMember = (member: Member): void => {
+    memberKinds.set(member.id, member.kind)
+  }
 
   const requireMembership = ["1", "true"].includes(process.env.ADA_REQUIRE_MEMBERSHIP ?? "")
   const app = createApi(database, {
     presence,
     requireMembership,
     onMessageCreated: (message, hint) => hub?.onMessageCreated(message, hint),
-    onMemberJoined: (member) => hub?.broadcast({ type: "member.joined", payload: { member } }),
+    onMemberJoined: (member) => {
+      rememberMember(member)
+      hub?.broadcast({ type: "member.joined", payload: { member } })
+    },
+    onChannelCreated: (channel) => hub?.broadcast({ type: "channel.created", payload: { channel } }),
+    onChannelUpdated: (channel) => hub?.broadcast({ type: "channel.updated", payload: { channel } }),
+    // Deletion is delivered by onChannelAccessRevoked to the pre-mutation
+    // audience; broadcasting from here would duplicate that typed event.
+    onChannelDeleted: () => undefined,
+    onChannelAccessRevoked: (channelId, memberIds, deletedBy) => hub?.revokeChannelAccess(channelId, memberIds, deletedBy),
+    onMemberUpdated: (member) => {
+      rememberMember(member)
+      if (member.kind === "agent" && member.status === "inactive") hub?.disconnectRunner(member.id, "agent deactivated")
+      hub?.broadcast({ type: "member.updated", payload: { member } })
+    },
+    onMemberDeleted: (memberId) => {
+      hub?.disconnectRunner(memberId, "agent deleted")
+      // Visibility-safe delivery is handled by onMemberAccessRevoked; the
+      // ordinary event would be unable to resolve a deleted agent's channels.
+    },
+    onMemberAccessRevoked: (memberId, viewerIds) => hub?.revokeMemberAccess(memberId, viewerIds),
+    onCommunityUpdated: (community) => hub?.broadcast({ type: "community.updated", payload: { community } }),
+    onMessageUpdated: (message) => hub?.broadcast({ type: "message.updated", payload: { message } }),
+    onMessageDeleted: (message) => hub?.broadcast({ type: "message.deleted", payload: { message } }),
+    onMessageReactionsUpdated: (messageId, reactions) => hub?.broadcast({
+      type: "message.reactions.updated",
+      payload: { messageId, reactions },
+    }),
+    onChannelRead: (read) => hub?.broadcast({
+      type: "channel.read",
+      payload: { channelId: read.channelId, memberId: read.memberId, lastReadAt: read.lastReadAt },
+    }),
     onThreadCreated: (thread) => hub?.onThreadCreated(thread),
     onCardPublished: ({ card, message }) => hub?.onCardPublished(card, message),
     onModuleUpdated: (module) => hub?.broadcast({ type: "module.updated", payload: { module } }),
@@ -48,6 +86,9 @@ export function startServer(): RunningServer {
     personTokenValid(token): boolean {
       return Boolean(findPersonByToken(database, token))
     },
+    viewerForToken(token): Member | undefined {
+      return findPersonByToken(database, token)
+    },
     findAgentByToken(token): AgentRecord | undefined {
       const agent = findAgentByToken(database, token)
       return agent ? { ...agent, token } : undefined
@@ -56,10 +97,22 @@ export function startServer(): RunningServer {
       return listMembers(database, presence)
     },
     channel(id: string): Channel | undefined {
-      return listChannels(database).find((channel) => channel.id === id)
+      return getWorkspaceChannel(database, id)
     },
     member(id: string): Member | undefined {
       return getMember(database, id, presence)
+    },
+    memberKind(id: string): Member["kind"] | undefined {
+      return memberKinds.get(id)
+    },
+    module(id: string) {
+      return getModule(database, id)
+    },
+    message(id: string) {
+      return getMessage(database, id)
+    },
+    canReadChannel(id: string, viewer: Member): boolean {
+      return canReadWorkspaceChannel(database, id, viewer)
     },
     messages(): Message[] {
       return getMessages(database, { limit: 1_000_000 })

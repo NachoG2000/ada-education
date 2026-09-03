@@ -1,40 +1,102 @@
 import { createHash, randomUUID, timingSafeEqual } from "node:crypto"
-import { mkdirSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, unlinkSync, writeFileSync } from "node:fs"
 import { readFileSync } from "node:fs"
 import { basename, dirname, resolve, sep } from "node:path"
 import { Hono } from "hono"
+import { bodyLimit } from "hono/body-limit"
 import type { Context } from "hono"
 import type { DatabaseSync } from "node:sqlite"
-import { messageBlockSchema, cardPublishInputSchema } from "@ada/protocol"
-import type { DifficultyLevel, Material, Member, MentionIntent, Message, Module, Report, Thread } from "@ada/protocol"
+import {
+  cardPublishInputSchema,
+  communityUpdateInputSchema,
+  createAgentInputSchema,
+  createChannelInputSchema,
+  editMessageInputSchema,
+  messageCreateInputSchema,
+  profileUpdateInputSchema,
+  readMarkerInputSchema,
+  replaceChannelMembersInputSchema,
+  updateAgentInputSchema,
+  updateChannelInputSchema,
+} from "@ada/protocol"
+import type {
+  Agent,
+  Channel,
+  DifficultyLevel,
+  Material,
+  Member,
+  MentionIntent,
+  Message,
+  MessageReaction,
+  Module,
+  Person,
+  Report,
+  Thread,
+} from "@ada/protocol"
 import {
   addMaterial,
   createInvite,
   createMessage,
-  createThread,
   findAgentByToken,
   findPersonByToken,
   findTeacher,
   generateToken,
   getAssignment,
   getCommunityInfo,
-  getCommunitySnapshot,
   getMember,
   getModule,
   getReport,
   joinWithInvite,
+  listMembers,
   publishCard,
+  reconcileReportWithCard,
   setMemberToken,
-  reconcileReport,
   repoRoot,
   setModuleStatus,
   updateModule,
   type AuthoredCardPublishInput,
-  type MessageInput,
   type ModulePatch,
   type PublishedCard,
   type SeedMaterial,
 } from "./db.js"
+import { canPostChannel, canReadChannel, getViewerCommunitySnapshot, getWorkspaceChannel, listWorkspaceChannels } from "./workspace-access.js"
+import {
+  createChannel as createWorkspaceChannel,
+  deleteEmptyChannel,
+  joinChannel,
+  leaveChannel,
+  replaceChannelMembers,
+  updateChannel as updateWorkspaceChannel,
+} from "./workspace-channels.js"
+import {
+  createAgent,
+  deleteAgent,
+  getWorkspaceAgent,
+  listWorkspaceAgents,
+  rotateAgentToken,
+  updateAgent,
+  updateCommunity,
+  updateProfile,
+  type CommunityInfo,
+} from "./workspace-members.js"
+import {
+  addMessageReaction,
+  createWorkspaceMessage,
+  editWorkspaceMessage,
+  markChannelRead,
+  removeMessageReaction,
+  tombstoneWorkspaceMessage,
+  createWorkspaceThread,
+  type ReadMarkerResult,
+} from "./workspace-messages.js"
+import {
+  deleteAttachment,
+  getAttachmentDownload,
+  MAX_ATTACHMENT_BYTES,
+  storeAttachment,
+  type AttachmentRecord,
+} from "./workspace-attachments.js"
+import { WorkspaceError } from "./workspace-errors.js"
 import { hasWebDist, serveWebFile } from "./static.js"
 
 const MATERIAL_KINDS: Material["kind"][] = ["markdown", "pdf", "slides", "link"]
@@ -48,6 +110,13 @@ function safeMaterialName(name: string): string | undefined {
   if (name !== basename(name)) return undefined
   if (!MATERIAL_NAME.test(name) || name.includes("..")) return undefined
   return name
+}
+
+function readablePersonIds(channel: Channel, members: Member[]): string[] {
+  const open = (channel.visibility ?? (channel.group === "private" ? "private" : "open")) === "open"
+  return members
+    .filter((member): member is Person => member.kind === "person" && (open || channel.memberIds.includes(member.id)))
+    .map((member) => member.id)
 }
 
 /** The routes below change the course itself (its material, its difficulty,
@@ -66,6 +135,21 @@ export interface ApiHooks {
   onCardPublished?: (published: PublishedCard) => void
   onModuleUpdated?: (module: Module) => void
   onReportUpdated?: (report: Report) => void
+  onChannelCreated?: (channel: Channel) => void
+  onChannelUpdated?: (channel: Channel) => void
+  onChannelDeleted?: (channelId: string, deletedBy: string) => void
+  /** Browser sockets that could read the old channel receive a tombstone when
+      a mutation removes their access; the channel payload itself is never
+      sent to those sockets after the mutation. */
+  onChannelAccessRevoked?: (channelId: string, memberIds: string[], deletedBy: string) => void
+  onMemberUpdated?: (member: Member) => void
+  onMemberDeleted?: (memberId: string) => void
+  onMemberAccessRevoked?: (memberId: string, viewerIds: string[]) => void
+  onCommunityUpdated?: (community: CommunityInfo) => void
+  onMessageUpdated?: (message: Message) => void
+  onMessageDeleted?: (message: Message) => void
+  onMessageReactionsUpdated?: (messageId: string, reactions: MessageReaction[]) => void
+  onChannelRead?: (read: ReadMarkerResult) => void
 }
 
 export interface ApiOptions extends ApiHooks {
@@ -144,6 +228,49 @@ export function createApi(database: DatabaseSync, options: ApiOptions = {}): Hon
     return context.json({ error: `Your token is "${me?.id ?? "nobody"}"; you can't write as "${authorId}".` }, 403)
   }
 
+  /** Workspace mutations always run as an active person. In gated deployments
+      identity comes only from the bearer token. Local development retains the
+      existing authorId adapter so the identity chooser keeps working. */
+  const workspaceActor = (context: Context<ApiEnv>, value?: unknown): Person => {
+    const authenticated = context.get("me")
+    const legacyId = isRecord(value) && typeof value.authorId === "string" ? value.authorId : undefined
+    if (requireMembership && legacyId && legacyId !== authenticated?.id) {
+      throw new WorkspaceError("forbidden", `Your token cannot write as "${legacyId}"`)
+    }
+    const actor = requireMembership ? authenticated : getMember(database, legacyId ?? "")
+    if (!actor) throw new WorkspaceError("unauthorized", "Choose a person before changing the workspace")
+    if (actor.kind !== "person") throw new WorkspaceError("forbidden", "Agents cannot use person workspace actions")
+    return actor
+  }
+
+  const requestViewer = (context: Context<ApiEnv>): Member | undefined => {
+    if (requireMembership) return context.get("me")
+    const authorId = context.req.query("authorId")
+    return authorId ? getMember(database, authorId) : undefined
+  }
+
+  const visibleAgent = (agent: Agent, viewer: Member | undefined): boolean => {
+    if (!viewer) return true
+    if (viewer.kind === "person" && viewer.role === "teacher") return true
+    if (agent.scope === "personal" && agent.createdBy === viewer.id) return true
+    return agent.channelIds.some((channelId) => canReadChannel(database, channelId, viewer))
+  }
+
+  const agentForViewer = (agent: Agent, viewer: Member | undefined): Agent => {
+    if (!viewer || (viewer.kind === "person" && viewer.role === "teacher")
+      || (agent.scope === "personal" && agent.createdBy === viewer.id)) return agent
+    return { ...agent, channelIds: agent.channelIds.filter((channelId) => canReadChannel(database, channelId, viewer)) }
+  }
+
+  const viewersForAgent = (agent: Agent): string[] => {
+    const members = listMembers(database)
+    return members
+      .filter((member): member is Person => member.kind === "person")
+      .filter((member) => (agent.scope === "personal" && agent.createdBy === member.id)
+        || agent.channelIds.some((channelId) => canReadChannel(database, channelId, member)))
+      .map((member) => member.id)
+  }
+
   /** Owner token → the teacher's person token. Re-claiming rotates it: the
       owner token is the root of trust and must always recover access. */
   app.post("/api/claim", async (context) => {
@@ -202,7 +329,269 @@ export function createApi(database: DatabaseSync, options: ApiOptions = {}): Hon
     }
   })
 
-  app.get("/api/community", (context) => context.json(getCommunitySnapshot(database, options.presence)))
+  app.get("/api/community", (context) => {
+    try {
+      return context.json(getViewerCommunitySnapshot(database, options.presence, requestViewer(context)))
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.patch("/api/community", async (context) => {
+    try {
+      const raw = await context.req.json<unknown>()
+      const actor = workspaceActor(context, raw)
+      const community = updateCommunity(database, actor.id, parseInput(communityUpdateInputSchema, raw))
+      options.onCommunityUpdated?.(community)
+      return context.json(community, 200)
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.patch("/api/members/:memberId", async (context) => {
+    try {
+      const raw = await context.req.json<unknown>()
+      const actor = workspaceActor(context, raw)
+      const member = updateProfile(database, actor.id, context.req.param("memberId"), parseInput(profileUpdateInputSchema, raw))
+      options.onMemberUpdated?.(member)
+      return context.json(member, 200)
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.get("/api/channels", (context) => {
+    const viewer = requestViewer(context)
+    return context.json(listWorkspaceChannels(database).filter((channel) => !viewer || canReadChannel(database, channel.id, viewer)))
+  })
+
+  app.get("/api/channels/:channelId", (context) => {
+    const channel = getWorkspaceChannel(database, context.req.param("channelId"))
+    const viewer = requestViewer(context)
+    if (!channel || (viewer && !canReadChannel(database, channel.id, viewer))) {
+      return context.json({ error: "Channel does not exist", code: "not_found" }, 404)
+    }
+    return context.json(channel)
+  })
+
+  app.post("/api/channels", async (context) => {
+    try {
+      const raw = await context.req.json<unknown>()
+      const actor = workspaceActor(context, raw)
+      const channel = createWorkspaceChannel(database, parseInput(createChannelInputSchema, raw), actor)
+      options.onChannelCreated?.(channel)
+      return context.json(channel, 201)
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.patch("/api/channels/:channelId", async (context) => {
+    try {
+      const raw = await context.req.json<unknown>()
+      const actor = workspaceActor(context, raw)
+      const channelId = context.req.param("channelId")
+      const previous = getWorkspaceChannel(database, channelId)
+      const previousReaders = previous ? readablePersonIds(previous, listMembers(database)) : []
+      const channel = updateWorkspaceChannel(database, channelId, parseInput(updateChannelInputSchema, raw), actor)
+      options.onChannelUpdated?.(channel)
+      const revoked = previousReaders.filter((memberId) => !canReadChannel(database, channel.id, getMember(database, memberId) as Person))
+      if (revoked.length > 0) options.onChannelAccessRevoked?.(channel.id, revoked, actor.id)
+      return context.json(channel, 200)
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.put("/api/channels/:channelId/members", async (context) => {
+    try {
+      const raw = await context.req.json<unknown>()
+      const actor = workspaceActor(context, raw)
+      const channelId = context.req.param("channelId")
+      const previous = getWorkspaceChannel(database, channelId)
+      const previousReaders = previous ? readablePersonIds(previous, listMembers(database)) : []
+      const channel = replaceChannelMembers(database, channelId, parseInput(replaceChannelMembersInputSchema, raw), actor)
+      options.onChannelUpdated?.(channel)
+      const revoked = previousReaders.filter((memberId) => !canReadChannel(database, channel.id, getMember(database, memberId) as Person))
+      if (revoked.length > 0) options.onChannelAccessRevoked?.(channel.id, revoked, actor.id)
+      return context.json(channel, 200)
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.post("/api/channels/:channelId/join", async (context) => {
+    try {
+      const raw = await readOptionalJson(context)
+      const actor = workspaceActor(context, raw)
+      const channel = joinChannel(database, context.req.param("channelId"), actor)
+      options.onChannelUpdated?.(channel)
+      return context.json(channel, 200)
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.delete("/api/channels/:channelId/leave", async (context) => {
+    try {
+      const raw = await readOptionalJson(context)
+      const actor = workspaceActor(context, raw)
+      const channelId = context.req.param("channelId")
+      const previous = getWorkspaceChannel(database, channelId)
+      const previousReaders = previous ? readablePersonIds(previous, listMembers(database)) : []
+      const channel = leaveChannel(database, channelId, actor)
+      options.onChannelUpdated?.(channel)
+      const revoked = previousReaders.filter((memberId) => !canReadChannel(database, channel.id, getMember(database, memberId) as Person))
+      if (revoked.length > 0) options.onChannelAccessRevoked?.(channel.id, revoked, actor.id)
+      return context.json(channel, 200)
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.delete("/api/channels/:channelId", async (context) => {
+    try {
+      const raw = await readOptionalJson(context)
+      const actor = workspaceActor(context, raw)
+      const channelId = context.req.param("channelId")
+      const previous = getWorkspaceChannel(database, channelId)
+      const previousReaders = previous ? readablePersonIds(previous, listMembers(database)) : []
+      deleteEmptyChannel(database, channelId, actor)
+      options.onChannelDeleted?.(channelId, actor.id)
+      if (previousReaders.length > 0) options.onChannelAccessRevoked?.(channelId, previousReaders, actor.id)
+      return context.body(null, 204)
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.get("/api/agents", (context) => {
+    const viewer = requestViewer(context)
+    return context.json(listWorkspaceAgents(database).filter((agent) => visibleAgent(agent, viewer)).map((agent) => agentForViewer(agent, viewer)))
+  })
+
+  app.get("/api/agents/:agentId", (context) => {
+    const viewer = requestViewer(context)
+    const agent = getWorkspaceAgent(database, context.req.param("agentId"))
+    if (!agent || !visibleAgent(agent, viewer)) {
+      return context.json({ error: "Agent does not exist", code: "not_found" }, 404)
+    }
+    return context.json(agentForViewer(agent, viewer))
+  })
+
+  app.post("/api/agents", async (context) => {
+    try {
+      const raw = await context.req.json<unknown>()
+      const actor = workspaceActor(context, raw)
+      const result = createAgent(database, actor.id, parseInput(createAgentInputSchema, raw))
+      options.onMemberUpdated?.(result.agent)
+      return context.json(result, 201)
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.patch("/api/agents/:agentId", async (context) => {
+    try {
+      const raw = await context.req.json<unknown>()
+      const actor = workspaceActor(context, raw)
+      const agentId = context.req.param("agentId")
+      const previous = getWorkspaceAgent(database, agentId)
+      const previousViewers = previous ? viewersForAgent(previous) : []
+      const agent = updateAgent(database, actor.id, agentId, parseInput(updateAgentInputSchema, raw))
+      options.onMemberUpdated?.(agent)
+      const revoked = previousViewers.filter((viewerId) => !visibleAgent(agent, getMember(database, viewerId)))
+      if (revoked.length > 0) options.onMemberAccessRevoked?.(agent.id, revoked)
+      return context.json(agent, 200)
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.post("/api/agents/:agentId/rotate-token", async (context) => {
+    try {
+      const raw = await readOptionalJson(context)
+      const actor = workspaceActor(context, raw)
+      const result = rotateAgentToken(database, actor.id, context.req.param("agentId"))
+      options.onMemberUpdated?.(result.agent)
+      return context.json(result, 200)
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.delete("/api/agents/:agentId", async (context) => {
+    try {
+      const raw = await readOptionalJson(context)
+      const actor = workspaceActor(context, raw)
+      const agentId = context.req.param("agentId")
+      const previous = getWorkspaceAgent(database, agentId)
+      const previousViewers = previous ? viewersForAgent(previous) : []
+      const result = deleteAgent(database, actor.id, agentId)
+      options.onMemberDeleted?.(result.agentId)
+      if (previousViewers.length > 0) options.onMemberAccessRevoked?.(result.agentId, previousViewers)
+      return context.body(null, 204)
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.post(
+    "/api/channels/:channelId/attachments",
+    bodyLimit({
+      maxSize: MAX_ATTACHMENT_BYTES + 64 * 1024,
+      onError: (context) => context.json({ error: "Attachment exceeds the 10 MiB upload limit", code: "invalid_input", field: "file" }, 413),
+    }),
+    async (context) => {
+      try {
+        const body = await context.req.parseBody()
+        const actor = workspaceActor(context, body)
+        const channelId = context.req.param("channelId")
+        if (!canPostChannel(database, channelId, actor)) throw new WorkspaceError("not_channel_member", "You must be an active channel member to upload files")
+        const file = body.file
+        if (!(file instanceof File)) throw new WorkspaceError("invalid_input", "file is required", "file")
+        const stored = storeAttachment(database, courseDir, {
+          channelId,
+          uploaderId: actor.id,
+          name: file.name,
+          mime: file.type || "application/octet-stream",
+          bytes: new Uint8Array(await file.arrayBuffer()),
+        })
+        return context.json(publicAttachment(stored), 201)
+      } catch (error) {
+        return errorResponse(context, error)
+      }
+    },
+  )
+
+  app.get("/api/attachments/:attachmentId", (context) => {
+    try {
+      const download = getAttachmentDownload(database, courseDir, context.req.param("attachmentId"))
+      const viewer = requestViewer(context)
+      if (viewer && !canReadChannel(database, download.channelId, viewer)) throw new WorkspaceError("not_found", "Attachment not found")
+      return new Response(download.bytes, {
+        headers: {
+          "content-type": download.mime,
+          "content-length": String(download.size),
+          "content-disposition": `attachment; filename*=UTF-8''${encodeURIComponent(download.name)}`,
+        },
+      })
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.delete("/api/attachments/:attachmentId", async (context) => {
+    try {
+      const raw = await readOptionalJson(context)
+      const actor = workspaceActor(context, raw)
+      const removed = deleteAttachment(database, courseDir, context.req.param("attachmentId"), actor.id, actor.role === "teacher")
+      return context.json(publicAttachment(removed), 200)
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
 
   /** A material's stored file, for runners (and clients) that don't share the
       server's disk: the runner syncs its local raw/ from here before an ingest
@@ -210,6 +599,10 @@ export function createApi(database: DatabaseSync, options: ApiOptions = {}): Hon
   app.get("/api/modules/:moduleId/materials/:materialId/raw", (context) => {
     const module = getModule(database, context.req.param("moduleId"))
     if (!module) return context.json({ error: `Module does not exist: ${context.req.param("moduleId")}` }, 404)
+    const viewer = requestViewer(context)
+    if (viewer && !canReadChannel(database, module.channelId, viewer)) {
+      return context.json({ error: "Material does not exist", code: "not_found" }, 404)
+    }
     const material = module.materials.find((item) => item.id === context.req.param("materialId"))
     if (!material) return context.json({ error: `Material does not exist: ${context.req.param("materialId")}` }, 404)
     const rawRoot = resolve(courseDir, "raw")
@@ -224,24 +617,73 @@ export function createApi(database: DatabaseSync, options: ApiOptions = {}): Hon
 
   app.post("/api/channels/:channelId/messages", async (context) => {
     try {
-      const body = await context.req.json<unknown>()
-      if (!isRecord(body) || typeof body.authorId !== "string" || !isParagraphs(body.paragraphs)) {
-        return context.json({ error: "authorId and paragraphs are required" }, 400)
-      }
-      const deniedAuthor = authorOr403(context, body.authorId)
-      if (deniedAuthor) return deniedAuthor
-      const input: MessageInput = {
-        channelId: context.req.param("channelId"),
-        authorId: body.authorId,
-        paragraphs: body.paragraphs,
-        threadId: optionalString(body.threadId),
-        fromCard: isRecord(body.fromCard) && typeof body.fromCard.cardId === "string" && typeof body.fromCard.ago === "string"
-          ? { cardId: body.fromCard.cardId, ago: body.fromCard.ago }
-          : undefined,
-      }
-      const message = createMessage(database, input)
+      const raw = await context.req.json<unknown>()
+      const actor = workspaceActor(context, raw)
+      const message = createWorkspaceMessage(database, actor.id, context.req.param("channelId"), parseInput(messageCreateInputSchema, raw))
       options.onMessageCreated?.(message)
       return context.json(message, 200)
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.patch("/api/messages/:messageId", async (context) => {
+    try {
+      const raw = await context.req.json<unknown>()
+      const actor = workspaceActor(context, raw)
+      const message = editWorkspaceMessage(database, actor.id, context.req.param("messageId"), parseInput(editMessageInputSchema, raw))
+      options.onMessageUpdated?.(message)
+      return context.json(message, 200)
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.delete("/api/messages/:messageId", async (context) => {
+    try {
+      const raw = await readOptionalJson(context)
+      const actor = workspaceActor(context, raw)
+      const message = tombstoneWorkspaceMessage(database, actor.id, context.req.param("messageId"))
+      options.onMessageDeleted?.(message)
+      return context.json(message, 200)
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.put("/api/messages/:messageId/reactions/:emoji", async (context) => {
+    try {
+      const raw = await readOptionalJson(context)
+      const actor = workspaceActor(context, raw)
+      const messageId = context.req.param("messageId")
+      const reactions = addMessageReaction(database, actor.id, messageId, decodeURIComponent(context.req.param("emoji")))
+      options.onMessageReactionsUpdated?.(messageId, reactions)
+      return context.json(reactions, 200)
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.delete("/api/messages/:messageId/reactions/:emoji", async (context) => {
+    try {
+      const raw = await readOptionalJson(context)
+      const actor = workspaceActor(context, raw)
+      const messageId = context.req.param("messageId")
+      const reactions = removeMessageReaction(database, actor.id, messageId, decodeURIComponent(context.req.param("emoji")))
+      options.onMessageReactionsUpdated?.(messageId, reactions)
+      return context.json(reactions, 200)
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.put("/api/channels/:channelId/read", async (context) => {
+    try {
+      const raw = await context.req.json<unknown>()
+      const actor = workspaceActor(context, raw)
+      const read = markChannelRead(database, actor.id, context.req.param("channelId"), parseInput(readMarkerInputSchema, raw))
+      options.onChannelRead?.(read)
+      return context.json(read, 200)
     } catch (error) {
       return errorResponse(context, error)
     }
@@ -253,7 +695,8 @@ export function createApi(database: DatabaseSync, options: ApiOptions = {}): Hon
       if (!isRecord(body) || typeof body.rootMessageId !== "string") {
         return context.json({ error: "rootMessageId is required" }, 400)
       }
-      const thread = createThread(database, body.rootMessageId)
+      const actor = workspaceActor(context, body)
+      const thread = createWorkspaceThread(database, actor.id, body.rootMessageId)
       options.onThreadCreated?.(thread)
       return context.json(thread, 200)
     } catch (error) {
@@ -305,6 +748,7 @@ export function createApi(database: DatabaseSync, options: ApiOptions = {}): Hon
       const absolutePath = resolve(rawRoot, relativePath)
       if (!absolutePath.startsWith(rawRoot + sep)) return context.json({ error: "name resolves outside the course" }, 400)
       mkdirSync(dirname(absolutePath), { recursive: true })
+      const previousFile = existsSync(absolutePath) ? readFileSync(absolutePath) : undefined
       const content = text
         ?? (kind === "markdown" ? "" : `# ${name}\n\n(binary material uploaded on ${new Date().toISOString().slice(0, 10)})`)
       writeFileSync(absolutePath, content, "utf8")
@@ -317,16 +761,32 @@ export function createApi(database: DatabaseSync, options: ApiOptions = {}): Hon
         path: relativePath,
         uploadedAt: new Date().toISOString(),
       }
-      addMaterial(database, moduleId, material)
-      const updated = setModuleStatus(database, moduleId, "compiling")
+      let committed = false
+      let updated: Module
+      let message: Message
+      try {
+        database.exec("BEGIN IMMEDIATE")
+        addMaterial(database, moduleId, material)
+        updated = setModuleStatus(database, moduleId, "compiling")
+        // Lowercase id so the standard @mention scan (mentions.ts) matches the agent's member id.
+        message = createMessage(database, {
+          channelId: module.channelId,
+          authorId,
+          paragraphs: [[{ kind: "text", text: `@ada ingest ${name} into ${moduleId}` }]],
+        })
+        database.exec("COMMIT")
+        committed = true
+      } catch (error) {
+        try { database.exec("ROLLBACK") } catch { /* preserve original failure */ }
+        if (!committed) {
+          try {
+            if (previousFile) writeFileSync(absolutePath, previousFile)
+            else unlinkSync(absolutePath)
+          } catch { /* preserve original failure */ }
+        }
+        throw error
+      }
       options.onModuleUpdated?.(updated)
-
-      // Lowercase id so the standard @mention scan (mentions.ts) matches the agent's member id.
-      const message = createMessage(database, {
-        channelId: module.channelId,
-        authorId,
-        paragraphs: [[{ kind: "text", text: `@ada ingest ${name} into ${moduleId}` }]],
-      })
       options.onMessageCreated?.(message, { intent: "ingest", moduleId })
 
       return context.json(updated, 200)
@@ -407,7 +867,7 @@ export function createApi(database: DatabaseSync, options: ApiOptions = {}): Hon
       ].join("\n\n")
       const path = `${authorId}/decisions/${module.id}-revision-${report.assignmentId ?? report.id}.md`
       const title = `${module.title} · revision after ${assignment?.title ?? "report"}`
-      const published = publishCard(database, {
+      const result = reconcileReportWithCard(database, reportId, module.id, {
         channelId: module.channelId,
         authorId,
         path,
@@ -416,15 +876,12 @@ export function createApi(database: DatabaseSync, options: ApiOptions = {}): Hon
         visibility: "channel",
         sources: [{ kind: "message", ref: report.id, label: "Agent report" }],
         body: decisionBody,
+      }, `Revised after ${assignment?.title ?? "report"} · ${accepted.length} changes accepted`, {
+        accepted, note, by: authorId,
       })
-      options.onCardPublished?.(published)
-
-      const revisedModule = updateModule(database, module.id, {
-        revision: `Revised after ${assignment?.title ?? "report"} · ${accepted.length} changes accepted`,
-      })
-      options.onModuleUpdated?.(revisedModule)
-
-      const reconciled = reconcileReport(database, reportId, { accepted, note, by: authorId, cardId: published.card.id })
+      const reconciled = result.report
+      options.onCardPublished?.(result.published)
+      options.onModuleUpdated?.(result.module)
       options.onReportUpdated?.(reconciled)
 
       return context.json(reconciled, 200)
@@ -459,16 +916,43 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value)
 }
 
-function isParagraphs(value: unknown): value is MessageInput["paragraphs"] {
-  return Array.isArray(value) && value.every((paragraph) => Array.isArray(paragraph)
-    && paragraph.every((block) => messageBlockSchema.safeParse(block).success))
+interface InputSchema<T> {
+  safeParse: (value: unknown) =>
+    | { success: true; data: T }
+    | { success: false; error: { issues: Array<{ message: string; path: PropertyKey[] }> } }
 }
 
-function optionalString(value: unknown): string | undefined {
-  return typeof value === "string" ? value : undefined
+function parseInput<T>(schema: InputSchema<T>, value: unknown): T {
+  const result = schema.safeParse(value)
+  if (result.success) return result.data
+  const issue = result.error.issues[0]
+  throw new WorkspaceError("invalid_input", issue?.message ?? "Invalid request body", issue?.path.join("."))
+}
+
+async function readOptionalJson(context: Context): Promise<unknown> {
+  const contentType = context.req.header("content-type") ?? ""
+  const contentLength = context.req.header("content-length")
+  if (!contentType.includes("application/json") || contentLength === "0") return {}
+  return context.req.json<unknown>().catch(() => ({}))
+}
+
+function publicAttachment(record: AttachmentRecord): Omit<AttachmentRecord, "storagePath"> {
+  const { storagePath: _storagePath, ...publicRecord } = record
+  return publicRecord
 }
 
 function errorResponse(context: Context, error: unknown): Response {
+  if (error instanceof WorkspaceError) {
+    const payload = { error: error.message, code: error.code, ...(error.field ? { field: error.field } : {}) }
+    switch (error.status) {
+      case 401: return context.json(payload, 401)
+      case 403: return context.json(payload, 403)
+      case 404: return context.json(payload, 404)
+      case 409: return context.json(payload, 409)
+      case 413: return context.json(payload, 413)
+      default: return context.json(payload, 400)
+    }
+  }
   const message = error instanceof Error ? error.message : "Internal error"
   const status = message.includes("does not exist") || message.includes("does not belong") ? 404 : 400
   return context.json({ error: message }, status)

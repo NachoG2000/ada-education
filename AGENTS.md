@@ -6,9 +6,11 @@ Repo rules for any agent working here (Claude Code, Codex, Cursor, whichever). `
 
 **Ada** (working name "Ada Education"): a course community where humans and AI agents share channels and knowledge compiles itself into **cards** (markdown pages with a type, a version, sources and "replaces"). **Open source (Apache-2.0)** for **organizations that run cohort-based courses — bootcamps, academies, corporate training programs, universities**; no specific organization is named in this repo (`DECISIONS.md` §19).
 
-**Current scope (`DECISIONS.md` §19, 08/23):** Ada is the open-source product for course-running organizations. The code today is a **fully local deployment on one machine** — the shape §15 set. The full architecture (remote runners, hosted, tiers) is future direction, not code.
+**Current scope (`DECISIONS.md` §21, 08/24):** Ada is the open-source product for course-running organizations, with Buzz desktop as the visible SPA interaction reference and a chat/configuration-first surface: Inbox, channels, threads, channel creation/management, Agents creation/configuration and scoped Settings. The local TypeScript server + SQLite + external runner topology from §14 stays. Buzz's Rust/Tauri/Nostr/runtime architecture and Ada's former dedicated Modules/My study/Card File pages are not part of the visible product phase.
 
-**Actual state of the code today:** a Vite + React 19 SPA (`apps/web/`) with three views in one shell — the channel, the teacher's **Modules** (`#modules`) and the student's **My study** (`#home`), gated by `Person.role` (`DECISIONS.md` §18) — that runs by default against the local server (`apps/web/.env` sets `VITE_ADA_SERVER=/`, proxied by Vite; the synthetic community in `apps/web/src/lib/demo.ts` is the opt-in demo mode via `npm run dev:demo`), a local server implemented in `apps/server/`, shared types/events in `packages/protocol/`, the example seed in `data/neural-networks-2026/` (with `agents/ada/CLAUDE.md`, the agent's rules) and `packages/runner/` (two runtimes: `claude` — mentions → `claude -p` in the agent's folder → cards + answer — and `scripted`, the demo default, which fills its answers from the live community state and publishes cards through the same pipeline). The plan to fork Buzz was discarded (`DECISIONS.md` §7 → §14). Read `DECISIONS.md` §14-§15 and §19 before touching architecture, agent memory or scope.
+**Active change:** `.empirical/specs/buzz-parity-ui/` implements and verifies the §21 workspace.
+
+**Actual state of the code today:** a Vite + React 19 SPA (`apps/web/`) with a responsive Buzz-style workspace: Inbox, Course/Work/Private channels, live message/thread UI, command search, channel management, Agents and scoped Settings. `#home` and `#modules` canonicalize to Inbox; their old components are retained only as implementation history, not mounted product routes. Connected mode uses real REST/WS mutations; `npm run dev:demo` is a labelled read-only preview. The Hono/SQLite server in `apps/server/` owns versioned workspace persistence, viewer-filtered snapshots, attachment bytes, typed errors and channel-authorized events. `packages/protocol/` owns the shared Zod inputs/events and `packages/runner/` keeps the two external runtimes (`claude` and `scripted`). The example seed remains in `data/neural-networks-2026/`. Read `DECISIONS.md` §14, §19 and §21 before touching architecture, agent memory or scope.
 
 **Every area of the repo has its own short `AGENTS.md`** with what it is today and how it grows tomorrow (`apps/web/`, `docs/`, and every new workspace must bring its own). If you touch an area, keep its file up to date.
 
@@ -18,7 +20,8 @@ Documents of truth, in order of authority:
 - `PRODUCT.md` — users, fixed terminology, states that must be visible, brand constraints.
 - `DESIGN.md` — "The card file" design system (tokens, typography, named rules). The real tokens live in `apps/web/src/index.css` and may differ in detail; the code wins.
 - `research/` — research with sources, one file per session. Backing for `PROBLEM.md`; not an authority by itself.
-- `openspec/` — specs and changes: what's being built and in what order. The active change is `demo-local-backend`.
+- `.empirical/specs/` — active implementation contracts, designs, decisions and plans. The active change is `buzz-parity-ui`.
+- `openspec/` — older specs and archived change history; not the active workflow for §21.
 - `docs/*.html` — **future inspiration** (full architecture, use cases, expanded API). They don't describe the current code; where they contradict the code or the spec, those win.
 - `design/BRIEF.md` and `design/mockups/` — history, not authority. The HTML mockups are discarded.
 
@@ -58,23 +61,25 @@ npm run dev:server     # server only → http://localhost:8787
 npm run check -w @ada/server # server typecheck
 npm run smoke          # WS/REST smoke test against a throwaway copy of the course (seeds a temp DB, spare port; never touches the demo DB)
 npm run check:gated -w @ada/server  # membership gating end to end: claim, invites, token-derived authorship, WS auth, remote material sync (throwaway copy)
+npm run check:workspace # migration/reseed, private access, channel/agent/message/attachment API invariants (throwaway data)
 npm run build          # tsc -b && vite build of apps/web → apps/web/dist/
 npm run lint           # oxlint over apps and packages; known warnings: only-export-components (card.tsx, ui/sidebar.tsx, community.tsx, identity.tsx, tabs.tsx, button.tsx) and one set-state-in-effect (community.tsx)
 npm run typecheck      # tsc -b apps/web (noUnusedLocals/Parameters active: one unused variable breaks the build)
 cd apps/web && npx shadcn add <component>   # primitives into src/components/ui (base-nova style, Base UI, lucide icons)
 ```
 
-No tests. Figure-generator dev screen: open `http://localhost:5173/#figures`.
+Targeted executable checks live under each workspace; there is no unit-test framework. Figure-generator dev screen: open `http://localhost:5173/#figures`.
 
 ## Architecture
 
 > Paths in this section are relative to `apps/web/` (the SPA lived at the repo root until 08/22). The types (`types.ts`) now live in `packages/protocol` and `apps/web/src/lib/types.ts` re-exports them.
 
-**No router.** `src/App.tsx` picks the screen from `location.hash` (`#figures` → `FigureSheet`; otherwise `ChannelScreen`). In demo mode it pins `NOW` (`2026-08-22T12:00-03:00`): messages with `at > now` are filtered out and the "today/yesterday" labels are computed against that date; in connected mode `now` is the real clock.
+**Typed hash routing, no router dependency.** `src/lib/routes.ts` parses and serializes `#inbox`, `#channel/<id>`, `#agents`, `#settings/<section>`, `#join` and `#figures`; invalid routes plus retired `#home`/`#modules` replace to Inbox. `src/App.tsx` keeps identity gates outside `WorkspaceShell`. Demo mode pins `NOW` (`2026-08-22T12:00-03:00`); connected mode uses the real clock.
 
 **State = a single context.** `src/lib/community.tsx` → `CommunityProvider` / `useCommunity()`. It receives the full `Community` (immutable in demo mode; hydrated from `GET /api/community` and updated by WS events through `src/lib/api.ts` in connected mode) and exposes:
 - `activeChannelId` + `setActiveChannelId`.
-- `panels`: the right contextual panel stack, **max 2** (`{kind:"thread"}` | `{kind:"card"}`). `openThread` replaces the previous thread; `openCard` dedupes by `cardId`; the top of the stack is `panels[0]`. `popPanel` goes back, `closePanel` empties it (and the channel takes the full width).
+- `workspace`: typed connected mutations for course/profile, channel/agent lifecycle, messages, reactions, reads, attachments and typing. Demo actions reject with a read-only explanation.
+- `panels`: contextual state (`thread | card | agent`); the mounted workspace currently exposes the resizable/overlay thread panel and inline card citations/publications.
 - `member/card/thread/message(id)` lookups that **throw** if the id doesn't exist: one broken id in `demo.ts` takes the whole screen down.
 - helpers: `isNew(card, now)` (state `new` and < 24 h), `isAgent`, `formatTime`, `dayLabel` (locale `en-US`).
 
@@ -86,7 +91,8 @@ No tests. Figure-generator dev screen: open `http://localhost:5173/#figures`.
 - `Channel.group` (`course | work | private`) and `Channel.work.status` (`active | submitted | archived`) are the sidebar's "drawers".
 
 **Component layers:**
-- `src/screens/` — screens. `Channel.tsx` assembles the sidebar (shadcn inset) + two `ResizablePanel`s (channel · context); layout persists in `localStorage["ada:layout:channel"]`. The file's header comment is the screen's design-direction statement.
+- `src/components/workspace/` — the mounted product: `WorkspaceShell`, sidebar, Inbox/Agents/Settings pages, channel timeline/composer/thread, command palette and channel/agent/destructive dialogs. Sidebar/theme/drafts use versioned localStorage keys.
+- `src/screens/` — `FigureSheet` remains mounted at `#figures`; the older Channel/Modules/Study screens are retired code history and must not be reintroduced into navigation.
 - `src/components/ada/` — product components. `folder` (tabbed folder panel; `Folder`, `FolderTab`, `FloatingButton`), `channel` (header, `CardRow`, `Conversation`, `Composer`), `panel` (`PanelStack`: Thread and Card), `card` (folded tab `Tab`, `Pill`, `CardState`, `CardTab`, `Cite`, `CardMessage`, and the `TAB_BG/INK/DOT/FILL` maps per `CardType`), `message` (`MessageRow`, `Inline`), `identity` (avatars: people = pastel circle with initials, agents = `Figure`; `agentInk` gives the agent's name color), `markdown` (minimal in-house renderer: `##`, paragraphs, numbered lists, `**`, `*`, `` ` ``; supports nothing else).
 - `src/components/ui/` — shadcn-generated primitives. They can be touched, but prefer composing from `components/ada`.
 - `src/lib/figure.ts` — **deterministic, seed-based** generator of agent figures (solid silhouette + crown + feet + two eyes; `FIGURE_COLORS` palette). `figureParams(seed)` → `silhouette(p)` (SVG). A new agent = a new seed; "roll another" = change the seed.
@@ -112,7 +118,7 @@ Named rules that affect code (details in `DESIGN.md`):
 - **The "already on file · N days ago" seal.** It can read as a cache ("here's what I already answered"). The correct semantics is "composed from the card file" (see `DECISIONS.md`, commitment 3): a fresh answer, built from existing cards. Copy in `demo.ts`/`card.tsx` to review with the user before changing it.
 - **MVP API (from `docs/usecases-api.html` §8):** `fromCard` should become plural (`fromFile: { cardIds[], oldestAgo }`) because composing involves several cards — it changes `types.ts`, `demo.ts`, `message` and `card`; a card's id would be its path in the wiki; the frontmatter has 7 types and the UI 5 (`difficulty` and `person` aren't published to channels); automatic ingest every N messages stays off in the MVP. None of this is decided: ask before implementing.
 - **The example agent's name.** `DECISIONS.md` and `demo.ts` call it "Ada"; `PRODUCT.md` says Ada is the product and agents carry other names. Ask before renaming.
-- Backend: Buzz fork (`just dev`) vs Plan B (local server + Agent SDK-style runner). The UI and the memory model are the same in both; this SPA is the shell.
+- Backend is settled by §§14/21: the local TypeScript server + external runner stays; Buzz is only the UI/interaction reference.
 - Out of scope for now (don't build): permissions, submission grading, collaborative editing, vector/global search, multi-course, mobile, notifications, work channels beyond the design. Nor gamification or per-student algorithmic personalization: `PROBLEM.md` §9 explains why they miss the problem.
 
 ## HTML docs

@@ -52,10 +52,12 @@ export function JoinCourse({
             autoFocus
             value={value}
             onChange={(event) => setValue(event.target.value)}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? "join-error" : undefined}
             placeholder={inviteToken ? "How the course will see you" : "From the deploy's environment"}
             className="mt-1.5 h-9 w-full rounded-control border border-line bg-panel-2 px-3 font-sans text-[13.5px] text-ink outline-none focus-visible:ring-2 focus-visible:ring-seal"
           />
-          {error ? <p className="mt-2 font-sans text-[12.5px] leading-[1.5] text-alert">{error}</p> : null}
+          {error ? <p id="join-error" role="alert" className="mt-2 font-sans text-[12.5px] leading-[1.5] text-alert">{error}</p> : null}
           <button
             type="submit"
             disabled={busy || !value.trim()}

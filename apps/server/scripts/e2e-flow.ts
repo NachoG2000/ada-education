@@ -17,7 +17,7 @@ import { join, resolve } from "node:path"
 import { WebSocket } from "ws"
 import type { Card, CommunitySnapshot, Message, Module, Report } from "@ada/protocol"
 import { repoRoot } from "../src/db.js"
-import { makeHarness, runTsx, serverUp, tsxBin, until } from "./lib.js"
+import { makeHarness, runTsx, serverUp, stopChild, tsxBin, until } from "./lib.js"
 
 const port = Number(process.env.E2E_PORT ?? "8798")
 const base = `http://localhost:${port}`
@@ -104,8 +104,7 @@ async function main(): Promise<void> {
 
     ws.close()
   } finally {
-    runner?.kill("SIGTERM")
-    server?.kill("SIGTERM")
+    await Promise.all([stopChild(runner), stopChild(server)])
     rmSync(scratch, { recursive: true, force: true })
   }
   if (failures.length) {

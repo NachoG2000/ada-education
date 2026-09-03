@@ -148,7 +148,9 @@ export function seedCourse(options: SeedOptions = {}): void {
     const agents = config.agents ?? []
     if (agentTokenOverride && agents.length > 1) console.warn("ADA_AGENT_TOKEN is set but the course has several agents; ignoring the override.")
     for (const agent of agents) {
-      upsertAgent(database, agentTokenOverride && agents.length === 1 ? { ...agent, token: agentTokenOverride } : agent)
+      upsertAgent(database, agentTokenOverride && agents.length === 1
+        ? { ...agent, token: agentTokenOverride, tokenOverride: true }
+        : agent)
     }
     for (const channel of config.channels) {
       for (const memberId of channel.memberIds ?? []) addChannelMember(database, channel.id, memberId)

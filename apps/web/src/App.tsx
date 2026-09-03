@@ -6,8 +6,11 @@ import { demo } from "@/lib/demo"
 import { ErrorBoundary } from "@/components/ada/boundary"
 import { WhoAreYou } from "@/components/ada/who-are-you"
 import { JoinCourse } from "@/components/ada/join"
-import { ChannelScreen } from "@/screens/Channel"
+import { WorkspaceShell } from "@/components/workspace/shell"
+import { TooltipProvider } from "@/components/ui/tooltip"
+import { Toaster } from "@/components/ui/toast"
 import { FigureSheet } from "@/screens/FigureSheet"
+import { parseHash } from "@/lib/routes"
 
 /* The demo's "now": pins the day labels and filters future messages. */
 const NOW = new Date("2026-08-22T12:00:00-03:00")
@@ -23,19 +26,25 @@ const SERVER = configuredServer()
 
 export default function App() {
   const hash = useSyncExternalStore(subscribeToHash, readHash)
+  const boundaryKey = parseHash(hash).kind === "figures" ? "figures" : "workspace"
 
   /* Last resort: whatever breaks, the person gets a screen that says so and a
      way to try again — never a blank page. The boundaries further in
      (message rows, contextual panel) catch what they can before this. */
-  return <ErrorBoundary key={hash} fallback={(error) => <AppBroken detail={error.message} />}>{screen(hash)}</ErrorBoundary>
+  return (
+    <TooltipProvider>
+      <ErrorBoundary key={boundaryKey} fallback={(error) => <AppBroken detail={error.message} />}>{screen(hash)}</ErrorBoundary>
+      <Toaster />
+    </TooltipProvider>
+  )
 }
 
 function screen(hash: string) {
-  if (hash === "#figures") return <FigureSheet />
+  if (parseHash(hash).kind === "figures") return <FigureSheet />
   if (SERVER) return <ConnectedApp server={SERVER} />
   return (
-    <CommunityProvider community={demo} initialChannelId="questions" initialPanels={[{ kind: "thread", threadId: "t-explodes" }]} now={NOW}>
-      <ChannelScreen />
+    <CommunityProvider community={demo} initialChannelId="questions" now={NOW}>
+      <WorkspaceShell />
     </CommunityProvider>
   )
 }
@@ -121,8 +130,10 @@ function ConnectedApp({ server }: { server: string }) {
       patchModule={con.patchModule}
       reconcileReport={con.reconcileReport}
       createInvite={con.createInvite}
+      workspace={con.workspace}
+      typing={con.typing}
     >
-      <ChannelScreen />
+      <WorkspaceShell />
     </CommunityProvider>
   )
 }

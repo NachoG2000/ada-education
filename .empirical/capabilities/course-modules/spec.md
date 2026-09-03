@@ -8,13 +8,18 @@ A course is organised in modules. The teacher loads study material per module on
 
 ### Requirement: Modules are part of the community snapshot
 
-The community snapshot carries `modules` (id, index, slug, title, summary, channelId, objectives, difficulty {level: intro|core|advanced, rationale, evidence[], suggestedBy}, status: empty|compiling|ready, materials[], cardIds[]) seeded from `community.json`.
+The snapshot continues to carry modules/materials/difficulty/cards for runners
+and inline conversation artifacts. The visible SPA has no `#modules` route,
+sidebar entry, module sheet, or document-management surface; module channel
+messages and card publications remain readable as conversation content subject
+to channel authorization.
 
-#### Scenario: Seeded modules
+#### Scenario: Old modules hash is retired
 
-- GIVEN the seed `data/neural-networks-2026/community.json` lists modules 01-perceptron, 02-mlp and 03-backprop
-- WHEN a client calls `GET /api/community`
-- THEN the response has three modules, each linked to an existing channel, with status `ready` and at least two `cardIds` that resolve to cards in the snapshot.
+- GIVEN Martin opens a saved `#modules` URL
+- WHEN the new SPA resolves the hash
+- THEN it replaces the destination with Inbox, exposes no module page or upload
+  UI, and the existing module/card data remains intact through API and runner checks.
 
 ### Requirement: Teacher uploads material to a module
 

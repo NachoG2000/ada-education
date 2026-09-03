@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "id": "collected-36e27528b9e809288e7af9fa",
+  "criteria": [
+    "AC-19",
+    "AC-3",
+    "AC-4",
+    "AC-5",
+    "AC-6",
+    "AC-7",
+    "AC-8",
+    "AC-UI-1",
+    "AC-UI-10",
+    "AC-UI-11",
+    "AC-UI-2",
+    "AC-UI-3",
+    "AC-UI-4",
+    "AC-UI-5",
+    "AC-UI-6",
+    "AC-UI-7",
+    "AC-UI-8",
+    "AC-UI-9"
+  ],
+  "evidenceKinds": [
+    "browser",
+    "review",
+    "screenshot"
+  ],
+  "summary": "Connected desktop/mobile, gated claim/invite/student flow, final 1440×900 and 375×812 screenshots, and independent code/security plus UI/accessibility review repairs.",
+  "passed": true,
+  "startedAt": "2026-08-24T05:28:55.528Z",
+  "completedAt": "2026-08-24T05:28:55.528Z",
+  "provenance": {
+    "repositoryId": "sha256:5ec6f3c476f2e40bbacdcf2c39af35f7b9a3ba3e39dcaea1b038f04ae0131813",
+    "feature": "buzz-parity-ui",
+    "specRevision": 2,
+    "specDigest": "sha256:b7ae1d05620d052fab29ac486d45a49f3ea0585f006f38248fff5d80f45ebd4c",
+    "treeDigest": "sha256:ffc195178217d053a09048784555b95fcaa0b8e346627350bc59b59f8677e852",
+    "policyDigest": "sha256:725b41010bb74fbfe3699ceab9ee6fbfd1e77c16cda9c20f6e2cbb5ebd5b4315"
+  },
+  "digest": "sha256:f5e98c3a59ff12abb592d8327c2dd5841c1305b70c9713a660b70f0ae834ba37",
+  "kind": "collected",
+  "collector": "Codex connected-browser verification plus two independent Luna reviews",
+  "artifacts": [
+    {
+      "path": ".empirical/specs/buzz-parity-ui/evidence/browser-review.md",
+      "mediaType": "text/markdown",
+      "bytes": 7250,
+      "digest": "sha256:11d75ef7b0717182ae600e7c85e3c73e39a0682a5d04806082ffb52433f1b334"
+    },
+    {
+      "path": ".empirical/specs/buzz-parity-ui/evidence/code-security-review.md",
+      "mediaType": "text/markdown",
+      "bytes": 1839,
+      "digest": "sha256:9222778bd70035e30c99dc5aefdcb39072deab9b37b2ae19fb50a8cfa0c3eb83"
+    },
+    {
+      "path": ".empirical/specs/buzz-parity-ui/evidence/final-connected-desktop.jpg",
+      "mediaType": "image/jpeg",
+      "bytes": 109390,
+      "digest": "sha256:bc0bb441e8bba4dcc05d6b7c18fbd9582905ac33ac87ef20e4bf8733dca6cbc9"
+    },
+    {
+      "path": ".empirical/specs/buzz-parity-ui/evidence/final-connected-mobile.jpg",
+      "mediaType": "image/jpeg",
+      "bytes": 48187,
+      "digest": "sha256:76fa1a2d8b84d4c3bb7560f1f2c7762a006082a572b8d10ef327c2332f5682bc"
+    },
+    {
+      "path": ".empirical/specs/buzz-parity-ui/evidence/ui-accessibility-review.md",
+      "mediaType": "text/markdown",
+      "bytes": 1496,
+      "digest": "sha256:a41ed6aafca11d573b57c18599b9432d8ccb6f610f30baa3d192c5cc0d4f738e"
+    }
+  ]
+}

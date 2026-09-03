@@ -235,7 +235,7 @@ Don't do: have the server call models "for convenience"; ask for Claude tokens i
 
 **Plan B in concrete terms (this weekend):** `apps/server` (Node 24 + Hono + `node:sqlite` + WS), `packages/runner` (CLI, `claude -p` runtime), `packages/protocol` (types + events), `apps/web` (the current SPA), `data/<course>/` (wiki). All local on one laptop. Details in the OpenSpec change.
 
-## 15. Scope pivot: a custom build for one specific teacher (08/22, afternoon — superseded by §19)
+## 15. Scope pivot: a custom build for one specific teacher (08/22, afternoon — superseded by §19, and by §21 for UI/configuration)
 
 Mentor's advice, adopted: *"I'd rather have a narrow system — like a custom build for one particular teacher, running on their machine — than a complete, scalable one."*
 
@@ -284,7 +284,7 @@ What changed with this decision:
 
 The repo rule lives in `AGENTS.md` ("Language"). Fixed English terminology in `PRODUCT.md`.
 
-## 18. Modules, study material, feedback and agent reports for the teacher/student demo (08/23, early morning)
+## 18. Modules, study material, feedback and agent reports for the teacher/student demo (08/23, early morning — visible pages superseded by §21)
 
 Request by Ignacio for the demo flow: the teacher loads modules and study material on a dedicated page with a difficulty adapted to the course and its students; the student sees the agent's feedback on the last assignment, learns the module that slipped and asks the agent how to get ahead; the agent tells the teacher what it advised; the teacher reconciles it into the subject. Everything mocked, but "the agent really answers and it doesn't feel hardcoded". Contract, design, plan and decisions: `.empirical/specs/build-the-hackathon-demo-flow-for-ada-one-teacher-fully/`.
 
@@ -352,3 +352,50 @@ token-derived authorship under the gating flag; `member.joined` in the
 protocol; the runner's material sync; `deploy/` (Dockerfiles, entrypoints,
 runbook); `npm run check:gated` covering all of it. Publishing the template in
 Railway's dashboard is a manual step in `deploy/README.md`.
+
+## 21. Buzz desktop as the SPA interaction reference; chat and configuration first (08/24)
+
+Decided by Ignacio after cloning and mapping Buzz at commit
+`0720f5380ce8a6c050afac159f8462c06cd51ab5`. The source-backed inventory is
+`research/2026-08-23-buzz-ui-map.md`; the implementation contract, design and
+plan are `.empirical/specs/buzz-parity-ui/`.
+
+1. **Buzz is the visible UI and interaction reference, not Ada's backend.** The
+   SPA reproduces Buzz's fixed gradient frame, compact top chrome, collapsible
+   sidebar, rounded content surface, channel timeline/composer, thread panel,
+   command palette, channel management, Agents catalog and Settings density.
+   §14 is unchanged: Ada keeps its TypeScript server, SQLite, shared protocol,
+   agent folders and external runners. No Rust/Tauri, Nostr identity/relays,
+   repository runtime or provider credential code is imported from Buzz.
+2. **The visible product is chat and configuration first.** The routes in this
+   phase are Inbox, channels, Agents and scoped Settings. The dedicated
+   **Modules**, **My study** and standalone **Card File/document** pages from §18
+   leave the navigation and routing. Module, feedback, report and card data stay
+   in the server/runner knowledge pipeline and may appear as inline conversation
+   publications or citations; history is not deleted.
+3. **Channels and agents are created and configured from the UI.** This
+   supersedes §15's configuration-file-only limitation. Channel group,
+   visibility, membership, agent assignment, work state and archive lifecycle
+   persist in SQLite. Agent identity, scope, instructions, runtime/model label,
+   figure, assignments and status persist in SQLite; creation/rotation yields an
+   Ada runner token/setup command, while provider access remains only in the
+   external runner's environment (§14, §20).
+4. **Deletion never wins over course history.** A non-empty channel is archived,
+   not cascade-deleted. An agent with authored history is deactivated, not
+   erased. Private channels are filtered by the server across snapshot, REST,
+   search, attachment access and WS delivery; hiding them only in React is not
+   sufficient.
+5. **Scope boundaries are explicit.** Buzz Canvas/documents, Pulse, Projects and
+   repositories, Workflows, Reminders, huddles/voice, Nostr onboarding, hosted
+   community administration and agent-harness/provider-key configuration stay
+   out. Ada also does not add grading, broad permissions, billing, SSO,
+   notifications, multi-course tenancy, vector search or personalization.
+6. **Connected mode is the working product.** The default local/deployed SPA
+   performs real REST/WS/SQLite mutations. `npm run dev:demo` remains a clearly
+   labelled read-only synthetic preview rather than growing a second fake CRUD
+   implementation.
+
+This section supersedes only the UI/page and static-configuration parts of
+§§15/18. It does not reopen the memory model, agent name, `fromCard` semantics,
+local server/runner topology, open-source direction or Railway deployment
+decisions.

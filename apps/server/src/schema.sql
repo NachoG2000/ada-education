@@ -4,7 +4,8 @@ CREATE TABLE IF NOT EXISTS community (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
   subtitle TEXT NOT NULL,
-  initial TEXT NOT NULL
+  initial TEXT NOT NULL,
+  updated_at TEXT NOT NULL DEFAULT '1970-01-01T00:00:00.000Z'
 );
 
 CREATE TABLE IF NOT EXISTS members (
@@ -23,7 +24,12 @@ CREATE TABLE IF NOT EXISTS members (
   provider_model TEXT,
   runtime TEXT,
   model TEXT,
-  token TEXT UNIQUE
+  token TEXT UNIQUE,
+  description TEXT,
+  status TEXT NOT NULL DEFAULT 'active',
+  created_at TEXT NOT NULL DEFAULT '1970-01-01T00:00:00.000Z',
+  updated_at TEXT NOT NULL DEFAULT '1970-01-01T00:00:00.000Z',
+  inactive_at TEXT
 );
 
 CREATE TABLE IF NOT EXISTS channels (
@@ -34,7 +40,13 @@ CREATE TABLE IF NOT EXISTS channels (
   member_count INTEGER,
   work_status TEXT,
   work_due TEXT,
-  unread INTEGER NOT NULL DEFAULT 0
+  unread INTEGER NOT NULL DEFAULT 0,
+  visibility TEXT NOT NULL DEFAULT 'open',
+  status TEXT NOT NULL DEFAULT 'active',
+  created_by TEXT,
+  created_at TEXT NOT NULL DEFAULT '1970-01-01T00:00:00.000Z',
+  updated_at TEXT NOT NULL DEFAULT '1970-01-01T00:00:00.000Z',
+  archived_at TEXT
 );
 
 CREATE TABLE IF NOT EXISTS channel_members (
@@ -52,11 +64,53 @@ CREATE TABLE IF NOT EXISTS messages (
   thread_id TEXT,
   from_card TEXT,
   publishes TEXT,
-  reactions TEXT
+  reactions TEXT,
+  client_id TEXT,
+  edited_at TEXT,
+  deleted_at TEXT,
+  deleted_by TEXT
 );
 
 CREATE INDEX IF NOT EXISTS messages_channel_at ON messages(channel_id, at);
 CREATE INDEX IF NOT EXISTS messages_thread_at ON messages(thread_id, at);
+CREATE UNIQUE INDEX IF NOT EXISTS messages_author_client
+  ON messages(author_id, client_id) WHERE client_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS messages_channel_lifecycle ON messages(channel_id, deleted_at, edited_at, at);
+
+CREATE TABLE IF NOT EXISTS message_reactions (
+  message_id TEXT NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
+  member_id TEXT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+  emoji TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (message_id, member_id, emoji)
+);
+
+CREATE INDEX IF NOT EXISTS message_reactions_message ON message_reactions(message_id, created_at);
+
+CREATE TABLE IF NOT EXISTS attachments (
+  id TEXT PRIMARY KEY,
+  channel_id TEXT NOT NULL REFERENCES channels(id),
+  uploader_id TEXT NOT NULL REFERENCES members(id),
+  message_id TEXT REFERENCES messages(id) ON DELETE SET NULL,
+  name TEXT NOT NULL,
+  mime TEXT NOT NULL,
+  size INTEGER NOT NULL,
+  storage_path TEXT NOT NULL UNIQUE,
+  created_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS attachments_message ON attachments(message_id, created_at);
+CREATE INDEX IF NOT EXISTS attachments_channel ON attachments(channel_id, created_at);
+
+CREATE TABLE IF NOT EXISTS channel_reads (
+  channel_id TEXT NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
+  member_id TEXT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+  last_read_at TEXT NOT NULL,
+  PRIMARY KEY (channel_id, member_id)
+);
+
+CREATE INDEX IF NOT EXISTS channels_lifecycle ON channels(group_name, visibility, status);
+CREATE INDEX IF NOT EXISTS members_agent_status ON members(kind, status);
 
 CREATE TABLE IF NOT EXISTS threads (
   id TEXT PRIMARY KEY,

@@ -19,11 +19,23 @@
         ],
         "cwd": ".",
         "timeoutMs": 300000,
+        "maxOutputBytes": 262144,
         "evidenceKinds": [
           "test"
         ],
         "criteria": [
-          "AC-11"
+          "AC-UI-1",
+          "AC-UI-2",
+          "AC-UI-3",
+          "AC-UI-4",
+          "AC-UI-5",
+          "AC-UI-6",
+          "AC-UI-7",
+          "AC-UI-8",
+          "AC-UI-9",
+          "AC-UI-10",
+          "AC-UI-11",
+          "AC-19"
         ]
       },
       {
@@ -37,11 +49,40 @@
         ],
         "cwd": ".",
         "timeoutMs": 300000,
+        "maxOutputBytes": 262144,
         "evidenceKinds": [
           "test"
         ],
         "criteria": [
-          "AC-11"
+          "AC-2",
+          "AC-8",
+          "AC-19"
+        ]
+      },
+      {
+        "id": "check-workspace",
+        "argv": [
+          "npm",
+          "run",
+          "check:workspace",
+          "-w",
+          "@ada/server"
+        ],
+        "cwd": ".",
+        "timeoutMs": 300000,
+        "maxOutputBytes": 262144,
+        "evidenceKinds": [
+          "test"
+        ],
+        "criteria": [
+          "AC-2",
+          "AC-3",
+          "AC-4",
+          "AC-5",
+          "AC-6",
+          "AC-7",
+          "AC-8",
+          "AC-19"
         ]
       },
       {
@@ -55,11 +96,14 @@
         ],
         "cwd": ".",
         "timeoutMs": 300000,
+        "maxOutputBytes": 262144,
         "evidenceKinds": [
           "test"
         ],
         "criteria": [
-          "AC-11"
+          "AC-4",
+          "AC-8",
+          "AC-19"
         ]
       },
       {
@@ -73,11 +117,13 @@
         ],
         "cwd": ".",
         "timeoutMs": 300000,
+        "maxOutputBytes": 262144,
         "evidenceKinds": [
           "test"
         ],
         "criteria": [
-          "AC-11"
+          "AC-2",
+          "AC-19"
         ]
       },
       {
@@ -91,11 +137,14 @@
         ],
         "cwd": ".",
         "timeoutMs": 300000,
+        "maxOutputBytes": 262144,
         "evidenceKinds": [
           "test"
         ],
         "criteria": [
-          "AC-11"
+          "AC-4",
+          "AC-8",
+          "AC-19"
         ]
       },
       {
@@ -107,11 +156,12 @@
         ],
         "cwd": ".",
         "timeoutMs": 300000,
+        "maxOutputBytes": 262144,
         "evidenceKinds": [
           "test"
         ],
         "criteria": [
-          "AC-11"
+          "AC-19"
         ]
       },
       {
@@ -123,12 +173,14 @@
         ],
         "cwd": ".",
         "timeoutMs": 600000,
+        "maxOutputBytes": 262144,
         "evidenceKinds": [
           "test"
         ],
         "criteria": [
-          "AC-2",
-          "AC-11"
+          "AC-UI-1",
+          "AC-UI-2",
+          "AC-19"
         ]
       },
       {
@@ -140,11 +192,14 @@
         ],
         "cwd": ".",
         "timeoutMs": 600000,
+        "maxOutputBytes": 262144,
         "evidenceKinds": [
           "test"
         ],
         "criteria": [
-          "AC-11"
+          "AC-5",
+          "AC-8",
+          "AC-19"
         ]
       },
       {
@@ -158,11 +213,13 @@
         ],
         "cwd": ".",
         "timeoutMs": 300000,
+        "maxOutputBytes": 262144,
         "evidenceKinds": [
           "test"
         ],
         "criteria": [
-          "AC-11"
+          "AC-8",
+          "AC-19"
         ]
       },
       {
@@ -173,12 +230,13 @@
         ],
         "cwd": ".",
         "timeoutMs": 60000,
+        "maxOutputBytes": 262144,
         "evidenceKinds": [
           "test"
         ],
         "criteria": [
           "AC-1",
-          "AC-10"
+          "AC-19"
         ]
       },
       {
@@ -192,6 +250,7 @@
         ],
         "cwd": ".",
         "timeoutMs": 300000,
+        "maxOutputBytes": 262144,
         "evidenceKinds": [
           "test"
         ],
@@ -201,9 +260,9 @@
           "AC-5",
           "AC-6",
           "AC-7",
-          "AC-11",
-          "AC-UI-1",
-          "AC-UI-2"
+          "AC-8",
+          "AC-UI-11",
+          "AC-19"
         ]
       },
       {
@@ -215,6 +274,7 @@
         ],
         "cwd": ".",
         "timeoutMs": 600000,
+        "maxOutputBytes": 262144,
         "evidenceKinds": [
           "test"
         ],

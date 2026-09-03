@@ -1,7 +1,7 @@
 /* Shared harness for the check scripts in this folder: a pass/fail collector,
    a spawn-and-wait wrapper for tsx scripts, and a poll-until helper. */
 
-import { spawn, type StdioOptions } from "node:child_process"
+import { spawn, type ChildProcess, type StdioOptions } from "node:child_process"
 import { resolve } from "node:path"
 import { repoRoot } from "../src/db.js"
 
@@ -29,6 +29,27 @@ export function runTsx(args: string[], env: NodeJS.ProcessEnv, stdio: StdioOptio
     const child = spawn(tsxBin, args, { cwd: repoRoot, env, stdio })
     child.on("close", (code) => resolvePromise(code ?? 1))
     child.on("error", () => resolvePromise(1))
+  })
+}
+
+/** Ask a spawned check process to stop and wait until all of its file handles
+    are closed before a throwaway course directory is removed. */
+export async function stopChild(child: ChildProcess | undefined): Promise<void> {
+  if (!child || child.exitCode !== null || child.signalCode !== null) return
+  await new Promise<void>((resolvePromise) => {
+    let settled = false
+    const finish = () => {
+      if (settled) return
+      settled = true
+      clearTimeout(forceTimer)
+      resolvePromise()
+    }
+    const forceTimer = setTimeout(() => {
+      if (child.exitCode === null && child.signalCode === null) child.kill("SIGKILL")
+    }, 2_000)
+    child.once("close", finish)
+    child.once("error", finish)
+    if (!child.kill("SIGTERM")) finish()
   })
 }
 

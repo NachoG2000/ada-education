@@ -106,8 +106,8 @@ const messages: Message[] = [
     ],
     threadId: "t-batch",
     reactions: [
-      { emoji: "👍", count: 4 },
-      { emoji: "🙏", count: 1 },
+      { emoji: "👍", count: 4, memberIds: ["martin", "sofia", "lucia", "tutor-sofia"] },
+      { emoji: "🙏", count: 1, memberIds: ["sofia"] },
     ],
   },
   {

@@ -21,7 +21,7 @@ import { join, resolve } from "node:path"
 import { WebSocket } from "ws"
 import type { CommunitySnapshot, Module } from "@ada/protocol"
 import { repoRoot } from "../src/db.js"
-import { makeHarness, runTsx, serverUp, tsxBin, until } from "./lib.js"
+import { makeHarness, runTsx, serverUp, stopChild, tsxBin, until } from "./lib.js"
 
 // 8799 is smoke's, 8798 is the e2e flow's: a distinct port so the three can run back to back (or at once).
 const port = Number(process.env.GATED_PORT ?? "8797")
@@ -120,7 +120,9 @@ async function main(): Promise<void> {
     const nina = (await snapshotAs(rotatedTeacherToken)).members.find((m) => m.id === "nina-torres")
     check(nina?.kind === "person" && nina.role === "student", "the new member is a student in the snapshot")
     check((await snapshotAs(ninaToken)).channels.some((c) => c.id === "questions" && c.memberIds.includes("nina-torres")), "the new student is in the open channels")
-    check(!(await snapshotAs(ninaToken)).channels.find((c) => c.id === "teachers")?.memberIds.includes("nina-torres"), "the new student is NOT in #teachers")
+    const ninaSnapshot = await snapshotAs(ninaToken)
+    check(!ninaSnapshot.channels.some((c) => c.id === "teachers"), "the new student cannot see #teachers")
+    check(!ninaSnapshot.messages.some((message) => message.channelId === "teachers"), "the new student cannot see #teachers messages")
     await until("member.joined over WS", async () =>
       events.some((e) => e.type === "member.joined" && (e.payload as { member?: { id?: string } } | undefined)?.member?.id === "nina-torres") ? true : undefined)
     check(true, "member.joined reached the authenticated WS")
@@ -152,8 +154,7 @@ async function main(): Promise<void> {
 
     ws.close()
   } finally {
-    runner?.kill("SIGTERM")
-    server?.kill("SIGTERM")
+    await Promise.all([stopChild(runner), stopChild(server)])
     rmSync(scratch, { recursive: true, force: true })
   }
   if (failures.length) {

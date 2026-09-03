@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "id": "executed-00c11f424c5dea53dfb346a3",
+  "criteria": [
+    "AC-19",
+    "AC-3",
+    "AC-4",
+    "AC-5",
+    "AC-6",
+    "AC-7",
+    "AC-8",
+    "AC-UI-11"
+  ],
+  "evidenceKinds": [
+    "test"
+  ],
+  "summary": "Gated membership and remote-runner flow passes.",
+  "passed": true,
+  "startedAt": "2026-08-24T05:28:31.785Z",
+  "completedAt": "2026-08-24T05:28:36.654Z",
+  "provenance": {
+    "repositoryId": "sha256:5ec6f3c476f2e40bbacdcf2c39af35f7b9a3ba3e39dcaea1b038f04ae0131813",
+    "feature": "buzz-parity-ui",
+    "specRevision": 2,
+    "specDigest": "sha256:b7ae1d05620d052fab29ac486d45a49f3ea0585f006f38248fff5d80f45ebd4c",
+    "treeDigest": "sha256:ffc195178217d053a09048784555b95fcaa0b8e346627350bc59b59f8677e852",
+    "policyDigest": "sha256:725b41010bb74fbfe3699ceab9ee6fbfd1e77c16cda9c20f6e2cbb5ebd5b4315"
+  },
+  "digest": "sha256:ad75c18561db5b49503307e73d58e3ce851ca7345f9b9912ef883bea9b9b2bd6",
+  "kind": "executed",
+  "command": {
+    "argv": [
+      "npm",
+      "run",
+      "check:gated",
+      "-w",
+      "@ada/server"
+    ],
+    "cwd": ".",
+    "timeoutMs": 300000,
+    "maxOutputBytes": 262144,
+    "environmentKeys": [
+      "PATH",
+      "TMPDIR"
+    ]
+  },
+  "result": {
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "stdoutDigest": "sha256:e204af188522d5d2e595490c0038e0d3bddefea853ee0a7de1c30bc4303eb809",
+    "stderrDigest": "sha256:0e373b34b741e4c3e257d6b759640b98866e3896dbee5bec972fab0687ff0d9b",
+    "stdoutTail": "\n> @ada/server@0.0.0 check:gated\n> tsx scripts/gated-check.ts\n\nok  GET /health answers without auth\nok  GET /api/course shows only the course's public face\nok  GET /api/community without a token is 401 and leaks nothing\nok  claim with a wrong owner token is 401\nok  claim binds the course's teacher and mints a person token\nok  re-claim rotates the teacher token without duplicating people\nok  the pre-rotation token stops working\nok  the teacher's token reads the community\nok  the rotated agent token reads the community (runner snapshot fetch)\nok  /ws without a token closes 4401\nok  /ws with the teacher's token stays open\nok  teacher mints a single-use invite\nok  an invite plus a name becomes a student\nok  a used invite is 410\nok  a student can't mint invites\nok  the new member is a student in the snapshot\nok  the new student is in the open channels\nok  the new student cannot see #teachers\nok  the new student cannot see #teachers messages\nok  member.joined reached the authenticated WS\nok  writing without a token is 401\nok  writing as someone else is 403\nok  writing as yourself lands\nok  teacher uploads material with their token\nok  ingest published cards from a runner that doesn't share the server's disk\nok  the runner synced the material into its own raw/\n\nGated flow OK\n",
+    "stderrTail": "(node:71442) ExperimentalWarning: SQLite is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:71445) ExperimentalWarning: SQLite is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:71448) ExperimentalWarning: SQLite is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n",
+    "stdoutTruncated": false,
+    "stderrTruncated": false
+  }
+}

@@ -28,14 +28,17 @@ The module list on `#home` marks every module named in a feedback gap as "slippe
 
 ### Requirement: Ask the agent for a plan
 
-The student page embeds the private channel between the student and Ada (`sofia-ada`), with its seeded history, a composer bound to that channel, and a suggested question chip. Sending a message that names a module triggers the runner's `plan` intent.
+Students ask agents in their authorized private/course channels using the same
+composer, mention, runner, card citation, and report pipeline as other chat.
+There is no embedded `#home` study dashboard, feedback page, module list, or
+suggested-question page in this phase.
 
-#### Scenario: Press Enter on the suggested question
+#### Scenario: Old study hash is retired
 
-- GIVEN the scripted runner is connected
-- WHEN Sofia presses the chip "How do I get ahead in 03-backprop?" and Enter
-- THEN her message appears, Ada shows "thinking", and within 6 s a plan arrives that names her feedback gap, lists prioritized steps, cites at least two cards of 03-backprop, and ends with "Ada shared a summary of this plan with Martin"
-- AND after reloading the page the plan is still there.
+- GIVEN Sofia opens a saved `#home` URL
+- WHEN the new SPA resolves the hash
+- THEN it replaces the destination with Inbox, where her authorized private
+  conversation remains available, and no feedback/study document page renders.
 
 ### Requirement: Study page is student-only
 

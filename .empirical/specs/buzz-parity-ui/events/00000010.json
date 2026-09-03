@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "sequence": 10,
+  "previousDigest": "sha256:e61cb957383e5c009281487d40c1c66dd970dcb66fec14e9f0c86aaa111c2912",
+  "actor": "empirical-integrate",
+  "type": "compaction-boundary",
+  "summary": "Compacted through journal event 9",
+  "createdAt": "2026-09-03T14:06:43.041Z",
+  "stateBeforeDigest": "sha256:7f1d8387e387a469d99e708ba36d616f91e8d7b2eb95e5851656f6b9907820ea",
+  "stateAfterDigest": "sha256:7f1d8387e387a469d99e708ba36d616f91e8d7b2eb95e5851656f6b9907820ea",
+  "state": {
+    "schemaVersion": 5,
+    "revision": 9,
+    "activeFeature": "buzz-parity-ui",
+    "request": "Rebuild Ada's visible SPA as a faithful educational adaptation of Buzz desktop at commit 0720f5380ce8a6c050afac159f8462c06cd51ab5, using research/2026-08-23-buzz-ui-map.md as the complete source inventory and keeping Ada's existing local TypeScript server/SQLite/runner architecture (do not import Buzz's Rust, Nostr, relay, repo, or runtime architecture). The delivered product must be a complete working chat/configuration surface, not a static mockup.\n\nVisual and navigation scope: reproduce Buzz's fixed full-viewport gradient frame, compact top chrome, ~300px collapsible sidebar, rounded inset content surface, typography/density, active/hover/focus states, responsive mobile drawer, history back/forward, keyboard shortcuts, loading/error/empty states, and light/dark/system appearance. Routes remain hash-driven (no router dependency): inbox/activity, channels, agents, and settings. Remove the visible Modules, My study, and dedicated Card File/document surfaces from Ada's navigation and routing for this phase. Also omit Buzz Canvas/docs, Pulse, Projects/repos, Workflows, huddles, and Nostr-specific onboarding. Existing cards and modules remain persisted backend knowledge for agents and may still appear as inline chat publication/citation content, but are not standalone user pages.\n\nChat scope: working channel timeline and thread panel, day/unread separators, people/agent identities, message composer with @mentions, reply/thread context, markdown/code affordances, attachment selection and display, optimistic/pending/error/retry states, message edit/delete, emoji reactions, draft persistence per channel/thread, search/command palette, and live updates. Adapt Buzz's labels and content to cohort-based education, using channels grouped as Course, Work, and Private.\n\nChannel scope: working create, edit/configure, archive/unarchive, and delete flows backed by the local API and SQLite. Configuration includes name, description, Course/Work/Private group, open/private visibility, member membership, assigned agents, work status/due date when relevant, confirmation and server errors. Deleting non-empty channels must be refused safely with an archive recommendation rather than cascading historical learning data.\n\nAgent scope: working Agents catalog plus create/edit/configure/remove flows backed by the local API and SQLite. Configuration includes name, description, system instructions, community/personal scope, runtime (scripted/claude), optional model label, channel assignments, deterministic figure reroll, presence/status, and a generated agent token/setup command. Provider credentials never enter the Ada server; the runner remains external and uses its own environment. Removing an agent with authored history must be refused safely; inactive/archive behavior should preserve history.\n\nSettings scope: course/profile, appearance, agent runner setup, invites, and keyboard shortcuts only. Do not invent grading, broad permissions, billing, SSO, notifications, multi-course, or personalization. Membership gating and owner/invite behavior from the existing Railway feature must remain functional.\n\nArchitecture and quality: extend packages/protocol, apps/server DB/API/events, and apps/web through normal typed APIs and explicit SQLite migrations; update AGENTS.md files and DECISIONS.md with a new dated decision that supersedes only the old custom UI/page constraints, not the local server/runner decision. Preserve English-only content and Ada's human/agent identity rules. Use existing shadcn/Base UI primitives where appropriate, follow the Impeccable craft floor and React performance guidance, avoid hacks. Verify with typecheck, lint (no new warnings), build, server/runner checks, smoke/gated/e2e checks, targeted CRUD/chat tests, and browser screenshots at desktop and narrow widths, followed by an independent UI/code review.",
+    "profile": "complex",
+    "workflow": "complex",
+    "mode": "normal",
+    "phase": "done",
+    "status": "done",
+    "repairAttempts": 0,
+    "message": "Integrated capability changes: agent-management, app-settings, channel-management, chat-workspace, course-membership, course-modules, student-study",
+    "implementationActor": "agent",
+    "specDigest": "sha256:b7ae1d05620d052fab29ac486d45a49f3ea0585f006f38248fff5d80f45ebd4c",
+    "approvedSpecRevision": 2,
+    "capabilityArchiveRequired": true,
+    "capabilityDeltaDigest": "sha256:2a159e319279a033dc4e59e23918b2f6ea1b26ae7fcaff317ebcf46f605b7add",
+    "impactDigest": "sha256:f98c5ddacad7f1f5a6e6a9eddcda6400a52675ba6c847ad2bc7f0713cfe7fe90",
+    "capabilityClaimId": "buzz-parity-ui-b67fdff41da5",
+    "authorizationDigest": null,
+    "evidence": [],
+    "evidenceReceiptIds": [
+      "executed-2831e9a4c476a56f7090b91c",
+      "executed-00c11f424c5dea53dfb346a3",
+      "executed-eb54ab367a6d0b0482c67624",
+      "executed-0623e752c4eaa875b173d11f",
+      "executed-47cb9c77ea6b372758b773b3",
+      "executed-16375f031cec05e0557e542b",
+      "collected-36e27528b9e809288e7af9fa",
+      "collected-d69ae53b6fa27d8a651540c4"
+    ],
+    "legacyEvidenceCount": 0,
+    "completion": {
+      "implemented": true,
+      "verified": true,
+      "integrated": true,
+      "delivered": false,
+      "published": false,
+      "highest": "integrated",
+      "reasons": {
+        "delivered": "delivered has not been proven by a durable receipt.",
+        "published": "published has not been proven by a durable receipt."
+      }
+    },
+    "updatedAt": "2026-09-03T14:06:43.013Z"
+  },
+  "digest": "sha256:96e6889c318ea816a8b6c53755d9194408bb90e0c8056bbfb8a9968f038bbb9c"
+}

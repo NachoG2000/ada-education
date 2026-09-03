@@ -5,7 +5,7 @@ import { readFileSync, existsSync } from "node:fs"
 
 const checks = [
   ["DECISIONS.md", [/## 18\. Modules, study material, feedback and agent reports .*08\/23/, /scripted/, /transparent to the student/i, /intro · core · advanced/]],
-  ["PRODUCT.md", [/Modules and the two role views/, /Report rule/, /reconcile/, /"My study" \(student view\)/]],
+  ["PRODUCT.md", [/Modules and study data/, /Report rule/, /reconcile/, /"My study" \(student view\)/]],
   ["AGENTS.md", [/scripted runtime by default/, /npm run smoke/, /#modules/]],
   ["apps/web/AGENTS.md", [/#modules/, /#home/]],
   ["apps/server/AGENTS.md", [/modules/, /reports/]],
@@ -28,6 +28,13 @@ const checks = [
   ["apps/server/AGENTS.md", [/ADA_REQUIRE_MEMBERSHIP/, /api\/claim/]],
   ["packages/runner/AGENTS.md", [/materials\b.*raw|raw.*materials/i]],
   ["apps/web/AGENTS.md", [/ada:token/, /join\.tsx/]],
+  // Buzz parity workspace (§21): visible chat/config shell with the old role
+  // pages explicitly retired and the TypeScript server/runner boundary kept.
+  ["DECISIONS.md", [/## 21\. Buzz desktop as the SPA interaction reference/, /Inbox, channels, Agents and scoped Settings/, /No Rust\/Tauri/]],
+  ["AGENTS.md", [/components\/workspace/, /check:workspace/, /#home.*#modules.*Inbox/]],
+  ["PRODUCT.md", [/Current visible product, 2026-08-24/, /chat\/configuration-first workspace/]],
+  ["DESIGN.md", [/Current visible workspace — Buzz frame/, /300px sidebar/, /below 600px/]],
+  ["research/2026-08-24-buzz-parity-implementation.md", [/Base UI/, /Hono/, /AI Elements/]],
 ]
 // The hackathon cover slide lives with the pitch history, not at the root.
 const mustExist = ["pitch/slide1.png"]

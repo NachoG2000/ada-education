@@ -1,6 +1,8 @@
 # Product
 
-> Product document (direction and ideas): describes the complete product, including what doesn't exist yet. **It does not represent the current code.** Actual state: `AGENTS.md` + `openspec/`. Current scope: `DECISIONS.md` §19 (open-source product for course-running organizations; the code today runs fully local).
+> Product document (direction and ideas): describes the complete product, including what doesn't exist yet. **It does not represent the current code.** Actual state: `AGENTS.md` + `.empirical/specs/`. Current scope: `DECISIONS.md` §§19/21 (open-source product for course-running organizations; the code today runs fully local with a chat/configuration-first workspace).
+
+> **Current visible product, 2026-08-24 (`DECISIONS.md` §21):** a responsive, chat/configuration-first workspace adapted from Buzz desktop: Inbox, Course/Work/Private channels, messages and threads, command search, channel management, Agents and scoped Settings. Dedicated Modules, My study and Card File pages are retired from navigation; their persisted knowledge pipeline remains behind inline citations and publication messages. This note supersedes older page/layout/mobile/theme statements below, not the underlying course-memory model.
 
 <!-- impeccable:product-schema 1 -->
 
@@ -8,7 +10,7 @@
 
 web
 
-Web app later packaged as desktop with Tauri (like Buzz and Berd from Block). The wrapper doesn't change the design language: it's designed for web, light theme by default. No mobile version in scope.
+Responsive web app; desktop packaging remains future direction. The same workspace adapts to narrow browsers with a sidebar sheet and overlay thread. Light, dark and system appearance are supported.
 
 ## Users
 
@@ -39,13 +41,13 @@ Demo success: a first-time viewer sees, without explanation, that (1) agents are
 ## Operating Context
 
 - One community per course. Entry via **invitation link**; local identity (name + avatar) with a key generated in the browser, no email signup. Variant: create a community from scratch.
-- Three-column layout: sidebar (community selector; channels grouped into *Course*, *Work*, *Private*; members with people and agents mixed by presence) · channel (strip of channel cards on top, messages below) · right contextual panel (stack: *Thread*, *Card*; extensible to a card tree and history).
+- Buzz-style framed layout: compact top chrome · resizable/collapsible sidebar with Inbox, Agents and channels grouped into *Course*, *Work*, *Private* · rounded content surface · a resizable thread auxiliary panel (overlay on narrow screens). Card provenance stays inline in messages rather than in a standalone Card File page.
 - Stable course channels: `#general`, `#questions`, `#teachers`, one per module (`#01-perceptron`, `#02-mlp`, `#03-backprop`…). Work channels: born from an assignment (e.g. "Assignment 2 · Backprop by Hand") with a base document, due date, and assigned agents.
 - **Card**: a markdown document published in a channel, with title, type (`note` · `assignment` · `decision` · `answer` · `submission`), author (person or agent), version, sources (messages or source files), "replaces" when applicable, and a visibility chip (*channel members* or *only me*). Actions: open in the right panel, edit (if you're the author), publish to another channel, view history. A published card also appears as a message-card in the channel's flow.
 - **Base documents** for a channel: cards or files the professor uploads or selects in channel settings; on save, the channel's agent starts generating cards from them (state "compiling").
 - Agent presence: *online*, *thinking*, *publishing a card*.
 - States the product has to show: agent compiling; card new · updated · superseded; live answer vs. answer from a card; work channel active · submitted · archived; newly created channel with no cards; module empty · compiling · ready; report new · reconciled.
-- **Modules and the two role views (`DECISIONS.md` §18).** A **module** is a unit of the course with its own channel, the **material** the teacher uploads, a **difficulty** (intro · core · advanced) the teacher sets with the agent's rationale and cohort evidence, and the cards the agent compiled from the material. The teacher works in **Modules** (`#modules`): upload material, accept or change the suggested difficulty, read the compiled cards and the agent's **reports**. The student works in **My study** (`#home`): the agent's **feedback** on the last assignment (score, what went well, where it slipped and in which module, next steps with citations), the module that slipped with its cards, and the private conversation with the agent where "how do I get ahead in 03-backprop?" returns a prioritized plan built from the module's cards and the student's own feedback.
+- **Modules and study data (`DECISIONS.md` §18, visible pages superseded by §21).** A **module** remains a persisted unit of the course with material, difficulty, compiled cards, feedback and reports. The former teacher `#modules` and student `#home` pages are no longer product routes. Runners and server workflows retain the data, and relevant results can surface as channel messages, citations and card-publication tiles.
 - **Report rule.** After advising a student, the agent files a report to the teacher with *its own* summary and a recommendation for the module — never the student's messages — and the student sees on her screen that a summary was shared. The teacher **reconciles** a report into a `decision` card in the module's channel; the module shows a one-line revision.
 
 ## Capabilities and Constraints
@@ -55,15 +57,15 @@ Demo success: a first-time viewer sees, without explanation, that (1) agents are
 - **Agents:** each agent runs in a **runner** belonging to whoever created it, running the provider's binary unmodified (`claude`, `codex`, `pi`); the credential (subscription or API key) lives with that binary, never in Ada (`DECISIONS.md` §14; rules verified in `research/2026-08-22-subscriptions-runners-buzz-pi.md`). Each agent has a name, avatar, instructions, provider/credential, and list of channels it participates in. There are **community** agents (created by the professor) and **personal** agents (created by a student for their private channel); the difference is a product distinction and must be visible.
 - Agents publish cards using the same mechanism as a person.
 - Fixed terminology (English): community, channel, work channel, thread, card, card type, base document, sources, "replaces", visibility, agent, members, submission, compiling, "from the file", module, material, difficulty (intro · core · advanced), feedback, report, reconcile, "Modules" (teacher view), "My study" (student view), owner token (claims the teacher on a deploy), invite link (single-use, mints a student).
-- **Out of scope (do not design):** permissions screen (the full model isn't defined; only the visibility chip exists), general settings, notifications, global search, mobile, submission grading.
-- Open decisions: name of the course's example agent (in the original brief it was called "Ada," but Ada is the product and agents carry distinct proper names); the full permissions model; dark theme (only if it comes naturally).
+- **Out of scope (do not design):** a broad permissions editor, notifications, grading, billing/SSO, multi-course tenancy, vector/global knowledge search, or a separate mobile app. Workspace search, responsive web layout and scoped Course/Profile, Appearance, Runner, Invite and Shortcut settings are in scope.
+- Open decisions: name of the course's example agent (the seed still says "Ada" pending an explicit rename); the full permissions model.
 
 ## Brand Commitments
 
-- **Name:** Ada (the product). Agents are many and have proper names; none of them is called Ada.
+- **Name:** Ada (the product). Agents are many and carry proper names. The seeded example is still called Ada pending the explicit naming decision recorded in `AGENTS.md`; do not silently rename it.
 - **Family reference:** Buzz and Berd (Block) for structure and for treating agents as members, with Ada's own design system.
 - Visual constraints set by the founder (binding): no "AI app" look (no purple gradients, sparkles, or generic chat bubbles), no crypto look; serious, warm study-tool tone; serif with personality only for titles and card body text, sans for the UI; strong typographic hierarchy, few boxes and borders; cards look like documents and messages look like conversation, and that contrast is part of the design; agents are distinguished by avatar shape or typographic detail, not a badge; light theme by default.
-- Decision from 2026-08-22 (third iteration, current): the visual world is **"The Card File," built on the reference material in `design/inspiration/01`** — a color-washed background, floating white panels with a large radius and soft shadow, folded color tabs by card type, a full yellow as an accent, pastel pills for state. **Colorful and playful, on par with Berd/Buzz**, without an "AI app" look. Agents are **flat procedural characters** (solid silhouette in a bright color, same size, two eyes; `src/lib/figure.ts`): every new agent is born with a unique seed-based variation and can be "rerolled." Quality free typefaces (Inter, Literata, Geist Mono): the founder asked for "more pro without paying." Previously discarded iterations: cardstock cards with a typewriter font and little faces (cheap-looking), a flat sober version (no personality).
+- Decision from 2026-08-24 (`DECISIONS.md` §21): the visible shell follows the pinned Buzz desktop frame and density while preserving Ada's education content and deterministic two-eye agent figures. The 2026-08-22 **Card File** language still governs inline cards/citations and provenance, but its three-floating-panel/card-strip layout is no longer the mounted shell. Inter remains the operating/conversation face; Literata remains for archived card content; Geist Mono remains for code/version text.
 - Tone references: Buzz (structure, agents as members), Linear (density, typography), Obsidian (beautiful markdown).
 
 ## Evidence on Hand

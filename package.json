@@ -18,6 +18,7 @@
     "lint": "oxlint apps packages",
     "typecheck": "tsc -b apps/web",
     "smoke": "npm run smoke -w @ada/server",
+    "check:workspace": "npm run check:workspace -w @ada/server",
     "check:docker": "bash deploy/check-docker.sh"
   },
   "devDependencies": {

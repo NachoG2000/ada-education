@@ -3,6 +3,7 @@ import { dirname, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { randomBytes, randomUUID } from "node:crypto"
 import { DatabaseSync } from "node:sqlite"
+import { LATEST_SCHEMA_VERSION, migrateDatabase } from "./migrations.js"
 import type {
   Agent,
   Assignment,
@@ -29,6 +30,7 @@ import type {
   WorkStatus,
 } from "@ada/protocol"
 import type { CardPublishInput as ProtocolCardPublishInput } from "@ada/protocol"
+import { WorkspaceError } from "./workspace-errors.js"
 
 export type PresenceMap = ReadonlyMap<string, Presence>
 
@@ -72,7 +74,20 @@ export function openDatabase(filePath?: string): DatabaseSync {
   const path = configuredPath === ":memory:" ? configuredPath : resolve(repoRoot, configuredPath)
   mkdirSync(dirname(path), { recursive: true })
   const database = new DatabaseSync(path, { timeout: 5_000 })
-  database.exec(readFileSync(new URL("./schema.sql", import.meta.url), "utf8"))
+  const hasExistingSchema = Boolean(database.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'community'").get())
+  // Legacy tables must be upgraded before the current schema can create
+  // indexes that reference v2 columns. Replaying schema.sql afterwards is
+  // safe because its DDL is CREATE IF NOT EXISTS.
+  database.exec("PRAGMA foreign_keys = ON")
+  if (hasExistingSchema) {
+    migrateDatabase(database)
+    database.exec(readFileSync(new URL("./schema.sql", import.meta.url), "utf8"))
+  } else {
+    database.exec(readFileSync(new URL("./schema.sql", import.meta.url), "utf8"))
+    // schema.sql is the current fresh-database shape. Existing files take the
+    // ordered migration path above; a fresh file starts at that same version.
+    database.exec(`PRAGMA user_version = ${LATEST_SCHEMA_VERSION}`)
+  }
   return database
 }
 
@@ -109,6 +124,8 @@ export interface SeedAgent {
   provider?: Agent["provider"]
   runtime?: string
   model?: string
+  /** Explicit deploy-time override; ordinary seed values never replace a live token. */
+  tokenOverride?: boolean
 }
 
 export function upsertPerson(database: DatabaseSync, person: SeedPerson): void {
@@ -130,10 +147,10 @@ export function upsertAgent(database: DatabaseSync, agent: SeedAgent): void {
       created_by = excluded.created_by, figure_seed = excluded.figure_seed, figure_color = excluded.figure_color,
       instructions = excluded.instructions, provider_mode = excluded.provider_mode,
       provider_model = excluded.provider_model, runtime = excluded.runtime, model = excluded.model,
-      token = excluded.token
+      token = CASE WHEN ? = 1 THEN excluded.token ELSE members.token END
   `).run(agent.id, agent.name, agent.scope, agent.createdBy, agent.figureSeed ?? null,
     agent.figureColor ?? null, agent.instructions, provider.mode, provider.model,
-    agent.runtime ?? null, agent.model ?? provider.model, agent.token)
+    agent.runtime ?? null, agent.model ?? provider.model, agent.token, agent.tokenOverride ? 1 : 0)
   for (const channelId of agent.channelIds) addChannelMember(database, channelId, agent.id)
 }
 
@@ -141,6 +158,7 @@ export interface SeedChannel {
   id: string
   name: string
   group: Channel["group"]
+  visibility?: Channel["visibility"]
   description?: string
   memberIds?: string[]
   memberCount?: number
@@ -149,12 +167,12 @@ export interface SeedChannel {
 
 export function upsertChannel(database: DatabaseSync, channel: SeedChannel): void {
   database.prepare(`
-    INSERT INTO channels (id, name, group_name, description, member_count, work_status, work_due)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO channels (id, name, group_name, visibility, description, member_count, work_status, work_due)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(id) DO UPDATE SET name = excluded.name, group_name = excluded.group_name,
-      description = excluded.description, member_count = excluded.member_count,
+      visibility = excluded.visibility, description = excluded.description, member_count = excluded.member_count,
       work_status = excluded.work_status, work_due = excluded.work_due
-  `).run(channel.id, channel.name, channel.group, channel.description ?? null,
+  `).run(channel.id, channel.name, channel.group, channel.visibility ?? (channel.group === "private" ? "private" : "open"), channel.description ?? null,
     channel.memberCount ?? null, channel.work?.status ?? null, channel.work?.due ?? null)
   for (const memberId of channel.memberIds ?? []) addChannelMember(database, channel.id, memberId)
 }
@@ -287,48 +305,54 @@ export function getInvite(database: DatabaseSync, token: string): Invite | undef
     (the ones every existing person is already in — private channels list
     their members explicitly), and returns the person plus their new token. */
 export function joinWithInvite(database: DatabaseSync, inviteToken: string, name: string): { person: Person; personToken: string } {
-  const invite = getInvite(database, inviteToken)
-  if (!invite) throw new Error("Invite does not exist")
-  if (invite.usedAt) throw new Error("Invite already used")
   const trimmed = name.trim().replace(/\s+/g, " ")
   if (!trimmed) throw new Error("A name is required")
+  database.exec("BEGIN IMMEDIATE")
+  try {
+    // Re-read while holding the write lock: two concurrent joins cannot both
+    // consume the same single-use invite.
+    const invite = getInvite(database, inviteToken)
+    if (!invite) throw new Error("Invite does not exist")
+    if (invite.usedAt) throw new Error("Invite already used")
+    const baseId = trimmed.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "member"
+    let id = baseId
+    for (let n = 2; getMember(database, id); n++) id = `${baseId}-${n}`
+    const parts = trimmed.split(" ")
+    const initials = ((parts[0]?.[0] ?? "") + (parts.length > 1 ? parts[parts.length - 1][0] : parts[0]?.[1] ?? "")).toUpperCase()
+    const tones: Person["tone"][] = ["card", "cardstock", "seal-soft", "red-soft"]
+    const personCount = Number((database.prepare("SELECT COUNT(*) AS n FROM members WHERE kind = 'person'").get() as Row).n ?? 0)
+    const tone = tones[personCount % tones.length]
 
-  const baseId = trimmed.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "member"
-  let id = baseId
-  for (let n = 2; getMember(database, id); n++) id = `${baseId}-${n}`
-  const parts = trimmed.split(" ")
-  const initials = ((parts[0]?.[0] ?? "") + (parts.length > 1 ? parts[parts.length - 1][0] : parts[0]?.[1] ?? "")).toUpperCase()
-  const tones: Person["tone"][] = ["card", "cardstock", "seal-soft", "red-soft"]
-  const personCount = Number((database.prepare("SELECT COUNT(*) AS n FROM members WHERE kind = 'person'").get() as Row).n ?? 0)
-  const tone = tones[personCount % tones.length]
+    upsertPerson(database, { id, name: trimmed, initials, tone, role: invite.role })
+    const personToken = generateToken()
+    setMemberToken(database, id, personToken)
 
-  upsertPerson(database, { id, name: trimmed, initials, tone, role: invite.role })
-  const personToken = generateToken()
-  setMemberToken(database, id, personToken)
+    /* New students join only course channels that already have a student. */
+    const courseChannels = database.prepare("SELECT id FROM channels WHERE group_name = 'course'").all() as Row[]
+    for (const channel of courseChannels) {
+      const channelId = asString(channel.id)
+      if (!channelId) continue
+      const peopleIn = database.prepare(`
+        SELECT members.role AS role FROM channel_members
+        JOIN members ON members.id = channel_members.member_id
+        WHERE channel_members.channel_id = ? AND members.kind = 'person' AND members.id != ?
+      `).all(channelId, id) as Row[]
+      const teachersOnly = peopleIn.length === 0 || peopleIn.every((row) => asString(row.role) === "teacher")
+      if (!teachersOnly) addChannelMember(database, channelId, id)
+    }
 
-  /* Which channels a new student lands in: the `course` group only (work
-     channels belong to an assignment already under way, `private` ones are
-     one-to-one), and never a channel whose people are all teachers — that's
-     what keeps #teachers out even on a course whose only member so far is the
-     teacher. A course with no students yet therefore gives its first student
-     no channels until someone is added by hand; deploy/README.md says so. */
-  const courseChannels = database.prepare("SELECT id FROM channels WHERE group_name = 'course'").all() as Row[]
-  for (const channel of courseChannels) {
-    const channelId = asString(channel.id)
-    if (!channelId) continue
-    const peopleIn = database.prepare(`
-      SELECT members.role AS role FROM channel_members
-      JOIN members ON members.id = channel_members.member_id
-      WHERE channel_members.channel_id = ? AND members.kind = 'person' AND members.id != ?
-    `).all(channelId, id) as Row[]
-    const teachersOnly = peopleIn.length === 0 || peopleIn.every((row) => asString(row.role) === "teacher")
-    if (!teachersOnly) addChannelMember(database, channelId, id)
+    const usedAt = new Date().toISOString()
+    const result = database.prepare("UPDATE invites SET used_by = ?, used_at = ? WHERE token = ? AND used_at IS NULL")
+      .run(id, usedAt, inviteToken) as { changes?: number }
+    if (result.changes !== 1) throw new Error("Invite already used")
+    const person = getMember(database, id)
+    if (person?.kind !== "person") throw new Error("Could not create the person")
+    database.exec("COMMIT")
+    return { person, personToken }
+  } catch (error) {
+    database.exec("ROLLBACK")
+    throw error
   }
-
-  database.prepare("UPDATE invites SET used_by = ?, used_at = ? WHERE token = ?").run(id, new Date().toISOString(), inviteToken)
-  const person = getMember(database, id)
-  if (person?.kind !== "person") throw new Error("Could not create the person")
-  return { person, personToken }
 }
 
 export function listAgentIdsForChannel(database: DatabaseSync, channelId: string): string[] {
@@ -915,6 +939,36 @@ export function reconcileReport(database: DatabaseSync, reportId: string, input:
   return { ...report, status: "reconciled", reconciled }
 }
 
+/** Reconciles a report and its decision card as one commit. Hooks are emitted
+    by the API only after this function returns, so clients never observe the
+    card/module/report halfway through the operation. */
+export function reconcileReportWithCard(
+  database: DatabaseSync,
+  reportId: string,
+  moduleId: string,
+  cardInput: AuthoredCardPublishInput,
+  revision: string,
+  input: Omit<ReconcileInput, "cardId">,
+): { published: PublishedCard; module: Module; report: Report } {
+  database.exec("BEGIN IMMEDIATE")
+  try {
+    const card = upsertCard(database, cardInput)
+    const message = createMessage(database, {
+      channelId: cardInput.channelId,
+      authorId: cardInput.authorId,
+      paragraphs: [[{ kind: "text", text: `Published "${cardInput.title}".` }]],
+      publishes: card.id,
+    })
+    const module = updateModule(database, moduleId, { revision })
+    const report = reconcileReport(database, reportId, { ...input, cardId: card.id })
+    database.exec("COMMIT")
+    return { published: { card, message }, module, report }
+  } catch (error) {
+    database.exec("ROLLBACK")
+    throw error
+  }
+}
+
 export interface UpsertCardOptions {
   /** deterministic id (e.g. `card:<authorId>:<path>`) used only when no row exists yet for (authorId, path) */
   id?: string
@@ -995,10 +1049,14 @@ export function upsertBaseCard(database: DatabaseSync, input: AuthoredCardPublis
 }
 
 export function assertChannelMember(database: DatabaseSync, channelId: string, memberId: string): void {
-  if (!database.prepare("SELECT 1 FROM channels WHERE id = ?").get(channelId)) throw new Error("Channel does not exist")
-  if (!database.prepare("SELECT 1 FROM members WHERE id = ?").get(memberId)) throw new Error("Member does not exist")
+  const channel = database.prepare("SELECT status FROM channels WHERE id = ?").get(channelId) as Row | undefined
+  if (!channel) throw new WorkspaceError("not_found", "Channel does not exist")
+  if (asString(channel.status) === "archived") throw new WorkspaceError("channel_archived", "Channel is archived")
+  const member = database.prepare("SELECT status FROM members WHERE id = ?").get(memberId) as Row | undefined
+  if (!member) throw new WorkspaceError("not_found", "Member does not exist")
+  if (asString(member.status) === "inactive") throw new WorkspaceError("forbidden", "Member is inactive")
   if (!database.prepare("SELECT 1 FROM channel_members WHERE channel_id = ? AND member_id = ?").get(channelId, memberId)) {
-    throw new Error("Member does not belong to the channel")
+    throw new WorkspaceError("not_channel_member", "Member does not belong to the channel")
   }
 }
 

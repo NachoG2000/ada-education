@@ -14,6 +14,34 @@ export type WorkStatus = "active" | "submitted" | "archived"
 
 export type Presence = "online" | "away" | "thinking" | "publishing"
 
+/** Visibility and lifecycle for chat channels. These are separate from the
+    Card visibility above: cards keep their existing `channel | only-me`
+    contract, while channels are either open or private and may be archived. */
+export type ChannelVisibility = "open" | "private"
+export type ChannelStatus = "active" | "archived"
+export type AgentStatus = "active" | "inactive"
+/** Known runner values plus a compatibility escape hatch for existing seeded
+    rows, which historically stored an arbitrary runtime label. New API input
+    schemas remain strict and accept only the two supported runtimes. */
+export type AgentRuntime = "scripted" | "claude" | (string & {})
+
+/** Stable JSON error codes shared by REST clients and server handlers. */
+export type ApiErrorCode =
+  | "invalid_input"
+  | "unauthorized"
+  | "forbidden"
+  | "not_found"
+  | "not_channel_member"
+  | "channel_archived"
+  | "conflict"
+  | "history_conflict"
+
+export interface ApiError {
+  error: string
+  code: ApiErrorCode
+  field?: string
+}
+
 export interface Person {
   kind: "person"
   id: string
@@ -40,6 +68,15 @@ export interface Agent {
   provider: { mode: "subscription" | "api-key"; model: string }
   channelIds: string[]
   presence: Presence
+  description?: string
+  /** Existing seeded rows may contain arbitrary runtime labels; new API input
+      schemas restrict values to AgentRuntime. */
+  runtime?: string
+  model?: string
+  status?: AgentStatus
+  createdAt?: string
+  updatedAt?: string
+  inactiveAt?: string
 }
 
 export type Member = Person | Agent
@@ -70,6 +107,23 @@ export interface Citation {
   section?: string
 }
 
+export interface Attachment {
+  id: string
+  channelId: string
+  uploaderId: string
+  name: string
+  mime: string
+  size: number
+  createdAt: string
+  messageId?: string
+}
+
+export interface MessageReaction {
+  emoji: string
+  count: number
+  memberIds: string[]
+}
+
 export type MessageBlock =
   | { kind: "text"; text: string }
   | { kind: "cite"; text: string; cite: Citation }
@@ -87,7 +141,11 @@ export interface Message {
   fromCard?: { cardId: string; ago: string }
   /** the message is a card's publication post */
   publishes?: string
-  reactions?: Array<{ emoji: string; count: number }>
+  clientId?: string
+  editedAt?: string
+  deletedAt?: string
+  attachments?: Attachment[]
+  reactions?: MessageReaction[]
 }
 
 export interface Thread {
@@ -102,12 +160,121 @@ export interface Channel {
   id: string
   name: string
   group: "course" | "work" | "private"
+  visibility?: ChannelVisibility
+  status?: ChannelStatus
+  createdBy?: string
+  createdAt?: string
+  updatedAt?: string
+  archivedAt?: string
   description?: string
   memberIds: string[]
   /** real total when the id list is partial (demo) */
   memberCount?: number
   work?: { status: WorkStatus; due?: string }
   unread?: boolean
+}
+
+export interface WorkChannelInput {
+  status?: WorkStatus
+  due?: string
+}
+
+export interface CreateChannelInput {
+  name: string
+  description?: string
+  group: Channel["group"]
+  visibility: ChannelVisibility
+  memberIds?: string[]
+  agentIds?: string[]
+  work?: WorkChannelInput
+}
+
+export interface UpdateChannelInput {
+  name?: string
+  description?: string | null
+  group?: Channel["group"]
+  visibility?: ChannelVisibility
+  status?: ChannelStatus
+  work?: WorkChannelInput | null
+}
+
+export interface ReplaceChannelMembersInput {
+  memberIds: string[]
+  agentIds: string[]
+}
+
+export interface CreateAgentInput {
+  name: string
+  description?: string
+  instructions: string
+  scope: Agent["scope"]
+  runtime: AgentRuntime
+  model?: string
+  figureSeed?: string
+  figureColor?: FigureColorName
+  channelIds: string[]
+}
+
+export interface UpdateAgentInput {
+  name?: string
+  description?: string
+  instructions?: string
+  scope?: Agent["scope"]
+  runtime?: AgentRuntime
+  model?: string
+  figureSeed?: string
+  figureColor?: FigureColorName
+  channelIds?: string[]
+  status?: AgentStatus
+}
+
+export interface AgentEnrollment {
+  runnerToken: string
+  setupCommand: string
+}
+
+export interface AgentCreateResult {
+  agent: Agent
+  enrollment: AgentEnrollment
+}
+
+export interface AgentTokenRotationResult {
+  agent: Agent
+  enrollment: AgentEnrollment
+}
+
+export interface CommunityUpdateInput {
+  name?: string
+  subtitle?: string
+}
+
+export interface ProfileUpdateInput {
+  name?: string
+  initials?: string
+  tone?: Person["tone"]
+}
+
+export interface EditMessageInput {
+  paragraphs: MessageBlock[][]
+}
+
+export interface MessageReactionInput {
+  emoji: string
+}
+
+export interface ReadMarkerInput {
+  lastReadAt: string
+}
+
+export interface TypingInput {
+  channelId: string
+  typing: boolean
+}
+
+export interface TypingState {
+  channelId: string
+  memberId: string
+  typing: boolean
 }
 
 /* ---- Modules, assignments, feedback and reports ---------------------------
@@ -220,4 +387,5 @@ export interface Community {
   feedback: Feedback[]
   reports: Report[]
   meId: string
+  updatedAt?: string
 }
