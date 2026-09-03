@@ -1,8 +1,8 @@
 # DECISIONS.md — Ada Education
 
-Full project context. Read it whole before touching code. Updated Sunday 08/23.
+Full project context. Read it whole before touching code. Updated 09/03.
 
-> **What this file is:** direction and ideas, with their history (superseded sections stay marked, never deleted). **It does not describe the current code.** The actual state of the code lives in `AGENTS.md` (repo map) and `openspec/` (spec of what's being built). The current scope is **§19** (open-source product for course-running organizations); §15 keeps the deployment shape it superseded; §14 is the future architecture.
+> **What this file is:** direction and ideas, with their history (superseded sections stay marked, never deleted). **It does not describe the current code.** The actual state of the code lives in `AGENTS.md`. The current scope is **§22** (a hosted service to sell, demo first; issue #1); §19 was the open-source framing it superseded; §14 remains the architecture.
 
 ---
 
@@ -353,7 +353,7 @@ protocol; the runner's material sync; `deploy/` (Dockerfiles, entrypoints,
 runbook); `npm run check:gated` covering all of it. Publishing the template in
 Railway's dashboard is a manual step in `deploy/README.md`.
 
-## 21. Buzz desktop as the SPA interaction reference; chat and configuration first (08/24)
+## 21. Buzz desktop as the SPA interaction reference; chat and configuration first (08/24 — superseded by §22)
 
 Decided by Ignacio after cloning and mapping Buzz at commit
 `0720f5380ce8a6c050afac159f8462c06cd51ab5`. The source-backed inventory is
@@ -399,3 +399,50 @@ This section supersedes only the UI/page and static-configuration parts of
 §§15/18. It does not reopen the memory model, agent name, `fromCard` semantics,
 local server/runner topology, open-source direction or Railway deployment
 decisions.
+
+## 22. Pivot: a hosted service to sell, demo first (09/03)
+
+Decided with Ignacio on 2026-09-03. Tracked in GitHub issue #1
+(https://github.com/NachoG2000/ada-education/issues/1), which holds the scope
+and checklist. Background:
+`research/2026-09-01-buzz-fork-vs-own-frontend.md` and
+`research/2026-09-01-strategy-scoped-agents-group-brain.md`.
+
+**The objective for the next weeks is a demo worth showing, on a date**, not
+the product shape argued in the September memos. The hackathon UI is not what
+we want and polishing it by taste has failed twice; the simplest
+implementation that can be demoed end to end wins.
+
+1. **Product shape: a hosted service sold by subscription** to institutions
+   with budget (schools, universities). This supersedes §19's open-source,
+   local-first framing as *the* product. Whether the public Apache-2.0 repo
+   stays as open core or goes private is an open question in the issue.
+2. **Runners by environment.** Development and tests use a **local runner
+   with the developer's own Claude or Codex subscription** (no API tokens
+   spent; the pattern §14 already allows). Production uses **hosted runners
+   with our provider keys, billed by usage** (§14.5's hosted tier). §14's
+   invariant holds in both: the server never runs a model; the runner stays
+   a separate process.
+3. **User identity is independent of membership.** A user has one session
+   (a user token); a community has members with a **role per community**
+   (teacher in one, student in another); one deployment hosts **many
+   communities**; invites are simple codes, no emails. This supersedes
+   §20.1 ("one deploy = one course community") and the per-community member
+   token of §20.2.
+4. **UI = Buzz's shell, no more, no less, in default shadcn styles.** No
+   differential UI and **no cards UI**: the card strip, the "already on file"
+   seal, folded tabs, channel types and `DESIGN.md`'s named rules are
+   **paused**, not deleted. The agent's memory (§6) stays in its folder;
+   whatever it publishes is not rendered in this phase. Styles come after
+   CRUD works. `research/2026-08-23-buzz-ui-map.md` is the inventory to copy.
+5. **Everything is created from the UI**: communities, channels, members
+   (invite codes, roles), and agents. This supersedes §15's "defined in a
+   config file".
+6. **What stays**: the memory model (§6), protocol/server/runner separation
+   (§14), the Railway deployment work (§20), and the thesis in `PROBLEM.md`.
+   The strategy memos of 09/01 (scoped agents, chat as commodity, adapters)
+   are future direction, not this implementation plan.
+
+**This phase is a local demo**: no deploy, billing, or video yet — foundations
+first. No grading, broad permissions, OAuth, hosted runners, proactive loops,
+cohort inheritance, search, notifications, or mobile-specific product work.
