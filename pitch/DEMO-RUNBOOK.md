@@ -47,6 +47,5 @@ Call-outs for the edit (SCRIPT.md): the citations, the sharing line, the decisio
 ## 4. Finishing checklist (after the take)
 
 1. `git add -A && git commit` the feature (one commit; the working tree holds the whole teacher/student flow).
-2. Optional: run the deferred Empirical integration (it will propose the worktree again).
-3. Export the deck: open `pitch/index.html` → `Cmd+P` → PDF.
-4. Edit to 82 s, drop into the video per SCRIPT.md's table, record the S1–S7 narration, submit per `research/2026-08-22-aleph-submission-and-pitch.md`.
+2. Export the deck: open `pitch/index.html` → `Cmd+P` → PDF.
+3. Edit to 82 s, drop into the video per SCRIPT.md's table, record the S1–S7 narration, submit per `research/2026-08-22-aleph-submission-and-pitch.md`.

@@ -2,7 +2,13 @@
 
 ## Scope and source state
 
-This session implemented `DECISIONS.md` §21 and `.empirical/specs/buzz-parity-ui/` in the approved isolated worktree. The visible reference is the local Buzz clone at `/Users/ignaciogarcia/Desktop/Personal/buzz`, pinned to commit `0720f5380ce8a6c050afac159f8462c06cd51ab5`; the source-backed component and route inventory remains `research/2026-08-23-buzz-ui-map.md`. Buzz supplied observable layout and interaction facts only. No Buzz Rust, Tauri, Nostr, relay, repository, runtime or provider-credential code was copied.
+This session implemented the first `DECISIONS.md` §21 workspace on branch
+`fix/buzz-parity-ui`. The visible reference is the local Buzz clone at
+`/Users/ignaciogarcia/Desktop/Personal/buzz`, pinned to commit
+`0720f5380ce8a6c050afac159f8462c06cd51ab5`; the source-backed component and
+route inventory remains `research/2026-08-23-buzz-ui-map.md`. Buzz supplied
+observable layout and interaction facts only. No Buzz Rust, Tauri, Nostr,
+relay, repository, runtime or provider-credential code was copied.
 
 ## Primary documentation consulted
 

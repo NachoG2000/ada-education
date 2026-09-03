@@ -5,7 +5,7 @@
    with live community state (module titles, material headings, the student's
    feedback gaps, the difficulty the teacher set), so the demo reads as a
    member of the course and not as a canned string. What it can't fill from
-   state it says it can't (DECISIONS.md §18; D-001 in the Empirical spec).
+   state it says it can't (`DECISIONS.md` §18).
 
    It never fabricates a citation: a `[[path]]` is only written for a card that
    exists in the wiki or that this run just wrote. */

@@ -1,6 +1,6 @@
 # Product
 
-> Product document (direction and ideas): describes the complete product, including what doesn't exist yet. **It does not represent the current code.** Actual state: `AGENTS.md` + `.empirical/specs/`. Current scope: `DECISIONS.md` §§19/21 (open-source product for course-running organizations; the code today runs fully local with a chat/configuration-first workspace).
+> Product document (direction and ideas): describes the complete product, including what doesn't exist yet. **It does not represent the current code.** Actual state: `AGENTS.md`. Current scope: GitHub issue #1 and `DECISIONS.md` §§19/21.
 
 > **Current visible product, 2026-08-24 (`DECISIONS.md` §21):** a responsive, chat/configuration-first workspace adapted from Buzz desktop: Inbox, Course/Work/Private channels, messages and threads, command search, channel management, Agents and scoped Settings. Dedicated Modules, My study and Card File pages are retired from navigation; their persisted knowledge pipeline remains behind inline citations and publication messages. This note supersedes older page/layout/mobile/theme statements below, not the underlying course-memory model.
 

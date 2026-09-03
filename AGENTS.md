@@ -8,7 +8,9 @@ Repo rules for any agent working here (Claude Code, Codex, Cursor, whichever). `
 
 **Current scope (`DECISIONS.md` §21, 08/24):** Ada is the open-source product for course-running organizations, with Buzz desktop as the visible SPA interaction reference and a chat/configuration-first surface: Inbox, channels, threads, channel creation/management, Agents creation/configuration and scoped Settings. The local TypeScript server + SQLite + external runner topology from §14 stays. Buzz's Rust/Tauri/Nostr/runtime architecture and Ada's former dedicated Modules/My study/Card File pages are not part of the visible product phase.
 
-**Active change:** `.empirical/specs/buzz-parity-ui/` implements and verifies the §21 workspace.
+**Active change:** GitHub issue #1 moves the local demo to user accounts,
+multi-community memberships, UI-created communities/channels/agents, and local
+Claude/Codex runners. The issue and `DECISIONS.md` §21 are the scope contract.
 
 **Actual state of the code today:** a Vite + React 19 SPA (`apps/web/`) with a responsive Buzz-style workspace: Inbox, Course/Work/Private channels, live message/thread UI, command search, channel management, Agents and scoped Settings. `#home` and `#modules` canonicalize to Inbox; their old components are retained only as implementation history, not mounted product routes. Connected mode uses real REST/WS mutations; `npm run dev:demo` is a labelled read-only preview. The Hono/SQLite server in `apps/server/` owns versioned workspace persistence, viewer-filtered snapshots, attachment bytes, typed errors and channel-authorized events. `packages/protocol/` owns the shared Zod inputs/events and `packages/runner/` keeps the two external runtimes (`claude` and `scripted`). The example seed remains in `data/neural-networks-2026/`. Read `DECISIONS.md` §14, §19 and §21 before touching architecture, agent memory or scope.
 
@@ -20,8 +22,7 @@ Documents of truth, in order of authority:
 - `PRODUCT.md` — users, fixed terminology, states that must be visible, brand constraints.
 - `DESIGN.md` — "The card file" design system (tokens, typography, named rules). The real tokens live in `apps/web/src/index.css` and may differ in detail; the code wins.
 - `research/` — research with sources, one file per session. Backing for `PROBLEM.md`; not an authority by itself.
-- `.empirical/specs/` — active implementation contracts, designs, decisions and plans. The active change is `buzz-parity-ui`.
-- `openspec/` — older specs and archived change history; not the active workflow for §21.
+- `openspec/` — older specifications and archived change history.
 - `docs/*.html` — **future inspiration** (full architecture, use cases, expanded API). They don't describe the current code; where they contradict the code or the spec, those win.
 - `design/BRIEF.md` and `design/mockups/` — history, not authority. The HTML mockups are discarded.
 
@@ -124,20 +125,3 @@ Named rules that affect code (details in `DESIGN.md`):
 ## HTML docs
 
 `docs/` holds self-contained HTML pages (no build, open by double-click) that explain the system to people. They are **future inspiration**: they describe the full product, not today's code, and each says so in its banner. `docs/how-it-works.html` = the mental model (server / runner / runtime / folder, the sequence of a mention, isolation, tiers). `docs/usecases-api.html` = use cases and the expanded MVP API. If `DECISIONS.md` §14-§15 or the OpenSpec change moves, they're updated in the same task.
-
-<!-- empirical-sdd:start -->
-## Empirical repository workflow
-
-When `.empirical/config.json` has `schemaVersion: 5` and
-`setupComplete: true`, automatically use the repository-local Empirical
-workflow for requests to build, add, implement, change, fix, refactor, remove,
-migrate, upgrade, change tests, or continue repository work. The user does not
-need to mention Empirical. Read-only explanation and inspection stay outside
-the workflow.
-
-Read `.agents/skills/empirical/SKILL.md` (or the native project copy) for the
-full contract. Use Empirical MCP operations first and private
-`empirical __internal` fallbacks only when MCP is unavailable. If the config
-is missing, invalid, or incomplete, do not initialize implicitly; tell the user
-to invoke `empirical-init` explicitly.
-<!-- empirical-sdd:end -->

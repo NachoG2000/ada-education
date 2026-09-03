@@ -286,7 +286,7 @@ The repo rule lives in `AGENTS.md` ("Language"). Fixed English terminology in `P
 
 ## 18. Modules, study material, feedback and agent reports for the teacher/student demo (08/23, early morning — visible pages superseded by §21)
 
-Request by Ignacio for the demo flow: the teacher loads modules and study material on a dedicated page with a difficulty adapted to the course and its students; the student sees the agent's feedback on the last assignment, learns the module that slipped and asks the agent how to get ahead; the agent tells the teacher what it advised; the teacher reconciles it into the subject. Everything mocked, but "the agent really answers and it doesn't feel hardcoded". Contract, design, plan and decisions: `.empirical/specs/build-the-hackathon-demo-flow-for-ada-one-teacher-fully/`.
+Request by Ignacio for the demo flow: the teacher loads modules and study material on a dedicated page with a difficulty adapted to the course and its students; the student sees the agent's feedback on the last assignment, learns the module that slipped and asks the agent how to get ahead; the agent tells the teacher what it advised; the teacher reconciles it into the subject. Everything mocked, but "the agent really answers and it doesn't feel hardcoded". The implementation remains in repository history and the decisions below preserve its product contract.
 
 **Decisions:**
 
@@ -357,8 +357,8 @@ Railway's dashboard is a manual step in `deploy/README.md`.
 
 Decided by Ignacio after cloning and mapping Buzz at commit
 `0720f5380ce8a6c050afac159f8462c06cd51ab5`. The source-backed inventory is
-`research/2026-08-23-buzz-ui-map.md`; the implementation contract, design and
-plan are `.empirical/specs/buzz-parity-ui/`.
+`research/2026-08-23-buzz-ui-map.md`; implementation findings are recorded in
+`research/2026-08-24-buzz-parity-implementation.md`.
 
 1. **Buzz is the visible UI and interaction reference, not Ada's backend.** The
    SPA reproduces Buzz's fixed gradient frame, compact top chrome, collapsible
