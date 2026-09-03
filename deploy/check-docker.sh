@@ -5,9 +5,9 @@
 # the network with its own volume and commits the run. Needs a docker daemon.
 set -euo pipefail
 
-# Empirical verifies the source and an independent target concurrently. Every
-# invocation therefore owns its Docker namespace and (unless explicitly
-# pinned) asks Docker for a free host port.
+# Verification runs may execute concurrently. Every invocation therefore owns
+# its Docker namespace and (unless explicitly pinned) asks Docker for a free
+# host port.
 CHECK_ID="${ADA_DOCKER_CHECK_ID:-$$}"
 PORT="${ADA_DOCKER_CHECK_PORT:-}"
 NET="ada-docker-check-$CHECK_ID"
