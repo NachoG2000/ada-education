@@ -74,8 +74,8 @@ creating an agent to running it; those are separable:
 - *Who owns it* (identity, folder, visibility) → the student. Enforced by
   folder permissions: the teacher cannot read `people/<student>/wiki`.
 - *Who runs it* (runner, credentials) → by default the org's hosted runner
-  (already designed: `.empirical/specs/railway-one-click-template/decisions.md`
-  D-006) with a cheap open model via pi/Ollama/OpenRouter (§14.5); a
+  (already recorded in the repository's deployment decisions and Railway
+  runbook) with a cheap open model via pi/Ollama/OpenRouter (§14.5); a
   student who wants sovereignty can point the agent at their own laptop
   later (the Buzz-like power feature, not the default).
 

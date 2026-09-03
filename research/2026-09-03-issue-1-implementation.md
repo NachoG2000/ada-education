@@ -92,12 +92,73 @@ Claude/Codex, presence, roster, browser, and no-card checks pass.
 
 ## Primary review log
 
-The user requested GPT-5.6 Luna implementation workers with primary-agent
-review. Each worker has an exclusive file area; no worker may declare the issue
-complete. Review findings and reruns will be added here as their diffs land.
+The implementation was reviewed in the isolated
+`feature/issue-1-hosted-service-demo` worktree. The application work is split
+into the following commits (the original dirty worktree remains untouched):
 
-- Shared protocol: pending.
-- Server/database/WebSocket: pending.
-- Local runner adapters: pending.
-- Web/session/shell: pending.
-- Documentation and final issue checklist: pending.
+- `0b62fd4`, `a47d400`, `a94e925`: tenant-scoped protocol contracts, correlated
+  runner acknowledgements, and explicit authorship in runner work.
+- `7f92af9`: multi-community SQLite/API/REST/first-frame WebSocket domain,
+  privacy filters, invitations, DMs, membership lifecycle, and issue flow.
+- `19c4495`: local Claude/Codex subscription runner with workspace bootstrap,
+  provider isolation, scoped prompts, and outbound first-frame authentication.
+- `e4bef7b`: reviewed Buzz-shaped shadcn workspace donor; the hosted shell is
+  subsequently mounted by the issue implementation while old card/modules
+  screens remain unmounted history.
+- `a7595c5`, `24a5843`, `5be40c8`: remove repository SDD metadata and preserve
+  the independent Railway/material-sync repairs without restoring that workflow.
+- `cb00e4e`, `e3afab9`: hosted-service pivot and this implementation record.
+
+Primary checks completed during implementation:
+
+- protocol typecheck and hosted contract check;
+- server typecheck and the issue #1 tenant/API/WS flow, including roles,
+  invitation rotation/revocation, cross-community isolation, DMs, presence,
+  mentions, runner acknowledgements, cards, and membership lifecycle;
+- runner typecheck, provider checks, and retained scripted-runtime checks;
+- web typecheck/build and lint (existing donor warnings only).
+
+## Final verification
+
+The final code and documentation state passed:
+
+- `npm run check:issue1` (hosted protocol contracts, server typecheck and full
+  tenant flow, runner typecheck/provider behavior, web typecheck and production
+  build);
+- `npm run check:workspace`, `npm run check:seed -w @ada/server`,
+  `npm run check:gated -w @ada/server`, `npm run check:e2e -w @ada/server`, and
+  `npm run smoke` against their isolated databases and ports;
+- `npm run check:scripted -w @ada/runner` for the explicitly retained fixture
+  harness;
+- `npm run lint`, with no errors and only the pre-existing Fast Refresh and
+  set-state-in-effect warnings in retained UI files;
+- `node scripts/docs-check.mjs`, shell syntax checks for the retained deploy and
+  reset scripts, and `git diff --check`.
+
+Both Docker images built successfully. The remaining runtime portion of
+`npm run check:docker` could not allocate a Docker network because the local
+daemon reported that all predefined address pools were already subnetted. No
+unrelated Docker networks were removed. This check covers the retained
+single-course deployment fixture; deployment itself remains outside issue #1.
+
+Browser acceptance used a fresh empty database and exercised:
+
+- display-name account creation and the one-time user token;
+- first and second community creation plus rapid switching without stale
+  cross-community state;
+- channel creation, a message with an agent mention, a desktop thread, a
+  mention reply inside the thread, and confirmed message deletion;
+- agent creation with the one-time runner credential still visible after the
+  server refresh;
+- the invite dialog and role/mode controls;
+- the 390 × 844 narrow layout, including the workspace and thread sheets.
+
+The pass also caught and fixed two integration defects before completion: the
+persisted membership projection includes `updatedAt`, and the hidden mobile
+thread sheet no longer closes the visible desktop thread panel. A final UI
+review found no high- or medium-severity issue #1 blockers.
+
+The repository-local workflow integration and its standalone editor/MCP
+configuration files are removed. A repository-wide search and GitHub issue #1
+both contain no reference to it; the old issue link now points at
+`DECISIONS.md` §21 instead.

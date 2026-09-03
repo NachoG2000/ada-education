@@ -12,7 +12,7 @@ Repo rules for any agent working here (Claude Code, Codex, Cursor, whichever). `
 multi-community memberships, UI-created communities/channels/agents, and local
 Claude/Codex runners. The issue and `DECISIONS.md` §22 are the scope contract.
 
-**Actual state of the code today:** a Vite + React 19 SPA (`apps/web/`) with a responsive Buzz-style workspace: Inbox, Course/Work/Private channels, live message/thread UI, command search, channel management, Agents and scoped Settings. `#home` and `#modules` canonicalize to Inbox; their old components are retained only as implementation history, not mounted product routes. Connected mode uses real REST/WS mutations; `npm run dev:demo` is a labelled read-only preview. The Hono/SQLite server in `apps/server/` owns versioned workspace persistence, viewer-filtered snapshots, attachment bytes, typed errors and channel-authorized events. `packages/protocol/` owns the shared Zod inputs/events and `packages/runner/` keeps the two external runtimes (`claude` and `scripted`). The example seed remains in `data/neural-networks-2026/`. Read `DECISIONS.md` §14, §21 and §22 before touching architecture, agent memory or scope.
+**Actual state of the code today:** a Vite + React 19 SPA (`apps/web/`) with a responsive default-shadcn Buzz-style workspace: community switcher, channels, private user-agent DMs, live messages/threads, members, invites and agent setup. `#home` and `#modules` and the old card UI remain only as unmounted implementation history. Connected mode uses real tenant-scoped REST/first-frame WS mutations; there is no `dev:demo` mode. The Hono/SQLite server owns global users, memberships, communities, channels, agents, messages, DMs, viewer-filtered snapshots and channel-authorized events. `packages/protocol/` owns shared Zod inputs/events and `packages/runner/` provides Claude/Codex subscription adapters. Cards remain backend memory without mounted card UI. Read `DECISIONS.md` §14, §21 and §22 before touching architecture, agent memory or scope.
 
 **Every area of the repo has its own short `AGENTS.md`** with what it is today and how it grows tomorrow (`apps/web/`, `docs/`, and every new workspace must bring its own). If you touch an area, keep its file up to date.
 
@@ -48,15 +48,14 @@ How an agent applies this:
 
 ## Commands
 
-Monorepo with **npm workspaces** (no Turborepo): `apps/web` (SPA), `apps/server` (local API), `packages/runner` (skeleton), `packages/protocol` (shared types and events), `data/<course>/` (courses), `deploy/` (Dockerfiles + Railway template runbook, `DECISIONS.md` §20). Every area has its `AGENTS.md`.
+Monorepo with **npm workspaces** (no Turborepo): `apps/web` (SPA), `apps/server` (local API), `packages/runner` (local subscription runner), `packages/protocol` (shared types and events), `data/<course>/` (legacy fixture courses), `deploy/` (retained pre-issue deployment history; deployment is outside issue #1). Every area has its `AGENTS.md`.
 
 ```bash
 npm install            # once, at the root (installs all workspaces)
 npm run seed           # loads data/neural-networks-2026 into the local DB
-npm run dev            # seed (idempotent) + web + server + ada's runner (scripted runtime by default) → http://localhost:5173 (proxied to :8787)
-ADA_RUNTIME=claude npm run dev   # same, with the real `claude` runtime (needs `claude` installed and logged in)
-npm run runner         # ada's runner alone (`ADA_RUNTIME=scripted|claude`; see packages/runner/AGENTS.md)
-npm run dev:demo       # SPA only against the synthetic demo community (no server)
+npm run dev            # fresh web + server → http://localhost:5173 (proxied to :8787)
+npm run runner         # opt-in hosted runner; use the one-time setup command from the UI
+npm run check:issue1   # protocol, server tenant-flow, and runner-provider checks
 npm run dev:web        # SPA only, with HMR → http://localhost:5173
 npm run dev:server     # server only → http://localhost:8787
 npm run check -w @ada/server # server typecheck
@@ -73,46 +72,21 @@ Targeted executable checks live under each workspace; there is no unit-test fram
 
 ## Architecture
 
-> Paths in this section are relative to `apps/web/` (the SPA lived at the repo root until 08/22). The types (`types.ts`) now live in `packages/protocol` and `apps/web/src/lib/types.ts` re-exports them.
+**Mounted web client.** `apps/web/src/App.tsx` mounts `HostedApp` for every normal URL and keeps only `#figures` as a developer screen. `components/hosted.tsx` owns account restoration, one-time token display, onboarding, community selection and the responsive workspace state. `lib/hosted-api.ts` is the Zod-validated REST/WS client. There is no product router and no synthetic demo mode. The older context, workspace, card, Modules and My study code is retained but unmounted.
 
-**Typed hash routing, no router dependency.** `src/lib/routes.ts` parses and serializes `#inbox`, `#channel/<id>`, `#agents`, `#settings/<section>`, `#join` and `#figures`; invalid routes plus retired `#home`/`#modules` replace to Inbox. `src/App.tsx` keeps identity gates outside `WorkspaceShell`. Demo mode pins `NOW` (`2026-08-22T12:00-03:00`); connected mode uses the real clock.
+**Hosted domain.** A `User` is global. A `Membership` joins that user to one `Community` with a teacher/student role. Every community resource carries a `communityId`: channels, user-agent DMs, agents, messages, threads, invitations, card records and runner presence. REST identifies the user from a bearer token and the tenant from `/api/communities/:communityId`; browser and runner sockets send credentials in their first frame. The server stores only SHA-256 token digests.
 
-**State = a single context.** `src/lib/community.tsx` → `CommunityProvider` / `useCommunity()`. It receives the full `Community` (immutable in demo mode; hydrated from `GET /api/community` and updated by WS events through `src/lib/api.ts` in connected mode) and exposes:
-- `activeChannelId` + `setActiveChannelId`.
-- `workspace`: typed connected mutations for course/profile, channel/agent lifecycle, messages, reactions, reads, attachments and typing. Demo actions reject with a read-only explanation.
-- `panels`: contextual state (`thread | card | agent`); the mounted workspace currently exposes the resizable/overlay thread panel and inline card citations/publications.
-- `member/card/thread/message(id)` lookups that **throw** if the id doesn't exist: one broken id in `demo.ts` takes the whole screen down.
-- helpers: `isNew(card, now)` (state `new` and < 24 h), `isAgent`, `formatTime`, `dayLabel` (locale `en-US`).
+**Persistence and projection.** `apps/server/src/migrations.ts` upgrades the SQLite file without requiring a seed. `tenant.ts` owns tenant-aware queries and lifecycle rules; `api.ts` owns authenticated REST; `ws.ts` filters each event for the receiving user or runner. Full history is returned only to channel members, agent DMs are visible to their user/agent pair plus teachers, and public directory entries reveal only browseable metadata. Legacy course/card/module tables and fixture import remain available behind the current UI.
 
-**Domain model** in `src/lib/types.ts` (commented against `PRODUCT.md`). The non-obvious parts:
-- A `Message` isn't text: it's `paragraphs: MessageBlock[][]`, with `text | cite | code` blocks. A `cite` block points to a `Card` (+ optional section) and renders as a citation pill that opens the card in the panel.
-- `message.fromCard` = an answer **composed from the card file** (the demo's key moment: the "already on file · N days ago" seal). `message.publishes` = the message is a card's publication card in the flow. `thread.publishedCardId` = the card that closes the thread.
-- `Card.state` (`new | updated | superseded | compiling`), `Card.base` (a channel base document, doesn't come from conversation), `Card.replaces`.
-- `Agent.scope` (`community | personal`) is a product distinction that must be visible in the UI; `Agent.figureSeed`/`figureColor` feed the agent's figure.
-- `Channel.group` (`course | work | private`) and `Channel.work.status` (`active | submitted | archived`) are the sidebar's "drawers".
+**Runner.** `packages/runner/src/cli.ts` consumes the UI-generated setup command, bootstraps an isolated agent workspace, connects outbound, authenticates in the first frame and processes mentions serially. `claude` and `codex` run through their own subscription-authenticated CLIs; Ada strips provider API-key environment variables and never receives provider credentials. Changed wiki markdown is published as backend cards through correlated runner acknowledgements.
 
-**Component layers:**
-- `src/components/workspace/` — the mounted product: `WorkspaceShell`, sidebar, Inbox/Agents/Settings pages, channel timeline/composer/thread, command palette and channel/agent/destructive dialogs. Sidebar/theme/drafts use versioned localStorage keys.
-- `src/screens/` — `FigureSheet` remains mounted at `#figures`; the older Channel/Modules/Study screens are retired code history and must not be reintroduced into navigation.
-- `src/components/ada/` — product components. `folder` (tabbed folder panel; `Folder`, `FolderTab`, `FloatingButton`), `channel` (header, `CardRow`, `Conversation`, `Composer`), `panel` (`PanelStack`: Thread and Card), `card` (folded tab `Tab`, `Pill`, `CardState`, `CardTab`, `Cite`, `CardMessage`, and the `TAB_BG/INK/DOT/FILL` maps per `CardType`), `message` (`MessageRow`, `Inline`), `identity` (avatars: people = pastel circle with initials, agents = `Figure`; `agentInk` gives the agent's name color), `markdown` (minimal in-house renderer: `##`, paragraphs, numbered lists, `**`, `*`, `` ` ``; supports nothing else).
-- `src/components/ui/` — shadcn-generated primitives. They can be touched, but prefer composing from `components/ada`.
-- `src/lib/figure.ts` — **deterministic, seed-based** generator of agent figures (solid silhouette + crown + feet + two eyes; `FIGURE_COLORS` palette). `figureParams(seed)` → `silhouette(p)` (SVG). A new agent = a new seed; "roll another" = change the seed.
-
-**Data:** in connected mode the source is the server (seed in `data/<course>/community.json`); `src/lib/demo.ts` is the demo-mode source (course "Neural Networks 2026"; people `martin`, `sofia`, agents `ada`, `tutor-sofia`; initial channel `questions`, thread `t-explodes`). Everything is fictional and presented as a demo; don't invent figures, testimonials or customers. `CARD_TYPE_LABEL` (type labels) also lives there.
+**Shared contracts.** `packages/protocol/src/hosted.ts` is the issue #1 boundary for hosted inputs, safe projections, events and runner frames. Network payloads are parsed at the web and runner boundaries. Raw user, invite and runner tokens occur only in their creation/rotation response or auth frame, never in ordinary projections or events.
 
 ## Design system in the code
 
-Tokens as Tailwind v4 `@theme` in `src/index.css`: colors `ground/panel/panel-2/panel-3/line/ink/ink-2..4/sun/sun-soft/seal/alert/ok`, `tab-<type>` and `tab-<type>-ink` per card type, `status-<status>`; fonts `font-sans` (Inter, UI) · `font-serif` (Literata, cards) · `font-mono` (Geist Mono, code/version); radii `rounded-panel/card/card-tab/control/pill`; `shadow-card/pop`. The shadcn semantic variables (`background`, `primary`, `sidebar-*`…) are mapped to these tokens in `@theme inline`; don't use raw Tailwind colors or violets.
+The issue #1 surface intentionally uses default base-nova shadcn styling and ordinary responsive sheets. Compose official primitives from `apps/web/src/components/ui/`; use `render` for composed triggers so interactive elements are not nested. Messages are open rows rather than bubbles. Icon-only controls need accessible names, mutations need pending/error states, and destructive changes need confirmation.
 
-In-house utility classes: `.panel`, `.label`, `.meta`, `.pill`, `.animate-archive`, `.animate-seal`. Source x-ray: `html[data-xray]` dims `[id^="msg-"]` except `[data-xray-target]`.
-
-Named rules that affect code (details in `DESIGN.md`):
-- **Tab Rule:** a type color appears only on the folded tab or on a citation's dot. Never on backgrounds, buttons or text.
-- **One Sun Rule:** `sun` (#ffd43b) covers one single large surface per screen (the new card) and the "already on file" pills.
-- **Three Voices:** Literata for what's read/archived, Inter for what's conversed/operated, Geist Mono for code and version. Don't title cards in Inter.
-- Agents: silhouette and two eyes only (no mouths, gradients or shadows); never a "BOT" badge. People: circles.
-- No chat bubbles, no violet gradients, no sparkles, no 1 px borders as a depth system.
-- Animations only on state changes (archive 360 ms, seal 380 ms, x-ray 300 ms); respect `prefers-reduced-motion`.
+The Card File tokens, figures and named visual rules remain in `apps/web/src/index.css`, `src/components/ada/` and `DESIGN.md` for the paused card UI. Do not apply those unmounted rules to the hosted shell unless a later decision explicitly restores them. Do not delete that design history.
 
 ## Decisions and open questions (don't resolve them on your own)
 
@@ -120,7 +94,7 @@ Named rules that affect code (details in `DESIGN.md`):
 - **MVP API (from `docs/usecases-api.html` §8):** `fromCard` should become plural (`fromFile: { cardIds[], oldestAgo }`) because composing involves several cards — it changes `types.ts`, `demo.ts`, `message` and `card`; a card's id would be its path in the wiki; the frontmatter has 7 types and the UI 5 (`difficulty` and `person` aren't published to channels); automatic ingest every N messages stays off in the MVP. None of this is decided: ask before implementing.
 - **The example agent's name.** `DECISIONS.md` and `demo.ts` call it "Ada"; `PRODUCT.md` says Ada is the product and agents carry other names. Ask before renaming.
 - Backend is settled by §§14/21: the local TypeScript server + external runner stays; Buzz is only the UI/interaction reference.
-- Out of scope for now (don't build): permissions, submission grading, collaborative editing, vector/global search, multi-course, mobile, notifications, work channels beyond the design. Nor gamification or per-student algorithmic personalization: `PROBLEM.md` §9 explains why they miss the problem.
+- Out of scope for now (don't build): granular permissions, submission grading, collaborative editing, vector/global search, billing, OAuth/email auth, hosted runners, notifications, work-channel lifecycle, or a separate mobile product. Multi-community tenancy and responsive web are implemented. Nor gamification or per-student algorithmic personalization: `PROBLEM.md` §9 explains why they miss the problem.
 
 ## HTML docs
 

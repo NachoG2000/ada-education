@@ -1,4 +1,14 @@
-# Deploying Ada — the Railway template runbook
+# Deployment history — not the issue #1 hosted-service runbook
+
+> **Status (2026-09-03):** deployment and hosted runners are outside GitHub
+> issue #1. The server and runner images below are retained from the earlier
+> single-course Railway work so its compatibility check remains reproducible;
+> they are not a supported deployment recipe for the new multi-community UI.
+> Run the current product locally with `npm run dev`, then create an agent in
+> the UI and use its one-time local Claude/Codex runner command. A production
+> multi-tenant deployment and hosted API-key runners need a later decision.
+
+## Retained single-course Railway runbook
 
 One course community per deploy (`DECISIONS.md` §20): a **server service**
 (UI + API + WS + SQLite on one volume) and an **optional runner service**
@@ -36,17 +46,18 @@ docker build -f deploy/Dockerfile.runner -t ada-runner .
 Volume mounted at `/data`. Healthcheck path: `/health`. One replica only
 (SQLite + volume). WebSockets need no special config on Railway.
 
-## Runner service (optional)
+## Runner service (historical)
 
-Skip it entirely and run the runner on your machine instead:
+For the current issue #1 product, do not deploy this service. Run the local
+runner from the exact setup command shown after creating an agent in the UI.
+The command below belongs to the superseded single-course token contract:
 
 ```bash
 ADA_SERVER=https://<your-app>.up.railway.app ADA_AGENT_TOKEN=<the same secret> \
   ADA_RUNTIME=claude npm run runner
 ```
 
-That uses *your* `claude` login; `https://` becomes `wss://` on its own. For a
-runner that lives in the deploy:
+The environment table below is retained only to explain the previous image:
 
 | Variable | Value |
 |---|---|

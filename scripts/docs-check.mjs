@@ -6,10 +6,10 @@ import { readFileSync, existsSync } from "node:fs"
 const checks = [
   ["DECISIONS.md", [/## 18\. Modules, study material, feedback and agent reports .*08\/23/, /scripted/, /transparent to the student/i, /intro · core · advanced/]],
   ["PRODUCT.md", [/Modules and study data/, /Report rule/, /reconcile/, /"My study" \(student view\)/]],
-  ["AGENTS.md", [/scripted runtime by default/, /npm run smoke/, /#modules/]],
+  ["AGENTS.md", [/npm run check:issue1/, /npm run smoke/, /#modules/]],
   ["apps/web/AGENTS.md", [/#modules/, /#home/]],
   ["apps/server/AGENTS.md", [/modules/, /reports/]],
-  ["packages/runner/AGENTS.md", [/scripted/, /report\.create/]],
+  ["packages/runner/AGENTS.md", [/scripted/, /legacy-fixture-cli/]],
   ["data/AGENTS.md", [/modules/, /feedback/]],
   // Positioning (refocus-open-source-product): open-source product for
   // course-running organizations; the hackathon is history.
@@ -23,18 +23,24 @@ const checks = [
   ["DECISIONS.md", [/## 20\. Railway one-click template.*\(08\/23/, /owner token/, /single-use\s+invite/i]],
   ["deploy/README.md", [/ADA_OWNER_TOKEN/, /\/health/, /Generate Template from Project/]],
   ["deploy/AGENTS.md", [/first[- ]boot/i, /never echo/i]],
-  ["README.md", [/railway\.com\/button\.svg/, /owner token/]],
+  ["README.md", [/Deployment and hosted runners are deliberately outside issue #1/, /one-time setup command/]],
   ["AGENTS.md", [/check:gated/]],
   ["apps/server/AGENTS.md", [/ADA_REQUIRE_MEMBERSHIP/, /api\/claim/]],
-  ["packages/runner/AGENTS.md", [/materials\b.*raw|raw.*materials/i]],
+  ["packages/runner/AGENTS.md", [/Materials are supplied to the provider/]],
   ["apps/web/AGENTS.md", [/ada:token/, /join\.tsx/]],
   // Buzz parity workspace (§21): visible chat/config shell with the old role
   // pages explicitly retired and the TypeScript server/runner boundary kept.
   ["DECISIONS.md", [/## 21\. Buzz desktop as the SPA interaction reference/, /Inbox, channels, Agents and scoped Settings/, /No Rust\/Tauri/]],
-  ["AGENTS.md", [/components\/workspace/, /check:workspace/, /#home.*#modules.*Inbox/]],
+  ["AGENTS.md", [/components\/hosted/, /check:workspace/, /no cards UI, Modules, My study, Inbox/]],
   ["PRODUCT.md", [/Current visible product, 2026-08-24/, /chat\/configuration-first workspace/]],
   ["DESIGN.md", [/Current visible workspace — Buzz frame/, /300px sidebar/, /below 600px/]],
   ["research/2026-08-24-buzz-parity-implementation.md", [/Base UI/, /Hono/, /AI Elements/]],
+  // Current hosted-service foundation (GitHub issue #1 / DECISIONS §22).
+  ["DECISIONS.md", [/## 22\./, /User identity is independent of membership/i, /Claude or Codex subscription/i]],
+  ["apps/server/AGENTS.md", [/tenant_users/, /first frame/, /last-teacher/]],
+  ["apps/web/AGENTS.md", [/HostedApp/, /community rail/, /no mounted card UI/i]],
+  ["packages/runner/AGENTS.md", [/subscription-backed/, /first WebSocket frame/, /provider API keys/]],
+  ["deploy/README.md", [/not the issue #1 hosted-service runbook/i, /not a supported deployment recipe/i]],
 ]
 // The hackathon cover slide lives with the pitch history, not at the root.
 const mustExist = ["pitch/slide1.png"]

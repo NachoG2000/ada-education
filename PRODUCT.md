@@ -2,6 +2,8 @@
 
 > Product document (direction and ideas): describes the complete product, including what doesn't exist yet. **It does not represent the current code.** Actual state: `AGENTS.md`. Current scope: GitHub issue #1 and `DECISIONS.md` §22.
 
+> **Issue #1 implementation boundary (2026-09-03):** the visible product is the default shadcn Buzz-shaped community workspace: one global user identity, many communities with a role per membership, channels, DMs, members, invites, agents, messages, threads and runner setup. Cards remain backend memory with no card UI in this phase. Modules, My study, Inbox and standalone Agents/settings explorations below are retained product direction/history, not mounted routes.
+
 > **Current visible product, 2026-08-24 (`DECISIONS.md` §21):** a responsive, chat/configuration-first workspace adapted from Buzz desktop: Inbox, Course/Work/Private channels, messages and threads, command search, channel management, Agents and scoped Settings. Dedicated Modules, My study and Card File pages are retired from navigation; their persisted knowledge pipeline remains behind inline citations and publication messages. This note supersedes older page/layout/mobile/theme statements below, not the underlying course-memory model.
 
 <!-- impeccable:product-schema 1 -->
@@ -16,8 +18,8 @@ Responsive web app; desktop packaging remains future direction. The same workspa
 
 Two primary users who alternate point of view depending on the screen; neither outranks the other.
 
-- **Professor (e.g. Martin).** Creates the course community, its channels and its agents; publishes material, assignments and decisions; opens work channels for assignments and exams. Owns the agent management, channel settings, work channel and decision screens.
-- **Student (e.g. Sofia).** Asks questions in channels, opens threads, uploads notes, submits cards of type *submission*, and may have a private channel with an agent configured for themself. Owns the invitation onboarding, #questions with thread, and "the same question, twice" screens.
+- **Professor (e.g. Martin).** Has a teacher membership in one or more communities; creates communities, channels, invites and agents, and moderates the conversation.
+- **Student (e.g. Sofia).** Has a student membership in one or more communities; joins with an invite code, participates in public channels, threads and private user-agent DMs.
 
 Situation: an in-progress university course (the demo example is Neural Networks), with 20-40 members, over the semester. UI and content language: English.
 
@@ -57,7 +59,7 @@ Demo success: a first-time viewer sees, without explanation, that (1) agents are
 - **Agents:** each agent runs in a **runner** belonging to whoever created it, running the provider's binary unmodified (`claude`, `codex`, `pi`); the credential (subscription or API key) lives with that binary, never in Ada (`DECISIONS.md` §14; rules verified in `research/2026-08-22-subscriptions-runners-buzz-pi.md`). Each agent has a name, avatar, instructions, provider/credential, and list of channels it participates in. There are **community** agents (created by the professor) and **personal** agents (created by a student for their private channel); the difference is a product distinction and must be visible.
 - Agents publish cards using the same mechanism as a person.
 - Fixed terminology (English): community, channel, work channel, thread, card, card type, base document, sources, "replaces", visibility, agent, members, submission, compiling, "from the file", module, material, difficulty (intro · core · advanced), feedback, report, reconcile, "Modules" (teacher view), "My study" (student view), owner token (claims the teacher on a deploy), invite link (single-use, mints a student).
-- **Out of scope (do not design):** a broad permissions editor, notifications, grading, billing/SSO, multi-course tenancy, vector/global knowledge search, or a separate mobile app. Workspace search, responsive web layout and scoped Course/Profile, Appearance, Runner, Invite and Shortcut settings are in scope.
+- **Current out of scope (issue #1):** a broad permissions editor, notifications, grading, billing/SSO, email/password/OAuth, hosted runners, vector/global knowledge search, work-channel lifecycle, a separate mobile app, or broad settings/search surfaces. Multi-community tenancy and responsive web layout are implemented.
 - Open decisions: name of the course's example agent (the seed still says "Ada" pending an explicit rename); the full permissions model.
 
 ## Brand Commitments

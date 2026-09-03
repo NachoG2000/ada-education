@@ -135,6 +135,12 @@ components:
 
 # Design System: Ada
 
+## Current visible workspace — issue #1 (2026-09-03)
+
+The hosted-service demo uses the default base-nova shadcn visual language inside a Buzz-shaped community shell: narrow community rail, channel/DM/member sidebar, open conversation rows and a desktop thread column that becomes a sheet below 1024px. Agent identity uses the configured avatar URL with a neutral bot-icon fallback; people use initials. This implementation note supersedes the 2026-08-24 mounted-frame, gradient, theme, route and deterministic-figure requirements immediately below.
+
+The Card File system, its typography, tabs, figures and provenance language are paused, not deleted. They remain the design direction for durable card surfaces when card UI returns. In the current shell there is no card strip, publication tile, citation panel, Modules, My study, Inbox, standalone Agents page, broad Settings area or special course/work/private grouping.
+
 ## Current visible workspace — Buzz frame (2026-08-24)
 
 `DECISIONS.md` §21 supersedes the former Card File shell while retaining its document/provenance language inside conversation. The mounted SPA uses the pinned Buzz desktop composition: one continuous full-viewport gradient canvas, 36px compact top chrome, a 300px sidebar that resizes from 220–420px or collapses to 52px, and one rounded 16px inset content surface. The main routes are Inbox, Channel, Agents and scoped Settings. A desktop thread is a 380px auxiliary split that resizes from 300–720px; below 600px it overlays the conversation. Below 768px, the sidebar becomes a 288px sheet. No information is removed merely to fit a narrow viewport.
