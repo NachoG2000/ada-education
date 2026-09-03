@@ -529,10 +529,28 @@ export const runnerWorkSchema = z.object({
     agentId: idSchema,
     channelId: idSchema,
     threadId: idSchema.optional(),
+    from: communityMemberSchema,
     message: scopedMessageSchema,
     context: z.array(scopedMessageSchema),
   }).strict(),
-}).strict()
+}).strict().superRefine((frame, context) => {
+  const { payload } = frame
+  if (payload.from.communityId !== payload.communityId) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["payload", "from", "communityId"], message: "work author belongs to a different community" })
+  }
+  if (payload.from.id !== payload.message.authorId) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["payload", "from", "id"], message: "work author does not match the message author" })
+  }
+  for (const [index, message] of [payload.message, ...payload.context].entries()) {
+    const path = index === 0 ? ["payload", "message"] : ["payload", "context", index - 1]
+    if (message.communityId !== payload.communityId) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: [...path, "communityId"], message: "work message belongs to a different community" })
+    }
+    if (message.channelId !== payload.channelId) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: [...path, "channelId"], message: "work message belongs to a different channel" })
+    }
+  }
+})
 
 export const runnerMessageCreateSchema = z.object({
   type: z.literal("message.create"),

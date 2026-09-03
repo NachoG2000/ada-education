@@ -5,6 +5,7 @@ import {
   createInviteInputSchema,
   runnerMessageCreateSchema,
   runnerServerFrameSchema,
+  runnerWorkSchema,
   scopedServerEventSchema,
 } from "../src/index.js"
 
@@ -105,6 +106,21 @@ check(runnerServerFrameSchema.safeParse({ type: "ack", ref: "request-1", ok: tru
   "runner success acknowledgements can return the published card id")
 check(runnerServerFrameSchema.safeParse({ type: "ack", ref: "request-1", ok: false, error: "channel access denied" }).success,
   "runner failures stay correlated to the originating request")
+const work = {
+  type: "work" as const,
+  payload: {
+    workId: "work-1",
+    communityId: "community-1",
+    agentId: "agent-1",
+    channelId: "channel-1",
+    from: { id: "user-1", communityId: "community-1", displayName: "Martin", initials: "MA", role: "teacher" as const, status: "active" as const, joinedAt: at, presence: "online" as const },
+    message: { id: "message-1", communityId: "community-1", channelId: "channel-1", authorId: "user-1", at, paragraphs: [[{ kind: "text" as const, text: "@Ada explain this" }]] },
+    context: [],
+  },
+}
+check(runnerWorkSchema.safeParse(work).success, "runner work carries the authenticated author's display projection")
+check(!runnerWorkSchema.safeParse({ ...work, payload: { ...work.payload, from: { ...work.payload.from, communityId: "community-2" } } }).success,
+  "runner work rejects an author projection from another community")
 
 if (failures.length > 0) {
   console.error(`\n${failures.length} hosted protocol check(s) failed`)
