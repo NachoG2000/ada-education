@@ -12,7 +12,7 @@
     "dev:demo": "npm run dev:demo -w @ada/web",
     "dev:web": "npm run dev -w @ada/web",
     "dev:server": "npm run dev -w @ada/server",
-    "runner": "tsx packages/runner/src/cli.ts --cwd data/neural-networks-2026/agents/ada --token ada-demo-token",
+    "runner": "tsx packages/runner/src/cli.ts --cwd data/neural-networks-2026/agents/ada --token ${ADA_AGENT_TOKEN:-ada-demo-token}",
     "seed": "npm run seed -w @ada/server",
     "build": "npm run build -w @ada/web",
     "lint": "oxlint apps packages",

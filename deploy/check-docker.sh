@@ -5,12 +5,18 @@
 # the network with its own volume and commits the run. Needs a docker daemon.
 set -euo pipefail
 
-PORT=18081
-NET=ada-docker-check
-SRV=ada-docker-check-server
-RUN=ada-docker-check-runner
-VOL=ada-docker-check-data
-RVOL=ada-docker-check-runner-data
+# Empirical verifies the source and an independent target concurrently. Every
+# invocation therefore owns its Docker namespace and (unless explicitly
+# pinned) asks Docker for a free host port.
+CHECK_ID="${ADA_DOCKER_CHECK_ID:-$$}"
+PORT="${ADA_DOCKER_CHECK_PORT:-}"
+NET="ada-docker-check-$CHECK_ID"
+SRV="ada-docker-check-server-$CHECK_ID"
+RUN="ada-docker-check-runner-$CHECK_ID"
+VOL="ada-docker-check-data-$CHECK_ID"
+RVOL="ada-docker-check-runner-data-$CHECK_ID"
+SERVER_IMAGE="ada-server:docker-check-$CHECK_ID"
+RUNNER_IMAGE="ada-runner:docker-check-$CHECK_ID"
 
 cleanup() {
   docker rm -f "$SRV" "$RUN" >/dev/null 2>&1 || true
@@ -23,14 +29,22 @@ trap cleanup EXIT
 fail() { echo "FAIL $1" >&2; exit 1; }
 ok() { echo "ok  $1"; }
 
-docker build -q -f deploy/Dockerfile -t ada-server:docker-check . >/dev/null
-docker build -q -f deploy/Dockerfile.runner -t ada-runner:docker-check . >/dev/null
+docker build -q -f deploy/Dockerfile -t "$SERVER_IMAGE" . >/dev/null
+docker build -q -f deploy/Dockerfile.runner -t "$RUNNER_IMAGE" . >/dev/null
 ok "both images build"
 
 docker network create "$NET" >/dev/null
-docker run -d --name "$SRV" --network "$NET" -v "$VOL":/data -p "$PORT":8080 \
+if [ -n "$PORT" ]; then
+  PORT_ARGS=(-p "127.0.0.1:$PORT:8080")
+else
+  PORT_ARGS=(-p "127.0.0.1::8080")
+fi
+docker run -d --name "$SRV" --network "$NET" -v "$VOL":/data "${PORT_ARGS[@]}" \
   -e ADA_REQUIRE_MEMBERSHIP=1 -e ADA_OWNER_TOKEN=dc-owner -e ADA_AGENT_TOKEN=dc-agent \
-  ada-server:docker-check >/dev/null
+  "$SERVER_IMAGE" >/dev/null
+if [ -z "$PORT" ]; then
+  PORT=$(docker port "$SRV" 8080/tcp | sed -n '1s/.*://p')
+fi
 
 for i in $(seq 1 30); do curl -sf "http://localhost:$PORT/health" >/dev/null && break; sleep 1; done
 curl -sf "http://localhost:$PORT/health" | grep -q '"ok":true' || fail "health"
@@ -44,7 +58,7 @@ ok "SPA served same-origin"
 # The bundle must carry the CONNECTED client, not the synthetic demo: Vite
 # inlines VITE_ADA_SERVER at build time and drops the unused branch, so a
 # missing build variable would silently ship the demo (deploy/Dockerfile).
-docker run --rm --entrypoint sh "ada-server:docker-check" -c \
+docker run --rm --entrypoint sh "$SERVER_IMAGE" -c \
   'grep -q "Connecting to the course" /app/apps/web/dist/assets/index-*.js' || fail "image bundles the demo instead of the connected client"
 ok "image bundles the connected client"
 
@@ -57,9 +71,22 @@ M2=$(curl -sf "http://localhost:$PORT/api/community" -H "authorization: Bearer $
 [ "$M1" = "$M2" ] || fail "restart changed seeded data"
 ok "restart: no re-seed, timestamps and person token stable"
 
+# Rotating the deploy's agent token: change the variable, run again on the same
+# volume. The seed doesn't re-run, so the server itself applies the override.
+curl -s -o /dev/null -w "%{http_code}" "http://localhost:$PORT/api/community" -H "authorization: Bearer dc-agent" | grep -q 200 || fail "agent token before rotation"
+docker rm -f "$SRV" >/dev/null
+docker run -d --name "$SRV" --network "$NET" -v "$VOL":/data -p "127.0.0.1:$PORT:8080" \
+  -e ADA_REQUIRE_MEMBERSHIP=1 -e ADA_OWNER_TOKEN=dc-owner -e ADA_AGENT_TOKEN=dc-agent-rotated \
+  "$SERVER_IMAGE" >/dev/null
+for i in $(seq 1 30); do curl -sf "http://localhost:$PORT/health" >/dev/null && break; sleep 1; done
+curl -s -o /dev/null -w "%{http_code}" "http://localhost:$PORT/api/community" -H "authorization: Bearer dc-agent" | grep -q 401 || fail "old agent token still works after rotation"
+curl -s -o /dev/null -w "%{http_code}" "http://localhost:$PORT/api/community" -H "authorization: Bearer dc-agent-rotated" | grep -q 200 || fail "rotated agent token does not work"
+docker logs "$SRV" 2>&1 | grep -c "first boot: seeding" | grep -qx 0 || fail "rotation re-seeded the volume"
+ok "agent token rotates by changing the variable (no re-seed)"
+
 docker run -d --name "$RUN" --network "$NET" -v "$RVOL":/data \
-  -e ADA_SERVER="http://$SRV:8080" -e ADA_AGENT_TOKEN=dc-agent -e ADA_RUNTIME=scripted \
-  ada-runner:docker-check >/dev/null
+  -e ADA_SERVER="http://$SRV:8080" -e ADA_AGENT_TOKEN=dc-agent-rotated -e ADA_RUNTIME=scripted \
+  "$RUNNER_IMAGE" >/dev/null
 for i in $(seq 1 30); do
   P=$(curl -sf "http://localhost:$PORT/api/community" -H "authorization: Bearer $TT" | python3 -c "import json,sys; d=json.load(sys.stdin); print(next((m['presence'] for m in d['members'] if m['id']=='ada'),''))")
   [ "$P" = "online" ] && break; sleep 1

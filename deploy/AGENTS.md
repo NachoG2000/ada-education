@@ -15,7 +15,10 @@ both images (container level).
 `npm run build`: Vite inlines that variable at build time and drops the unused
 branch, so without it the image ships the synthetic demo and no runtime
 variable can bring the real client back (`check-docker.sh` asserts the bundle
-carries the connected client). The server image must keep the monorepo layout (`repoRoot` in
+carries the connected client). The check owns per-process image/container/
+network/volume names and asks Docker for a free host port, because Empirical
+replays source and independent-target evidence concurrently. The server image
+must keep the monorepo layout (`repoRoot` in
 `apps/server/src/db.ts` is derived from the source tree) and absolute
 `ADA_DB`/`ADA_COURSE` on the volume. The runner entrypoint asserts
 `ADA_SERVER`/`ADA_AGENT_TOKEN` and must never echo the environment. Seed-once

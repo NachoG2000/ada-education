@@ -3,6 +3,7 @@ import { createServer, type Server } from "node:http"
 import { getRequestListener } from "@hono/node-server"
 import type { Channel, Member, Message, Presence } from "@ada/protocol"
 import {
+  applyAgentTokenOverride,
   applyModuleSuggestion,
   createMessage,
   createReport,
@@ -30,6 +31,11 @@ export type RunningServer = {
 
 export function startServer(): RunningServer {
   const database = openDatabase()
+  // Rotating the deploy's ADA_AGENT_TOKEN and restarting rotates the live
+  // token: the seed only runs on an empty volume (deploy/entrypoint-server.sh).
+  if (applyAgentTokenOverride(database, process.env.ADA_AGENT_TOKEN)) {
+    console.log("Applied ADA_AGENT_TOKEN to the course's agent.")
+  }
   const presence = new Map<string, Presence>()
   const memberKinds = new Map(listMembers(database).map((member) => [member.id, member.kind] as const))
   let hub: WebSocketHub | undefined

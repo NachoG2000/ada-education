@@ -186,11 +186,12 @@ export function createApi(database: DatabaseSync, options: ApiOptions = {}): Hon
 
   app.get("/health", (context) => context.json({ ok: true }))
 
-  /** The course's public face: what the join screen may show before any auth. */
+  /** The course's public face: name and subtitle, nothing else — a client
+      learns the course is gated from the 401 on /api/community. */
   app.get("/api/course", (context) => {
     const info = getCommunityInfo(database)
     if (!info) return context.json({ error: "The course isn't seeded yet" }, 404)
-    return context.json({ ...info, requireMembership })
+    return context.json(info)
   })
 
   /* Membership gating (DECISIONS.md §20, off for local dev): everything under
@@ -609,7 +610,9 @@ export function createApi(database: DatabaseSync, options: ApiOptions = {}): Hon
     const absolutePath = resolve(rawRoot, material.path)
     if (!absolutePath.startsWith(rawRoot + sep)) return context.json({ error: "material path resolves outside the course" }, 400)
     try {
-      return context.text(readFileSync(absolutePath, "utf8"))
+      // Bytes, not text: decoding and re-encoding would corrupt a pdf.
+      const bytes = readFileSync(absolutePath)
+      return context.body(new Uint8Array(bytes), 200, { "content-type": "application/octet-stream" })
     } catch {
       return context.json({ error: `The material's file is missing: ${material.path}` }, 404)
     }
@@ -894,7 +897,15 @@ export function createApi(database: DatabaseSync, options: ApiOptions = {}): Hon
      Absent in dev (Vite serves and proxies); present after `npm run build`. */
   const webDist = options.webDist ?? resolve(repoRoot, process.env.ADA_WEB_DIST ?? "apps/web/dist")
   if (hasWebDist(webDist)) {
-    app.get("*", (context) => serveWebFile(webDist, new URL(context.req.url).pathname))
+    app.get("*", (context) => {
+      const pathname = new URL(context.req.url).pathname
+      // An unmatched API path is a 404, never the app shell: the SPA fallback
+      // must not shadow the API namespace.
+      if (pathname === "/api" || pathname.startsWith("/api/")) {
+        return context.json({ error: `No such endpoint: ${pathname}` }, 404)
+      }
+      return serveWebFile(webDist, pathname)
+    })
   }
 
   return app

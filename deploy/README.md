@@ -31,7 +31,7 @@ docker build -f deploy/Dockerfile.runner -t ada-runner .
 | `ADA_DB` / `ADA_COURSE` | defaults `/data/ada.db`, `/data/course` — keep them on the volume |
 | `ADA_REQUIRE_MEMBERSHIP` | `1` — a public URL must be members-only |
 | `ADA_OWNER_TOKEN` | generate with the template's `${{secret(32)}}` |
-| `ADA_AGENT_TOKEN` | generate with `${{secret(32)}}`; the seed applies it to the course's single agent, replacing the committed demo token |
+| `ADA_AGENT_TOKEN` | generate with `${{secret(32)}}`; every server boot applies it to the course's single agent, replacing the committed demo token and supporting rotation on a persistent volume |
 
 Volume mounted at `/data`. Healthcheck path: `/health`. One replica only
 (SQLite + volume). WebSockets need no special config on Railway.
@@ -58,6 +58,18 @@ runner that lives in the deploy:
 Volume at `/data` (the agent's folder and its git history live there). The
 runner is a long-running process: it costs while idle. The entrypoint never
 prints the environment.
+
+## Rotating tokens
+
+- **The agent's:** change `ADA_AGENT_TOKEN` on the server service and redeploy.
+  The seed doesn't run again (the volume already has a database), so the server
+  applies the new value at boot; update the runner's copy of it too. A re-seed
+  never hands the agent back the course file's committed token.
+- **The teacher's:** POST the owner token to `/api/claim` again — it mints a
+  fresh person token and invalidates the previous one. That is the recovery
+  path when a teacher loses access.
+- **A student's:** send them a new invite link; the person they already are
+  keeps its channels.
 
 ## First run
 
@@ -94,6 +106,6 @@ users can "Eject" to their own copy.
 - The images run TypeScript via `tsx` and carry devDependencies (the web
   build): simple over small, revisit if size matters.
 - One agent per course is what `ADA_AGENT_TOKEN` rotates; several agents mean
-  editing `community.json` (the seed warns and keeps JSON tokens).
+  editing `community.json` (the seed warns and leaves the tokens alone).
 - Replacing the example course: put your own `community.json` + folders at
   `/data/course` (or point `ADA_COURSE` elsewhere) and re-seed on an empty DB.

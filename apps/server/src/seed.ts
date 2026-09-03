@@ -7,6 +7,7 @@ import {
   openDatabase,
   repoRoot,
   seedCommunity,
+  applyAgentTokenOverride,
   upsertAgent,
   upsertAssignment,
   upsertBaseCard,
@@ -142,16 +143,16 @@ export function seedCourse(options: SeedOptions = {}): void {
       upsertPerson(database, person)
       for (const channelId of person.channelIds ?? openChannelIds) addChannelMember(database, channelId, person.id)
     }
-    // A deploy rotates the committed demo token by env: with exactly one agent
-    // in the course, ADA_AGENT_TOKEN wins over the JSON (deploy/README.md).
-    const agentTokenOverride = process.env.ADA_AGENT_TOKEN
     const agents = config.agents ?? []
-    if (agentTokenOverride && agents.length > 1) console.warn("ADA_AGENT_TOKEN is set but the course has several agents; ignoring the override.")
-    for (const agent of agents) {
-      upsertAgent(database, agentTokenOverride && agents.length === 1
-        ? { ...agent, token: agentTokenOverride, tokenOverride: true }
-        : agent)
+    for (const agent of agents) upsertAgent(database, agent)
+    // A deploy rotates the committed demo token by env: with exactly one agent
+    // in the course, ADA_AGENT_TOKEN wins (deploy/README.md). The server
+    // applies the same override on every boot, so changing the variable and
+    // restarting rotates the live token too.
+    if (process.env.ADA_AGENT_TOKEN && agents.length > 1) {
+      console.warn("ADA_AGENT_TOKEN is set but the course has several agents; ignoring the override.")
     }
+    applyAgentTokenOverride(database, process.env.ADA_AGENT_TOKEN)
     for (const channel of config.channels) {
       for (const memberId of channel.memberIds ?? []) addChannelMember(database, channel.id, memberId)
     }

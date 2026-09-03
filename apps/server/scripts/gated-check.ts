@@ -75,13 +75,16 @@ async function main(): Promise<void> {
   let runner: ChildProcess | undefined
   try {
     if ((await runTsx(["apps/server/src/seed.ts"], env)) !== 0) throw new Error("seed failed")
+    const envWithoutAgentToken: NodeJS.ProcessEnv = { ...env }
+    delete envWithoutAgentToken.ADA_AGENT_TOKEN
+    if ((await runTsx(["apps/server/src/seed.ts"], envWithoutAgentToken)) !== 0) throw new Error("re-seed failed")
     server = spawn(tsxBin, ["apps/server/src/index.ts"], { cwd: repoRoot, env, stdio: ["ignore", "ignore", "inherit"] })
     await serverUp(base)
 
     // 1. The doors.
     check((await req("GET", "/health")).json.ok === true, "GET /health answers without auth")
     const course = await req("GET", "/api/course")
-    check(course.status === 200 && course.json.name === "Neural Networks 2026" && course.json.requireMembership === true, "GET /api/course shows only the course's public face")
+    check(course.status === 200 && course.json.name === "Neural Networks 2026" && Object.keys(course.json).sort().join(",") === "name,subtitle", "GET /api/course shows only name and subtitle")
     const closed = await req("GET", "/api/community")
     check(closed.status === 401 && !("members" in closed.json), "GET /api/community without a token is 401 and leaks nothing")
 
@@ -97,6 +100,7 @@ async function main(): Promise<void> {
     check((await req("GET", "/api/community", undefined, teacherToken)).status === 401, "the pre-rotation token stops working")
     check((await snapshotAs(rotatedTeacherToken)).members.some((m) => m.id === "martin"), "the teacher's token reads the community")
     check((await req("GET", "/api/community", undefined, AGENT_TOKEN)).status === 200, "the rotated agent token reads the community (runner snapshot fetch)")
+    check((await req("GET", "/api/no-such-route", undefined, rotatedTeacherToken)).status === 404, "unknown API routes stay API 404s instead of serving the SPA")
 
     // 3. WS gating.
     check((await wsCloseCode(`${base.replace(/^http/, "ws")}/ws`)) === 4401, "/ws without a token closes 4401")

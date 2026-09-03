@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 # Ada's optional runner service: the agent's process, in the org's OWN deploy,
 # with the org's own provider access — the server never runs models (§14).
 # git: the runner commits each run in the agent's folder. The claude CLI is

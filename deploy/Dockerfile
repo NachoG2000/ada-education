@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 # Ada's server service: UI + API + WS in one container (deploy/README.md).
 # Runs TypeScript from source with the monorepo layout intact (repoRoot in
 # apps/server/src/db.ts is derived from the source tree; see design D-005).

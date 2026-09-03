@@ -11,7 +11,7 @@
    exists in the wiki or that this run just wrote. */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
-import { dirname, join } from "node:path"
+import { dirname, join, resolve, sep } from "node:path"
 import type {
   Assignment,
   Card,
@@ -286,7 +286,18 @@ function runIngest(job: ScriptedJob, module: Module | undefined): ScriptedResult
       after: () => [{ type: "module.suggest", payload: { moduleId: module.id, status: "empty", difficulty: { level: module.difficulty.level, rationale: "No material to read yet.", evidence: [] } } }],
     }
   }
-  const file = join(job.rawDir, material.path)
+  // Same resolve+prefix guard the sync applies: `material.path` comes from
+  // the server's snapshot, which is a different trust domain.
+  const rawRoot = resolve(job.rawDir)
+  const file = resolve(job.rawDir, material.path)
+  if (!file.startsWith(rawRoot + sep)) {
+    return {
+      intent: "ingest",
+      answer: `I can't read ${material.name}: its path points outside the course's raw folder.`,
+      wrote: [],
+      after: () => [],
+    }
+  }
   const markdown = existsSync(file) ? readFileSync(file, "utf8") : `# ${material.name}\n\n${material.name} was uploaded but I couldn't read it as text.`
   const sections = splitSections(markdown)
   const published = job.now.toISOString()

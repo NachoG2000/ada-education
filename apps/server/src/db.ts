@@ -272,6 +272,20 @@ export function findTeacher(database: DatabaseSync): Person | undefined {
   return member?.kind === "person" ? member : undefined
 }
 
+/** Applies `ADA_AGENT_TOKEN` to the course's single agent when it's set and
+    different, so rotating the deploy's variable and restarting really rotates
+    the live token (the seed only runs on an empty volume). Returns whether it
+    changed anything; a course with several agents is left alone. */
+export function applyAgentTokenOverride(database: DatabaseSync, token: string | undefined): boolean {
+  if (!token) return false
+  const rows = database.prepare("SELECT id, token FROM members WHERE kind = 'agent'").all() as Row[]
+  if (rows.length !== 1) return false
+  const id = asString(rows[0].id)
+  if (!id || asString(rows[0].token) === token) return false
+  setMemberToken(database, id, token)
+  return true
+}
+
 export interface Invite {
   token: string
   role: "student" | "teacher"

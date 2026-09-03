@@ -521,7 +521,8 @@ async function syncMaterials(moduleId: string) {
         continue
       }
       mkdirSync(dirname(local), { recursive: true })
-      writeFileSync(local, await res.text(), "utf8")
+      // Bytes: a pdf or slide deck must land byte-identical.
+      writeFileSync(local, Buffer.from(await res.arrayBuffer()))
       synced++
     } catch (e) {
       log(`material sync failed for ${material.path}:`, (e as Error).message)

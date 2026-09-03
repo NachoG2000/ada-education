@@ -497,7 +497,6 @@ export async function reconcileReport(
 export interface CourseInfo {
   name: string
   subtitle: string
-  requireMembership: boolean
 }
 
 /** GET /api/course — the course's public face; never needs a token. */
