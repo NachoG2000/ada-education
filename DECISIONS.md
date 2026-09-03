@@ -1,8 +1,8 @@
 # DECISIONS.md — Ada Education
 
-Full project context. Read it whole before touching code. Updated Saturday 08/22 (Aleph Hackathon 2026, General Track only).
+Full project context. Read it whole before touching code. Updated 09/03.
 
-> **What this file is:** direction and ideas, with their history (superseded sections stay marked, never deleted). **It does not describe the current code.** The actual state of the code lives in `AGENTS.md` (repo map) and `openspec/` (spec of what's being built). The weekend's current scope is **§15**; §14 is the future architecture.
+> **What this file is:** direction and ideas, with their history (superseded sections stay marked, never deleted). **It does not describe the current code.** The actual state of the code lives in `AGENTS.md`. The current scope is **§22** (a hosted service to sell, demo first; issue #1); §19 was the open-source framing it superseded; §14 remains the architecture.
 
 ---
 
@@ -235,7 +235,7 @@ Don't do: have the server call models "for convenience"; ask for Claude tokens i
 
 **Plan B in concrete terms (this weekend):** `apps/server` (Node 24 + Hono + `node:sqlite` + WS), `packages/runner` (CLI, `claude -p` runtime), `packages/protocol` (types + events), `apps/web` (the current SPA), `data/<course>/` (wiki). All local on one laptop. Details in the OpenSpec change.
 
-## 15. Scope pivot: a custom build for one specific teacher (08/22, afternoon)
+## 15. Scope pivot: a custom build for one specific teacher (08/22, afternoon — superseded by §19, and by §21 for UI/configuration)
 
 Mentor's advice, adopted: *"I'd rather have a narrow system — like a custom build for one particular teacher, running on their machine — than a complete, scalable one."*
 
@@ -284,9 +284,9 @@ What changed with this decision:
 
 The repo rule lives in `AGENTS.md` ("Language"). Fixed English terminology in `PRODUCT.md`.
 
-## 18. Modules, study material, feedback and agent reports for the teacher/student demo (08/23, early morning)
+## 18. Modules, study material, feedback and agent reports for the teacher/student demo (08/23, early morning — visible pages superseded by §21)
 
-Request by Ignacio for the demo flow: the teacher loads modules and study material on a dedicated page with a difficulty adapted to the course and its students; the student sees the agent's feedback on the last assignment, learns the module that slipped and asks the agent how to get ahead; the agent tells the teacher what it advised; the teacher reconciles it into the subject. Everything mocked, but "the agent really answers and it doesn't feel hardcoded". Contract, design, plan and decisions: `.empirical/specs/build-the-hackathon-demo-flow-for-ada-one-teacher-fully/`.
+Request by Ignacio for the demo flow: the teacher loads modules and study material on a dedicated page with a difficulty adapted to the course and its students; the student sees the agent's feedback on the last assignment, learns the module that slipped and asks the agent how to get ahead; the agent tells the teacher what it advised; the teacher reconciles it into the subject. Everything mocked, but "the agent really answers and it doesn't feel hardcoded". The implementation remains in repository history and the decisions below preserve its product contract.
 
 **Decisions:**
 
@@ -301,3 +301,148 @@ Request by Ignacio for the demo flow: the teacher loads modules and study materi
 **Out of scope, still:** grading, permissions, notifications beyond the `#teachers` message and the report list, PDF parsing (a PDF uploads as a placeholder; markdown is read), per-student personalization of content.
 
 ~~**Next, decided but not built (08/23, morning):** the demo language flips to **Spanish (rioplatense, voseo)** as the default — UI strings, seeded course content and the scripted runtime's templates — with English behind a query parameter (`?english=true`).~~ **Superseded the same morning:** Ignacio dropped the Spanish localization; the product stays in English (§17). Nothing was implemented.
+
+## 19. Product focus: open source for course-running organizations (08/23)
+
+The Aleph 2026 hackathon phase closed on 08/23: the code cutoff passed and the demo flow of §18 was built and verified. The `demo` branch was merged into `main` and deleted; from here the repository is the product, not a demo.
+
+**Direction:** Ada is an **open-source product** for **organizations that run cohort-based courses — bootcamps, academies, corporate training programs, universities**. This extends §16 from pitch positioning to product direction: the open-source route — contributors, teacher-by-teacher and organization-by-organization adoption, hosting as the later commercial engine — is now how the product is built, not just how it was pitched.
+
+**Named targets: none, on purpose.** No specific organization is named anywhere in the repository; the audience is always described in the generic terms above. Conversations with any particular organization live outside the repo until they become a decision recorded here.
+
+**License:** Apache-2.0, reaffirming §4 — the `LICENSE` file ships at the root.
+
+**What §15 keeps:** the deployment shape. The code today still runs fully local on one machine (server + runner + web client), and local-first remains the free tier of §14/§16. What changes is the frame: it stops being "a custom build for one specific teacher this weekend" and becomes the open-source product any of these organizations can run.
+
+Backing: `research/2026-08-22-open-source-vs-premium.md` (open source vs premium evidence), §4 (license), §16 (positioning line and counterexamples).
+
+## 20. Railway one-click template: identity by tokens, runner outside (08/23, night)
+
+Decided with Ignacio after verifying how Buzz ships its relay template and what
+Railway allows (`research/2026-08-23-railway-deploy-template.md`,
+`research/2026-08-23-buzz-identity-and-agents.md`,
+`research/2026-08-23-shared-filesystem-on-railway.md`). This is §4(b) made
+concrete: the self-host rung between the laptop and hosted.
+
+1. **One deploy = one course community.** An organization runs N cohorts as N
+   deploys. Multi-course stays future direction (§9, §14).
+2. **Identity copies Buzz's pattern, with plain tokens instead of Nostr keys.**
+   A deploy-time **owner token** claims the teacher (`POST /api/claim`, always
+   recoverable, rotates the teacher's token); the teacher mints **single-use
+   invite links** (`#join?token=…` → name → student); members live in the
+   server's DB and **membership gating is an explicit flag**
+   (`ADA_REQUIRE_MEMBERSHIP`, off for local dev, on in the template — Buzz
+   ships open-by-default, we don't). Students don't manage keypairs: a
+   bootcamp student who loses an `nsec` loses the identity; a lost Ada token
+   is one invite away.
+3. **Runners stay outside the deploy by default** (the teacher's machine,
+   their own `claude` login; `https://` → `wss://` already works). The
+   template offers an **optional runner service** where the org pastes its own
+   `ANTHROPIC_API_KEY`: the credential lives in *their* Railway project,
+   never with us — §14's "the server never runs models" holds in every shape.
+4. **No shared filesystem.** Railway forbids FUSE/privileged mounts and
+   volumes are one-per-service, so the Archil-style composed view stays in the
+   hosted tier (§14.7 layer 3). What crosses machines crosses over HTTP: the
+   server serves material content and the runner syncs its local `raw/`
+   before an ingest. Git remains the folder's own sync/audit layer.
+
+**What this changed in the code:** the server serves the built SPA same-origin
+(one public service) plus `/health`; claim/invite/join endpoints and
+token-derived authorship under the gating flag; `member.joined` in the
+protocol; the runner's material sync; `deploy/` (Dockerfiles, entrypoints,
+runbook); `npm run check:gated` covering all of it. Publishing the template in
+Railway's dashboard is a manual step in `deploy/README.md`.
+
+## 21. Buzz desktop as the SPA interaction reference; chat and configuration first (08/24 — superseded by §22)
+
+Decided by Ignacio after cloning and mapping Buzz at commit
+`0720f5380ce8a6c050afac159f8462c06cd51ab5`. The source-backed inventory is
+`research/2026-08-23-buzz-ui-map.md`; implementation findings are recorded in
+`research/2026-08-24-buzz-parity-implementation.md`.
+
+1. **Buzz is the visible UI and interaction reference, not Ada's backend.** The
+   SPA reproduces Buzz's fixed gradient frame, compact top chrome, collapsible
+   sidebar, rounded content surface, channel timeline/composer, thread panel,
+   command palette, channel management, Agents catalog and Settings density.
+   §14 is unchanged: Ada keeps its TypeScript server, SQLite, shared protocol,
+   agent folders and external runners. No Rust/Tauri, Nostr identity/relays,
+   repository runtime or provider credential code is imported from Buzz.
+2. **The visible product is chat and configuration first.** The routes in this
+   phase are Inbox, channels, Agents and scoped Settings. The dedicated
+   **Modules**, **My study** and standalone **Card File/document** pages from §18
+   leave the navigation and routing. Module, feedback, report and card data stay
+   in the server/runner knowledge pipeline and may appear as inline conversation
+   publications or citations; history is not deleted.
+3. **Channels and agents are created and configured from the UI.** This
+   supersedes §15's configuration-file-only limitation. Channel group,
+   visibility, membership, agent assignment, work state and archive lifecycle
+   persist in SQLite. Agent identity, scope, instructions, runtime/model label,
+   figure, assignments and status persist in SQLite; creation/rotation yields an
+   Ada runner token/setup command, while provider access remains only in the
+   external runner's environment (§14, §20).
+4. **Deletion never wins over course history.** A non-empty channel is archived,
+   not cascade-deleted. An agent with authored history is deactivated, not
+   erased. Private channels are filtered by the server across snapshot, REST,
+   search, attachment access and WS delivery; hiding them only in React is not
+   sufficient.
+5. **Scope boundaries are explicit.** Buzz Canvas/documents, Pulse, Projects and
+   repositories, Workflows, Reminders, huddles/voice, Nostr onboarding, hosted
+   community administration and agent-harness/provider-key configuration stay
+   out. Ada also does not add grading, broad permissions, billing, SSO,
+   notifications, multi-course tenancy, vector search or personalization.
+6. **Connected mode is the working product.** The default local/deployed SPA
+   performs real REST/WS/SQLite mutations. `npm run dev:demo` remains a clearly
+   labelled read-only synthetic preview rather than growing a second fake CRUD
+   implementation.
+
+This section supersedes only the UI/page and static-configuration parts of
+§§15/18. It does not reopen the memory model, agent name, `fromCard` semantics,
+local server/runner topology, open-source direction or Railway deployment
+decisions.
+
+## 22. Pivot: a hosted service to sell, demo first (09/03)
+
+Decided with Ignacio on 2026-09-03. Tracked in GitHub issue #1
+(https://github.com/NachoG2000/ada-education/issues/1), which holds the scope
+and checklist. Background:
+`research/2026-09-01-buzz-fork-vs-own-frontend.md` and
+`research/2026-09-01-strategy-scoped-agents-group-brain.md`.
+
+**The objective for the next weeks is a demo worth showing, on a date**, not
+the product shape argued in the September memos. The hackathon UI is not what
+we want and polishing it by taste has failed twice; the simplest
+implementation that can be demoed end to end wins.
+
+1. **Product shape: a hosted service sold by subscription** to institutions
+   with budget (schools, universities). This supersedes §19's open-source,
+   local-first framing as *the* product. Whether the public Apache-2.0 repo
+   stays as open core or goes private is an open question in the issue.
+2. **Runners by environment.** Development and tests use a **local runner
+   with the developer's own Claude or Codex subscription** (no API tokens
+   spent; the pattern §14 already allows). Production uses **hosted runners
+   with our provider keys, billed by usage** (§14.5's hosted tier). §14's
+   invariant holds in both: the server never runs a model; the runner stays
+   a separate process.
+3. **User identity is independent of membership.** A user has one session
+   (a user token); a community has members with a **role per community**
+   (teacher in one, student in another); one deployment hosts **many
+   communities**; invites are simple codes, no emails. This supersedes
+   §20.1 ("one deploy = one course community") and the per-community member
+   token of §20.2.
+4. **UI = Buzz's shell, no more, no less, in default shadcn styles.** No
+   differential UI and **no cards UI**: the card strip, the "already on file"
+   seal, folded tabs, channel types and `DESIGN.md`'s named rules are
+   **paused**, not deleted. The agent's memory (§6) stays in its folder;
+   whatever it publishes is not rendered in this phase. Styles come after
+   CRUD works. `research/2026-08-23-buzz-ui-map.md` is the inventory to copy.
+5. **Everything is created from the UI**: communities, channels, members
+   (invite codes, roles), and agents. This supersedes §15's "defined in a
+   config file".
+6. **What stays**: the memory model (§6), protocol/server/runner separation
+   (§14), the Railway deployment work (§20), and the thesis in `PROBLEM.md`.
+   The strategy memos of 09/01 (scoped agents, chat as commodity, adapters)
+   are future direction, not this implementation plan.
+
+**This phase is a local demo**: no deploy, billing, or video yet — foundations
+first. No grading, broad permissions, OAuth, hosted runners, proactive loops,
+cohort inheritance, search, notifications, or mobile-specific product work.

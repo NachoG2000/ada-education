@@ -7,6 +7,7 @@ import {
   openDatabase,
   repoRoot,
   seedCommunity,
+  applyAgentTokenOverride,
   upsertAgent,
   upsertAssignment,
   upsertBaseCard,
@@ -24,6 +25,7 @@ import {
   type SeedPerson,
   type SeedReport,
 } from "./db.js"
+import { syncLegacyToTenant } from "./tenant.js"
 import type { CardType, Difficulty, MessageBlock, ModuleStatus, WorkStatus } from "@ada/protocol"
 import type { DatabaseSync } from "node:sqlite"
 
@@ -142,7 +144,16 @@ export function seedCourse(options: SeedOptions = {}): void {
       upsertPerson(database, person)
       for (const channelId of person.channelIds ?? openChannelIds) addChannelMember(database, channelId, person.id)
     }
-    for (const agent of config.agents ?? []) upsertAgent(database, agent)
+    const agents = config.agents ?? []
+    for (const agent of agents) upsertAgent(database, agent)
+    // A deploy rotates the committed demo token by env: with exactly one agent
+    // in the course, ADA_AGENT_TOKEN wins (deploy/README.md). The server
+    // applies the same override on every boot, so changing the variable and
+    // restarting rotates the live token too.
+    if (process.env.ADA_AGENT_TOKEN && agents.length > 1) {
+      console.warn("ADA_AGENT_TOKEN is set but the course has several agents; ignoring the override.")
+    }
+    applyAgentTokenOverride(database, process.env.ADA_AGENT_TOKEN)
     for (const channel of config.channels) {
       for (const memberId of channel.memberIds ?? []) addChannelMember(database, channel.id, memberId)
     }
@@ -212,6 +223,10 @@ export function seedCourse(options: SeedOptions = {}): void {
           : undefined,
       })
     }
+
+    // Keep the hosted-demo projection aligned on the first explicit seed.
+    // Existing tenant edits and additional communities are never overwritten.
+    syncLegacyToTenant(database)
 
     console.log(`Seed complete: ${config.name} (${config.channels.length} channels, ${people.length + (config.agents ?? []).length} members). Repeatable without duplicating.`)
   } finally {

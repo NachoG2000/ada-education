@@ -9,7 +9,10 @@
     "check": "tsc --noEmit",
     "smoke": "tsx scripts/smoke-run.ts",
     "check:seed": "tsx scripts/seed-check.ts",
-    "check:e2e": "tsx scripts/e2e-flow.ts"
+    "check:e2e": "tsx scripts/e2e-flow.ts",
+    "check:gated": "tsx scripts/gated-check.ts",
+    "check:workspace": "tsx scripts/workspace-check.ts",
+    "check:issue1": "tsx scripts/issue1-flow.ts"
   },
   "dependencies": {
     "@ada/protocol": "*",
@@ -20,5 +23,8 @@
   "devDependencies": {
     "@types/node": "^24.0.0",
     "@types/ws": "^8.18.1"
+  },
+  "engines": {
+    "node": ">=24"
   }
 }

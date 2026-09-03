@@ -1,0 +1,27 @@
+# Historical optional runner image. Issue #1's supported development path is
+# the local subscription runner started from the UI-generated command; hosted
+# runner deployment remains a later milestone. This image stays buildable for
+# the pre-existing container/fixture verification.
+FROM node:24-slim
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends git ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+COPY apps/web/package.json apps/web/
+COPY apps/server/package.json apps/server/
+COPY packages/protocol/package.json packages/protocol/
+COPY packages/runner/package.json packages/runner/
+RUN npm ci --no-audit --no-fund \
+  && npm install -g --no-audit --no-fund @anthropic-ai/claude-code
+
+COPY . .
+
+# The agent's folder and git history live on this service's own volume.
+ENV ADA_RUNTIME=claude ADA_AGENT_CWD=/data/course/agents/ada
+VOLUME /data
+
+ENTRYPOINT ["/app/deploy/entrypoint-runner.sh"]

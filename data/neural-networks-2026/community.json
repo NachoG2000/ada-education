@@ -69,6 +69,7 @@
       "id": "teachers",
       "name": "teachers",
       "group": "course",
+      "visibility": "private",
       "description": "Where the course is run. Ada files what it learns about the cohort here.",
       "memberIds": [
         "martin",
@@ -490,7 +491,7 @@
       "channelId": "general",
       "authorId": "martin",
       "ago": "48h",
-      "text": "Assignment 2 feedback is out. Ada wrote each of you a note on how it went — open My study to read it."
+      "text": "Assignment 2 feedback is out. Ada wrote each of you a note on how it went — check your private channel to read it."
     },
     {
       "id": "m-general-thanks",

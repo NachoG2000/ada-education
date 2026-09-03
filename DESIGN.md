@@ -135,9 +135,25 @@ components:
 
 # Design System: Ada
 
+## Current visible workspace — issue #1 (2026-09-03)
+
+The hosted-service demo uses the default base-nova shadcn visual language inside a Buzz-shaped community shell: narrow community rail, channel/DM/member sidebar, open conversation rows and a desktop thread column that becomes a sheet below 1024px. Agent identity uses the configured avatar URL with a neutral bot-icon fallback; people use initials. This implementation note supersedes the 2026-08-24 mounted-frame, gradient, theme, route and deterministic-figure requirements immediately below.
+
+The Card File system, its typography, tabs, figures and provenance language are paused, not deleted. They remain the design direction for durable card surfaces when card UI returns. In the current shell there is no card strip, publication tile, citation panel, Modules, My study, Inbox, standalone Agents page, broad Settings area or special course/work/private grouping.
+
+## Current visible workspace — Buzz frame (2026-08-24)
+
+`DECISIONS.md` §21 supersedes the former Card File shell while retaining its document/provenance language inside conversation. The mounted SPA uses the pinned Buzz desktop composition: one continuous full-viewport gradient canvas, 36px compact top chrome, a 300px sidebar that resizes from 220–420px or collapses to 52px, and one rounded 16px inset content surface. The main routes are Inbox, Channel, Agents and scoped Settings. A desktop thread is a 380px auxiliary split that resizes from 300–720px; below 600px it overlays the conversation. Below 768px, the sidebar becomes a 288px sheet. No information is removed merely to fit a narrow viewport.
+
+The code tokens in `apps/web/src/index.css` are authoritative. Light chrome runs from `#e6e6b6` to `#c4d0da`; dark chrome runs from `#4a4616` to `#0a1423`. The accent is a solid workspace action/focus color (`#8839ef` light, `#c6a0f6` dark), never a purple gradient. Content surfaces remain neutral. Inter is used for chrome, settings and conversation; Literata is reserved for durable card content; Geist Mono is reserved for code/version material.
+
+Visible depth comes from the gradient frame, inset surface, restrained popover shadows and internal separators. Messages are open rows with no chat bubbles. Use official shadcn/Base UI and AI Elements primitives; compose triggers through their `render` API and never nest interactive elements. Every icon-only control has an accessible name, every mutation exposes pending/error state, and teacher/student capabilities match the server rather than advertising forbidden actions. Theme, sidebar dimensions and composer drafts persist locally. Motion is limited to meaningful state transitions and obeys `prefers-reduced-motion`.
+
+Agent identity remains Ada-specific: deterministic solid silhouettes, crown/feet and exactly two eyes; people remain pastel circles with initials. Card type color remains limited by the Tab Rule when a citation or publication appears inline. Dedicated Modules, My study and Card File pages are not part of the visible system.
+
 ## Overview
 
-**Creative North Star: "The Card File"**
+**Inline knowledge-artifact north star: "The Card File"**
 
 Ada takes the logic of a card file — cards classified by their color tab, states that get sealed, agents that file things away — and executes it with the reference material from `design/inspiration/01`: a color-washed background (pink → lavender → mint → yellow), white panels floating with a large radius and a soft diffuse shadow, folded tabs with a diagonal cut, a full yellow that marks what's new, and pastel pills that state the status. Colorful and playful with confidence, on par with Berd and Buzz, without an "AI app" look: no gradient purple, sparkles, or bubbles.
 
@@ -195,9 +211,9 @@ Strategy: **full palette with roles** — warm neutrals, a lead yellow, a black 
 ### Named Rules
 **The Three Voices Rule.** Literata = what gets read and filed. Inter = what gets discussed and operated. Geist Mono = code and version.
 
-## Layout
+## Retained Card File layout reference (not the mounted shell)
 
-Three floating panels over the color wash, with 16px of air: drawers (264px) · channel (min. 560px) · contextual panel (416px). Inside the channel: header (19px), **card strip** over panel-2 with a 16 radius (three 82px cards + "+N"), conversation in rows with a 36px avatar and 8px of air, composer on panel-2 with a 16 radius. The active channel in the sidebar is a black pill. 4px rhythm; more air above a title than below it. Desktop only.
+This was the 08/22 shell: three floating panels over the color wash with a card strip above conversation. It remains useful only when rendering card artifacts and historical mockups. For the mounted responsive workspace, use the current section above.
 
 ## Elevation & Depth
 

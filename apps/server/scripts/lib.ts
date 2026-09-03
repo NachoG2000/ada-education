@@ -1,7 +1,7 @@
 /* Shared harness for the check scripts in this folder: a pass/fail collector,
    a spawn-and-wait wrapper for tsx scripts, and a poll-until helper. */
 
-import { spawn, type StdioOptions } from "node:child_process"
+import { spawn, type ChildProcess, type StdioOptions } from "node:child_process"
 import { resolve } from "node:path"
 import { repoRoot } from "../src/db.js"
 
@@ -32,6 +32,27 @@ export function runTsx(args: string[], env: NodeJS.ProcessEnv, stdio: StdioOptio
   })
 }
 
+/** Ask a spawned check process to stop and wait until all of its file handles
+    are closed before a throwaway course directory is removed. */
+export async function stopChild(child: ChildProcess | undefined): Promise<void> {
+  if (!child || child.exitCode !== null || child.signalCode !== null) return
+  await new Promise<void>((resolvePromise) => {
+    let settled = false
+    const finish = () => {
+      if (settled) return
+      settled = true
+      clearTimeout(forceTimer)
+      resolvePromise()
+    }
+    const forceTimer = setTimeout(() => {
+      if (child.exitCode === null && child.signalCode === null) child.kill("SIGKILL")
+    }, 2_000)
+    child.once("close", finish)
+    child.once("error", finish)
+    if (!child.kill("SIGTERM")) finish()
+  })
+}
+
 /** Poll `probe` until it returns a value or the timeout passes. */
 export async function until<T>(what: string, probe: () => Promise<T | undefined>, timeoutMs = 15000): Promise<T> {
   const start = Date.now()
@@ -43,11 +64,11 @@ export async function until<T>(what: string, probe: () => Promise<T | undefined>
   }
 }
 
-/** True once GET /api/community answers ok. */
+/** True once GET /health answers ok (auth-free in gated mode too). */
 export async function serverUp(base: string): Promise<true> {
   return until("server up", async () => {
     try {
-      return (await fetch(`${base}/api/community`)).ok ? (true as const) : undefined
+      return (await fetch(`${base}/health`)).ok ? (true as const) : undefined
     } catch {
       return undefined
     }

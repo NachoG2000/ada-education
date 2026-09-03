@@ -12,3 +12,8 @@ Convention: one file per session or document, `YYYY-MM-DD-<topic>.md`. Every cla
 | `2026-08-22-open-source-vs-premium.md` | Precedents from open source edtech and open-core vs. selling to elite schools; Aleph jury criteria. Basis for `DECISIONS.md` §16. |
 | `2026-08-22-aleph-submission-and-pitch.md` | Aleph 2026 submission rules and pitch guidance: demo video constraints, judging criteria, and what we decided for the pitch structure. |
 | `2026-08-22-api-local-frameworks.md` | Technical claims used to implement Ada's local API: Hono on Node, WebSocket, and Node's built-in SQLite. |
+| `2026-09-01-buzz-fork-vs-own-frontend.md` | Buzz-fork versus own-frontend assessment and re-verification of the pinned Buzz desktop source. |
+| `2026-09-01-strategy-scoped-agents-group-brain.md` | Strategy memo on scoped agents, shared memory, chat adapters, and the proposed course-community position. |
+| `2026-09-01-instinct-thesis-memory-as-compiler.md` | Summary of the supplied “Instinct Thesis” and what it validates or leaves missing in Ada's memory model. |
+| `2026-09-03-codex-local-runner.md` | Official Codex CLI authentication and non-interactive command findings for issue #1's subscription-backed local runner. |
+| `2026-09-03-issue-1-implementation.md` | Scope, architecture boundaries, preservation record, baseline evidence, and primary review log for GitHub issue #1. |

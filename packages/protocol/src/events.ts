@@ -4,6 +4,28 @@ import type { Community } from "./types.js"
 const cardTypeSchema = z.enum(["note", "assignment", "decision", "answer", "submission"])
 const visibilitySchema = z.enum(["channel", "only-me"])
 const presenceSchema = z.enum(["online", "away", "thinking", "publishing"])
+export const channelVisibilitySchema = z.enum(["open", "private"])
+export const channelStatusSchema = z.enum(["active", "archived"])
+export const agentStatusSchema = z.enum(["active", "inactive"])
+/* `scripted` remains for the local deterministic demo; hosted runners use
+   Claude or Codex subscriptions. */
+export const agentRuntimeSchema = z.enum(["scripted", "claude", "codex"])
+export const apiErrorCodeSchema = z.enum([
+  "invalid_input",
+  "unauthorized",
+  "forbidden",
+  "not_found",
+  "not_channel_member",
+  "channel_archived",
+  "conflict",
+  "history_conflict",
+])
+
+export const apiErrorSchema = z.object({
+  error: z.string(),
+  code: apiErrorCodeSchema,
+  field: z.string().optional(),
+})
 
 export const citationSchema = z.object({
   cardId: z.string(),
@@ -16,6 +38,23 @@ export const messageBlockSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("code"), text: z.string() }),
 ])
 
+export const attachmentSchema = z.object({
+  id: z.string(),
+  channelId: z.string(),
+  uploaderId: z.string(),
+  name: z.string(),
+  mime: z.string(),
+  size: z.number(),
+  createdAt: z.string(),
+  messageId: z.string().optional(),
+})
+
+export const messageReactionSchema = z.object({
+  emoji: z.string(),
+  count: z.number(),
+  memberIds: z.array(z.string()),
+})
+
 export const messageSchema = z.object({
   id: z.string(),
   channelId: z.string(),
@@ -25,7 +64,11 @@ export const messageSchema = z.object({
   threadId: z.string().optional(),
   fromCard: z.object({ cardId: z.string(), ago: z.string() }).optional(),
   publishes: z.string().optional(),
-  reactions: z.array(z.object({ emoji: z.string(), count: z.number() })).optional(),
+  clientId: z.string().optional(),
+  editedAt: z.string().optional(),
+  deletedAt: z.string().optional(),
+  attachments: z.array(attachmentSchema).optional(),
+  reactions: z.array(messageReactionSchema).optional(),
 })
 
 export const threadSchema = z.object({
@@ -57,6 +100,15 @@ const agentSchema = z.object({
   provider: z.object({ mode: z.enum(["subscription", "api-key"]), model: z.string() }),
   channelIds: z.array(z.string()),
   presence: presenceSchema,
+  description: z.string().optional(),
+  /* Snapshot compatibility: older seeded agents used arbitrary runtime labels;
+     create/update request schemas remain strict via agentRuntimeSchema. */
+  runtime: z.string().optional(),
+  model: z.string().optional(),
+  status: agentStatusSchema.optional(),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional(),
+  inactiveAt: z.string().optional(),
 })
 
 export const memberSchema = z.discriminatedUnion("kind", [personSchema, agentSchema])
@@ -86,6 +138,12 @@ export const channelSchema = z.object({
   id: z.string(),
   name: z.string(),
   group: z.enum(["course", "work", "private"]),
+  visibility: channelVisibilitySchema.optional(),
+  status: channelStatusSchema.optional(),
+  createdBy: z.string().optional(),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional(),
+  archivedAt: z.string().optional(),
   description: z.string().optional(),
   memberIds: z.array(z.string()),
   memberCount: z.number().optional(),
@@ -94,6 +152,102 @@ export const channelSchema = z.object({
     due: z.string().optional(),
   }).optional(),
   unread: z.boolean().optional(),
+})
+
+export const workChannelInputSchema = z.object({
+  status: z.enum(["active", "submitted", "archived"]).optional(),
+  due: z.string().optional(),
+})
+
+/** REST request schemas. Actor/creator IDs deliberately do not appear: the
+    server derives identity from the bearer token (with legacy ungated mode
+    handled by the server adapter). */
+export const createChannelInputSchema = z.object({
+  name: z.string().trim().min(1).max(80),
+  description: z.string().max(1000).optional(),
+  group: z.enum(["course", "work", "private"]),
+  visibility: channelVisibilitySchema,
+  memberIds: z.array(z.string()).max(100).optional(),
+  agentIds: z.array(z.string()).max(100).optional(),
+  work: workChannelInputSchema.optional(),
+})
+
+export const updateChannelInputSchema = z.object({
+  name: z.string().trim().min(1).max(80).optional(),
+  description: z.string().max(1000).nullable().optional(),
+  group: z.enum(["course", "work", "private"]).optional(),
+  visibility: channelVisibilitySchema.optional(),
+  status: channelStatusSchema.optional(),
+  work: workChannelInputSchema.nullable().optional(),
+})
+
+export const replaceChannelMembersInputSchema = z.object({
+  memberIds: z.array(z.string()).max(100),
+  agentIds: z.array(z.string()).max(100),
+})
+
+export const createAgentInputSchema = z.object({
+  name: z.string().trim().min(1).max(80),
+  description: z.string().max(2000).optional(),
+  instructions: z.string().max(20_000),
+  scope: z.enum(["community", "personal"]),
+  runtime: agentRuntimeSchema,
+  model: z.string().max(200).optional(),
+  figureSeed: z.string().max(200).optional(),
+  figureColor: z.enum(["coral", "green", "yellow", "blue", "lilac", "pink", "teal", "orange", "red", "lime"]).optional(),
+  channelIds: z.array(z.string()).max(100),
+})
+
+export const updateAgentInputSchema = z.object({
+  name: z.string().trim().min(1).max(80).optional(),
+  description: z.string().max(2000).optional(),
+  instructions: z.string().max(20_000).optional(),
+  scope: z.enum(["community", "personal"]).optional(),
+  runtime: agentRuntimeSchema.optional(),
+  model: z.string().max(200).optional(),
+  figureSeed: z.string().max(200).optional(),
+  figureColor: z.enum(["coral", "green", "yellow", "blue", "lilac", "pink", "teal", "orange", "red", "lime"]).optional(),
+  channelIds: z.array(z.string()).max(100).optional(),
+  status: agentStatusSchema.optional(),
+})
+
+export const communityUpdateInputSchema = z.object({
+  name: z.string().trim().min(1).max(120).optional(),
+  subtitle: z.string().max(240).optional(),
+})
+
+export const profileUpdateInputSchema = z.object({
+  name: z.string().trim().min(1).max(120).optional(),
+  initials: z.string().trim().max(4).optional(),
+  tone: z.enum(["card", "cardstock", "seal-soft", "red-soft"]).optional(),
+})
+
+export const messageCreateInputSchema = z.object({
+  threadId: z.string().optional(),
+  paragraphs: z.array(z.array(messageBlockSchema)),
+  clientId: z.string().max(200).optional(),
+  attachmentIds: z.array(z.string()).max(20).optional(),
+})
+
+export const editMessageInputSchema = z.object({
+  paragraphs: z.array(z.array(messageBlockSchema)),
+})
+
+export const messageReactionInputSchema = z.object({
+  emoji: z.string().trim().min(1).max(32),
+})
+
+export const attachmentReferenceInputSchema = z.object({
+  attachmentIds: z.array(z.string()).max(20),
+})
+
+export const readMarkerInputSchema = z.object({
+  lastReadAt: z.string(),
+})
+
+export const typingInputSchema = z.object({
+  channelId: z.string(),
+  typing: z.boolean(),
 })
 
 /* ---- Modules, assignments, feedback, reports (DECISIONS.md §18) ------------ */
@@ -211,6 +365,15 @@ export const communitySnapshotSchema = z.object({
   assignments: z.array(assignmentSchema),
   feedback: z.array(feedbackSchema),
   reports: z.array(reportSchema),
+  updatedAt: z.string().optional(),
+})
+
+export const communityInfoSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  subtitle: z.string(),
+  initial: z.string(),
+  updatedAt: z.string().optional(),
 })
 
 export const cardPublishInputSchema = z.object({
@@ -258,6 +421,54 @@ export const serverEventSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("report.updated"),
     payload: z.object({ report: reportSchema }),
+  }),
+  z.object({
+    type: z.literal("member.joined"),
+    payload: z.object({ member: memberSchema }),
+  }),
+  z.object({
+    type: z.literal("channel.created"),
+    payload: z.object({ channel: channelSchema }),
+  }),
+  z.object({
+    type: z.literal("channel.updated"),
+    payload: z.object({ channel: channelSchema }),
+  }),
+  z.object({
+    type: z.literal("channel.deleted"),
+    payload: z.object({ channelId: z.string(), deletedAt: z.string(), deletedBy: z.string() }),
+  }),
+  z.object({
+    type: z.literal("member.updated"),
+    payload: z.object({ member: memberSchema }),
+  }),
+  z.object({
+    type: z.literal("member.deleted"),
+    payload: z.object({ memberId: z.string() }),
+  }),
+  z.object({
+    type: z.literal("community.updated"),
+    payload: z.object({ community: communityInfoSchema }),
+  }),
+  z.object({
+    type: z.literal("message.updated"),
+    payload: z.object({ message: messageSchema }),
+  }),
+  z.object({
+    type: z.literal("message.deleted"),
+    payload: z.object({ message: messageSchema }),
+  }),
+  z.object({
+    type: z.literal("message.reactions.updated"),
+    payload: z.object({ messageId: z.string(), reactions: z.array(messageReactionSchema) }),
+  }),
+  z.object({
+    type: z.literal("channel.read"),
+    payload: z.object({ channelId: z.string(), memberId: z.string(), lastReadAt: z.string() }),
+  }),
+  z.object({
+    type: z.literal("typing.updated"),
+    payload: z.object({ channelId: z.string(), memberId: z.string(), typing: z.boolean() }),
   }),
 ])
 
@@ -331,6 +542,7 @@ const ackErrorSchema = z.object({
   ref: z.string(),
   ok: z.literal(false),
   error: z.string(),
+  code: apiErrorCodeSchema.optional(),
 })
 
 export const ackSchema = z.discriminatedUnion("ok", [ackSuccessSchema, ackErrorSchema])
@@ -344,3 +556,17 @@ export type Ack = z.infer<typeof ackSchema>
 export type ModuleSuggestInput = z.infer<typeof moduleSuggestInputSchema>
 export type ReportCreateInput = z.infer<typeof reportCreateInputSchema>
 export type MentionIntent = z.infer<typeof mentionIntentSchema>
+export type ApiErrorPayload = z.infer<typeof apiErrorSchema>
+export type CreateChannelRequest = z.infer<typeof createChannelInputSchema>
+export type UpdateChannelRequest = z.infer<typeof updateChannelInputSchema>
+export type ReplaceChannelMembersRequest = z.infer<typeof replaceChannelMembersInputSchema>
+export type CreateAgentRequest = z.infer<typeof createAgentInputSchema>
+export type UpdateAgentRequest = z.infer<typeof updateAgentInputSchema>
+export type CommunityUpdateRequest = z.infer<typeof communityUpdateInputSchema>
+export type ProfileUpdateRequest = z.infer<typeof profileUpdateInputSchema>
+export type MessageCreateRequest = z.infer<typeof messageCreateInputSchema>
+export type EditMessageRequest = z.infer<typeof editMessageInputSchema>
+export type MessageReactionRequest = z.infer<typeof messageReactionInputSchema>
+export type AttachmentReferenceRequest = z.infer<typeof attachmentReferenceInputSchema>
+export type ReadMarkerRequest = z.infer<typeof readMarkerInputSchema>
+export type TypingRequest = z.infer<typeof typingInputSchema>

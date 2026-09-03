@@ -85,7 +85,7 @@
 <main>
   <p class="meta">docs/how-it-works.html · written 2026-08-22 · sources: DECISIONS.md §6 and §14</p>
   <h1>How Ada Works</h1>
-  <div class="nota" style="margin:12px 0 20px"><b>Future direction.</b> This page describes the full architecture Ada is growing toward, not today's code. What gets built this weekend is the "laptop" row in section 6: a local install for one specific professor (<code>DECISIONS.md</code> §15, spec in <code>openspec/</code>). If this page contradicts the code or the spec, they win.</div>
+  <div class="nota" style="margin:12px 0 20px"><b>Future direction.</b> This page describes the full architecture Ada is growing toward, not today's code. The current issue #1 foundation is a local multi-community server and web client with opt-in local Claude/Codex subscription runners (<code>DECISIONS.md</code> §22). Deployment and hosted runners remain later work. If this page contradicts the code, GitHub issue #1, or <code>DECISIONS.md</code>, those sources win.</div>
   <p class="lead">One page to understand it once, so you never have to piece it back together in your head. This isn't a classic SaaS, and that's half the confusion: the AI model doesn't run on our server — it runs on a "plug" that each person connects from their own machine.</p>
 
   <h2 id="saas">1. Why it isn't "frontend + API + DB + agent"</h2>
@@ -122,7 +122,8 @@
     <text x="530" y="185" class="mono dim">Outbound WebSocket, with the agent's token</text>
   </svg>
   </div>
-  <p>In a classic SaaS, the API calls the model with the company's API key: the company pays, controls, and is responsible. In Ada the server <b>never calls a model</b>. It's a chat with storage: it stores messages, members, channels, and published cards, and notifies over WebSocket when something happens. Intelligence comes in through the <b>runner</b>: a small process that runs wherever the credentials of whoever created the agent live, using the AI program that person already has (<code>claude</code>, <code>codex</code>, <code>pi</code> with an open model).</p>
+  <p><b>Issue #1 current demo:</b> one global user identity can belong to many communities, with a role per membership. The default shadcn workspace provides the community rail, channels, DMs, members, threads, invites and agent setup. Cards remain backend memory; their dedicated UI is not mounted yet. In a classic SaaS, the API calls the model with the company's API key: the company pays, controls, and is responsible. In Ada the server <b>never calls a model</b>. It's a chat with storage: it stores messages, members, channels, and published cards, and notifies over WebSocket when something happens. Intelligence comes in through the <b>runner</b>: a small process that runs wherever the credentials of whoever created the agent live, using the AI program that person already has (<code>claude</code> or <code>codex</code>).</p>
+  <p>Browser and runner WebSockets authenticate with a token in their first protocol frame; tokens are not placed in URLs, snapshots, events, logs, or provider prompts. REST paths carry the selected community, while the bearer token identifies the global user.</p>
   <p>The most useful analogy: <b>GitHub Actions runners</b>. GitHub keeps the repo and the job queue; the runner can be GitHub's own (paid, always on) or one of yours on your machine (free, turns off when you turn it off). Same result, different question of who pays and who keeps it alive.</p>
 
   <h2 id="piezas">2. The four pieces</h2>
@@ -204,7 +205,7 @@
   </ol>
 
   <h2 id="data">4. "Why is <code>data/</code> in the repo next to <code>apps/</code>?"</h2>
-  <p>Because this weekend everything runs on a laptop, and we need a sample course that gets cloned along with the code. But these are two different things, and it's worth being clear about that from the start:</p>
+  <p>Because today everything runs on a laptop, and we need a sample course that gets cloned along with the code. But these are two different things, and it's worth being clear about that from the start:</p>
   <div class="grid two">
     <div class="panel"><h3>The repo = code + a sample course</h3>
       <pre>apps/web          client
@@ -226,9 +227,9 @@ data/neural-…/    <b>sample course</b> (seed)</pre>
     <thead><tr><th>Layer</th><th>How</th><th>What it guarantees</th><th>When</th></tr></thead>
     <tbody>
       <tr><td><span class="tag sol">1 · policy</span></td>
-        <td><code>cwd</code> in the agent's folder; <code>--add-dir</code> only for <code>raw/</code>; scoped <code>--allowedTools</code>; path-based <code>deny</code> rules in the folder's <code>.claude/settings.json</code>; no <code>Bash</code> except <code>git add/commit</code>.</td>
+        <td><code>cwd</code> in the agent's folder; bounded read-only excerpts in the prompt; scoped read/write tools; no extra <code>--add-dir</code> root and no provider API keys passed by Ada.</td>
         <td>Claude Code refuses to read or write outside it. It's a rule the runtime follows, <b>not a wall</b>.</td>
-        <td>This weekend, and the local tier forever: on your laptop, everything is already yours. If you run your agent on your own machine, there's no one to isolate it from.</td></tr>
+        <td>Today, and the local tier forever: on your laptop, everything is already yours. If you run your agent on your own machine, there's no one to isolate it from.</td></tr>
       <tr><td><span class="tag sello">2 · wall</span></td>
         <td>A container (or micro-VM) per agent. Only two things get mounted: the course's <code>raw/</code>, read-only, and the agent's folder, read/write. Nothing else exists inside.</td>
         <td>Operating-system-level isolation. Even if the model wanted to, there's no other folder to read.</td>
@@ -236,7 +237,7 @@ data/neural-…/    <b>sample course</b> (seed)</pre>
       <tr><td><span class="tag ok">3 · composition</span></td>
         <td>Each agent sees a <b>virtual tree</b> built from the folders of the channels it's a member of, plus its own (DECISIONS §6, "permissions = folder composition"). With bind mounts today; with <b>Archil</b> once it's multi-machine.</td>
         <td>The same as layer 2, but the agent's view changes when it's added to or removed from a channel, with no reconfiguration.</td>
-        <td>Once several agents share knowledge across channels. Not needed this weekend, nor for the local tier.</td></tr>
+        <td>Once several agents share knowledge across channels. Not needed today, nor for the local tier.</td></tr>
     </tbody>
   </table>
   <div class="nota" style="margin-top:16px"><b>About Archil.</b> Yes: Archil is a hosted service (mountable disks backed by S3), so using it implies the hosted tier. But Archil isn't what provides isolation — it provides the <i>composed view</i> in layer 3. Isolation comes from layer 2, with one container per agent, which we can do today with no external service. Sensible order: layer 1 now → layer 2 once we host → layer 3 once agents need to share folders.</div>
@@ -254,7 +255,7 @@ data/neural-…/    <b>sample course</b> (seed)</pre>
 
   <h2 id="faq">7. Questions we've already asked ourselves</h2>
   <div class="faq">
-    <details><summary>Can a professor use their Claude subscription on Railway?</summary><p>Yes, as long as what's running is the unmodified <code>claude</code> binary and they log in through Anthropic's own flow (<code>claude setup-token</code>). Claude Code's legal page says it outright: «<i>Nor does it prevent an end user from signing in to the unmodified Claude Code binary with their own Claude subscription, including where a platform hosts Claude Code</i>». What we can't do is request, store, or route that token. Source and detail: <code>research/2026-08-22-suscripciones-runners-buzz-pi.md</code>.</p></details>
+    <details><summary>Can a professor use their Claude subscription on Railway?</summary><p>Yes, as long as what's running is the unmodified <code>claude</code> binary and they log in through Anthropic's own flow (<code>claude setup-token</code>). Claude Code's legal page says it outright: «<i>Nor does it prevent an end user from signing in to the unmodified Claude Code binary with their own Claude subscription, including where a platform hosts Claude Code</i>». What we can't do is request, store, or route that token. Source and detail: <code>research/2026-08-22-subscriptions-runners-buzz-pi.md</code>.</p></details>
     <details><summary>What about pi.dev? I wanted to avoid depending on a single provider.</summary><p>pi is the right harness for that: 15+ providers, open models via Ollama/OpenRouter, headless mode, reads <code>CLAUDE.md</code>. What it <b>doesn't</b> give you is subscriptions: its OAuth login with Claude is exactly what Anthropic banned (since April 2026 it responds "Third-party apps now draw from your extra usage"). So: pi = runtime with API keys and open models; claude/codex = runtime with a subscription. The runner treats them the same.</p></details>
     <details><summary>Why doesn't the server call the model, "even just for the demo"?</summary><p>Because it's the decision you can't undo later. The moment the server holds an API key, you have to store it, rotate it, bill for it, and the local tier stops being free and private. Keeping server and runner separate costs an afternoon today and nothing tomorrow.</p></details>
     <details><summary>What happens if the student turns off their computer?</summary><p>Their personal agent shows as "offline" in the UI. Mentions don't get queued: they're lost, with a warning shown when writing. That's exactly what Buzz does. If they want it always on, they move it to the hosted tier.</p></details>
@@ -265,8 +266,8 @@ data/neural-…/    <b>sample course</b> (seed)</pre>
 
   <h2 id="glosario">8. Glossary</h2>
   <dl class="glos">
-    <dt>Community</dt><dd>A course. One server = one community this weekend.</dd>
-    <dt>Channel</dt><dd>Steady (<code>#questions</code>, <code>#03-backprop</code>) or a work channel (an assignment; design-only this weekend).</dd>
+    <dt>Community</dt><dd>A course. One local server can hold several communities today.</dd>
+    <dt>Channel</dt><dd>Steady (<code>#questions</code>, <code>#03-backprop</code>) or a work channel (an assignment; design-only today).</dd>
     <dt>Card</dt><dd>A markdown page with a type, version, sources, and "replaces." It's the published copy of a file from an agent's wiki.</dd>
     <dt>Agent</dt><dd>An identity in the community + a folder + a runner. Community (created by the professor) or personal (created by a student).</dd>
     <dt>Runner</dt><dd><code>ada-runner</code>: the process that connects an agent to the server and runs its runtime.</dd>
@@ -279,7 +280,7 @@ data/neural-…/    <b>sample course</b> (seed)</pre>
   </dl>
 
   <footer>
-    This page is direction, not status: the code, <code>openspec/</code>, and <code>DECISIONS.md</code> §14-§15 are what govern. Implementation spec: <code>openspec/changes/demo-local-backend/</code>. Sourced research: <code>research/2026-08-22-suscripciones-runners-buzz-pi.md</code>. If anything on this page contradicts those files, this page is out of date.
+    This page is direction, not status: the code, GitHub issue #1, and <code>DECISIONS.md</code> §14 and §22 govern the current milestone. Older specifications remain history. Sourced research: <code>research/2026-08-22-subscriptions-runners-buzz-pi.md</code>. If anything on this page contradicts those sources, this page is out of date.
   </footer>
 </main>
 </body>

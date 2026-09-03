@@ -17,7 +17,7 @@ import { join, resolve } from "node:path"
 import { WebSocket } from "ws"
 import type { Card, CommunitySnapshot, Message, Module, Report } from "@ada/protocol"
 import { repoRoot } from "../src/db.js"
-import { makeHarness, runTsx, serverUp, tsxBin, until } from "./lib.js"
+import { makeHarness, runTsx, serverUp, stopChild, tsxBin, until } from "./lib.js"
 
 const port = Number(process.env.E2E_PORT ?? "8798")
 const base = `http://localhost:${port}`
@@ -46,11 +46,11 @@ async function main(): Promise<void> {
     await serverUp(base)
     runner = spawn(
       tsxBin,
-      ["packages/runner/src/cli.ts", "--cwd", join(courseDir, "agents/ada"), "--token", "ada-demo-token", "--server", base, "--runtime", "scripted"],
+      ["packages/runner/src/legacy-fixture-cli.ts", "--cwd", join(courseDir, "agents/ada"), "--token", "ada-demo-token", "--server", base, "--runtime", "scripted"],
       { cwd: repoRoot, env: { ...env, ADA_RUNTIME: "scripted" }, stdio: ["ignore", "ignore", "inherit"] },
     )
     const events: Array<{ type: string; payload?: Record<string, unknown> }> = []
-    const ws = new WebSocket(`${base.replace(/^http/, "ws")}/ws`)
+    const ws = new WebSocket(`${base.replace(/^http/, "ws")}/ws?memberId=martin`)
     ws.on("message", (raw) => events.push(JSON.parse(String(raw)) as { type: string }))
     await until("runner online", async () => ((await snapshot()).members.find((m) => m.id === "ada")?.presence === "online" ? true : undefined))
 
@@ -104,8 +104,7 @@ async function main(): Promise<void> {
 
     ws.close()
   } finally {
-    runner?.kill("SIGTERM")
-    server?.kill("SIGTERM")
+    await Promise.all([stopChild(runner), stopChild(server)])
     rmSync(scratch, { recursive: true, force: true })
   }
   if (failures.length) {

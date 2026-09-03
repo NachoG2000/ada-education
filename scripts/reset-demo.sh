@@ -60,7 +60,7 @@ fi
 
 # ---- 2. Stop whatever is running -------------------------------------------
 pkill -f "tsx.*apps/server/src/index.ts" 2>/dev/null || true
-pkill -f "runner/src/cli.ts" 2>/dev/null || true
+pkill -f "runner/src/.*cli.ts" 2>/dev/null || true
 pkill -f "vite" 2>/dev/null || true
 
 # ---- 3. Forget the run -----------------------------------------------------
@@ -83,8 +83,8 @@ console (or use "Switch person" in the sidebar footer for the identity alone):
 EOF
 
 if [ "$START_DEV" = true ]; then
-  echo "Starting the stack (web + server + Ada's runner, scripted runtime)…"
+  echo "Starting the hosted web + server stack…"
   exec npm run dev
 fi
 
-echo "Now run:  npm run dev        (or ADA_RUNTIME=claude npm run dev for the real runtime)"
+echo "Now run:  npm run dev        (then create an agent and use its setup command)"

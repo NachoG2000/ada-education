@@ -11,7 +11,7 @@ import { cpSync, mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join, resolve } from "node:path"
 import { repoRoot } from "../src/db.js"
-import { runTsx, serverUp, tsxBin } from "./lib.js"
+import { runTsx, serverUp, stopChild, tsxBin } from "./lib.js"
 
 const course = process.env.ADA_COURSE ?? "data/neural-networks-2026"
 const port = Number(process.env.SMOKE_PORT ?? "8799")
@@ -31,7 +31,7 @@ async function main(): Promise<number> {
     await serverUp(url)
     return await runTsx(["apps/server/scripts/smoke.ts"], { ...env, ADA_SERVER_URL: url }, "inherit")
   } finally {
-    server?.kill("SIGTERM")
+    await stopChild(server)
     rmSync(scratch, { recursive: true, force: true })
   }
 }

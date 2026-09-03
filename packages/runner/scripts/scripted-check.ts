@@ -70,6 +70,20 @@ check(ingest.wrote.every((p) => ingest.answer.includes(`[[${p}|`)), "ingest answ
 const suggest = ingest.after({}).find((a) => a.type === "module.suggest")
 check(suggest?.type === "module.suggest" && suggest.payload.moduleId === "04-attention" && suggest.payload.status === "ready" && suggest.payload.difficulty.rationale.includes("attention.md"), "ingest suggests a difficulty for the module with a rationale naming the material")
 
+// A material path is server-controlled input. The runtime must enforce the
+// same raw/-root boundary as the network sync before it reads the file.
+const unsafeSnapshot: CommunitySnapshot = {
+  ...snapshot,
+  modules: snapshot.modules.map((module) => module.id === "04-attention"
+    ? { ...module, materials: [{ ...module.materials[0], path: "../outside.md" }] }
+    : module),
+}
+const unsafeIngest = runScripted({
+  ...job({ channelId: "04-attention", message: msg("m-unsafe", "04-attention", "martin", "@ada ingest attention.md into 04-attention"), from: martin, context: [], intent: "ingest", moduleId: "04-attention" }),
+  snapshot: unsafeSnapshot,
+})
+check(unsafeIngest.wrote.length === 0 && unsafeIngest.after({}).length === 0 && /outside the course's raw folder/.test(unsafeIngest.answer), "ingest refuses a material path outside raw/")
+
 // Plan: starts from the feedback gap, cites ≥2 module cards, files a report and a #teachers note, ends with the sharing line.
 const plan = runScripted(job({ channelId: "sofia-ada", message: msg("m-2", "sofia-ada", "sofia", "How do I get ahead in 03-backprop?"), from: sofia, context: [] }))
 check(plan.intent === "plan", "plan intent detected from a student's question in her private channel")

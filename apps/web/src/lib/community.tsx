@@ -6,22 +6,73 @@
    Product components don't know which of the two sources is active. */
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState, useSyncExternalStore, type ReactNode } from "react"
+import type { CreateAgentRequest, UpdateAgentRequest } from "@ada/protocol"
 import {
+  addReaction as addReactionRest,
   applyEvent,
+  claimOwner,
   connectEvents,
+  createAgent as createAgentRest,
+  createChannel as createChannelRest,
+  createMessage as createMessageRest,
+  createInvite as createInviteRest,
   createThread,
+  deleteAgent as deleteAgentRest,
+  deleteAttachment as deleteAttachmentRest,
+  deleteChannel as deleteChannelRest,
+  deleteMessage as deleteMessageRest,
+  downloadAttachment as downloadAttachmentRest,
+  editMessage as editMessageRest,
   fetchCommunity,
+  fetchCourseInfo,
+  joinCourse,
+  joinChannel as joinChannelRest,
+  leaveChannel as leaveChannelRest,
+  markChannelRead as markChannelReadRest,
   patchModule as patchModuleRest,
-  postMessage,
   reconcileReport as reconcileReportRest,
+  removeReaction as removeReactionRest,
+  replaceChannelMembers as replaceChannelMembersRest,
+  rotateAgentToken as rotateAgentTokenRest,
+  UnauthorizedError,
+  updateAgent as updateAgentRest,
+  updateChannel as updateChannelRest,
+  updateCommunity as updateCommunityRest,
+  updateProfile as updateProfileRest,
+  uploadAttachment as uploadAttachmentRest,
   uploadMaterial as uploadMaterialRest,
   type CommunitySnapshot,
   type MessageInput,
   type RunnerInfo,
   type ServerEvent,
 } from "./api"
+import { clearToken, storeToken } from "./auth"
 import { subscribeToHash } from "./hash"
-import type { Agent, Card, Community, DifficultyLevel, Feedback, Material, Member, Message, Module, Person, Presence, Report, Thread } from "./types"
+import type {
+  Agent,
+  AgentCreateResult,
+  AgentTokenRotationResult,
+  Attachment,
+  Card,
+  Channel,
+  Community,
+  CommunityUpdateInput,
+  CreateChannelInput,
+  DifficultyLevel,
+  EditMessageInput,
+  Feedback,
+  Material,
+  Member,
+  Message,
+  Module,
+  Person,
+  Presence,
+  ProfileUpdateInput,
+  ReplaceChannelMembersInput,
+  Report,
+  Thread,
+  UpdateChannelInput,
+} from "./types"
 
 /** Which of the three top-level screens is showing, decided by the hash
     (`#modules`, `#home`, anything else → the channel screen). Kept separate
@@ -44,6 +95,31 @@ export function panelKey(p: Panel): string {
   return p.kind === "thread" ? `thread:${p.threadId}` : p.kind === "card" ? `card:${p.cardId}` : `agent:${p.agentId}`
 }
 
+export interface WorkspaceActions {
+  available: boolean
+  updateCommunity: (input: CommunityUpdateInput) => Promise<void>
+  updateProfile: (input: ProfileUpdateInput) => Promise<void>
+  createChannel: (input: CreateChannelInput) => Promise<Channel>
+  updateChannel: (channelId: string, input: UpdateChannelInput) => Promise<Channel>
+  replaceChannelMembers: (channelId: string, input: ReplaceChannelMembersInput) => Promise<Channel>
+  joinChannel: (channelId: string) => Promise<Channel>
+  leaveChannel: (channelId: string) => Promise<Channel>
+  deleteChannel: (channelId: string) => Promise<void>
+  createAgent: (input: CreateAgentRequest) => Promise<AgentCreateResult>
+  updateAgent: (agentId: string, input: UpdateAgentRequest) => Promise<Agent>
+  rotateAgentToken: (agentId: string) => Promise<AgentTokenRotationResult>
+  deleteAgent: (agentId: string) => Promise<void>
+  editMessage: (messageId: string, input: EditMessageInput) => Promise<Message>
+  deleteMessage: (messageId: string) => Promise<Message>
+  addReaction: (messageId: string, emoji: string) => Promise<void>
+  removeReaction: (messageId: string, emoji: string) => Promise<void>
+  markChannelRead: (channelId: string) => Promise<void>
+  uploadAttachment: (channelId: string, file: File) => Promise<Attachment>
+  deleteAttachment: (attachmentId: string) => Promise<void>
+  downloadAttachment: (attachmentId: string, filename: string) => Promise<void>
+  setTyping: (channelId: string, typing: boolean) => void
+}
+
 interface CommunityCtx {
   community: Community
   /** "now": frozen in demo, real clock when connected; filters future messages and sets the day labels */
@@ -53,8 +129,11 @@ interface CommunityCtx {
   me: Member
   /** WS state (stays true in demo so it never triggers warnings) */
   connected: boolean
+  workspace: WorkspaceActions
+  typingMemberIds: (channelId: string) => string[]
   /** posts over REST when connected; rejects with a clear error in demo */
   sendMessage: (input: MessageInput) => Promise<void>
+  retryMessage: (clientId: string) => Promise<void>
   /** opens a thread on a message and shows it in the panel; rejects in demo */
   replyInThread: (messageId: string) => Promise<void>
   /** runtime and model reported by the agent's runner (via member.presence) */
@@ -69,6 +148,8 @@ interface CommunityCtx {
   goTo: (view: "modules" | "home") => void
   /** forgets the local identity and reloads into "who are you?" */
   switchPerson: () => void
+  /** teacher mints a single-use invite link; undefined in demo mode */
+  createInvite?: () => Promise<{ token: string; joinHash: string }>
   /** uploads one material to a module; rejects in demo */
   uploadMaterial: (moduleId: string, input: { name: string; kind: Material["kind"]; size?: number; text?: string }) => Promise<Module>
   /** sets a module's difficulty (by hand) and/or objectives; rejects in demo */
@@ -112,6 +193,41 @@ const patchModuleDemo = (): Promise<Module> =>
 const reconcileReportDemo = (): Promise<Report> =>
   Promise.reject(new Error("You're in demo mode: reconciling a report doesn't go anywhere. Set VITE_ADA_SERVER to connect to a course."))
 
+const workspaceUnavailable = (): never => {
+  throw new Error("This action needs a connected course server.")
+}
+
+const demoWorkspaceActions: WorkspaceActions = {
+  available: false,
+  updateCommunity: async () => workspaceUnavailable(),
+  updateProfile: async () => workspaceUnavailable(),
+  createChannel: async () => workspaceUnavailable(),
+  updateChannel: async () => workspaceUnavailable(),
+  replaceChannelMembers: async () => workspaceUnavailable(),
+  joinChannel: async () => workspaceUnavailable(),
+  leaveChannel: async () => workspaceUnavailable(),
+  deleteChannel: async () => workspaceUnavailable(),
+  createAgent: async () => workspaceUnavailable(),
+  updateAgent: async () => workspaceUnavailable(),
+  rotateAgentToken: async () => workspaceUnavailable(),
+  deleteAgent: async () => workspaceUnavailable(),
+  editMessage: async () => workspaceUnavailable(),
+  deleteMessage: async () => workspaceUnavailable(),
+  addReaction: async () => workspaceUnavailable(),
+  removeReaction: async () => workspaceUnavailable(),
+  markChannelRead: async () => workspaceUnavailable(),
+  uploadAttachment: async () => workspaceUnavailable(),
+  deleteAttachment: async () => workspaceUnavailable(),
+  downloadAttachment: async () => workspaceUnavailable(),
+  setTyping: () => undefined,
+}
+
+type PendingWorkspaceMessage = Message & { pendingState: "sending" | "failed" }
+interface PendingRecord {
+  message: PendingWorkspaceMessage
+  input: MessageInput
+}
+
 export function CommunityProvider({
   community,
   initialChannelId,
@@ -125,6 +241,9 @@ export function CommunityProvider({
   uploadMaterial = uploadMaterialDemo,
   patchModule = patchModuleDemo,
   reconcileReport = reconcileReportDemo,
+  createInvite,
+  workspace = demoWorkspaceActions,
+  typing = {},
   children,
 }: {
   community: Community
@@ -145,11 +264,54 @@ export function CommunityProvider({
     input: { difficulty?: { level: DifficultyLevel; rationale?: string }; objectives?: string[] },
   ) => Promise<Module>
   reconcileReport?: (reportId: string, input: { accepted: string[]; note: string }) => Promise<Report>
+  createInvite?: () => Promise<{ token: string; joinHash: string }>
+  workspace?: WorkspaceActions
+  typing?: Readonly<Record<string, string[]>>
   children: ReactNode
 }) {
   const view = useSyncExternalStore(subscribeToHash, readView)
   const [activeChannelId, setActiveChannel] = useState(initialChannelId)
   const [panels, setPanels] = useState<Panel[]>(initialPanels)
+  const [pendingMessages, setPendingMessages] = useState<Record<string, PendingRecord>>({})
+
+  const sendWithPending = useCallback(async (input: MessageInput) => {
+    if (mode === "demo") return sendMessage(input)
+    const clientId = input.clientId ?? crypto.randomUUID()
+    const request = { ...input, clientId }
+    const optimistic: PendingWorkspaceMessage = {
+      id: `pending:${clientId}`,
+      channelId: input.channelId,
+      authorId: community.meId,
+      at: new Date().toISOString(),
+      paragraphs: input.paragraphs,
+      ...(input.threadId ? { threadId: input.threadId } : {}),
+      ...(input.clientId ? { clientId: input.clientId } : { clientId }),
+      pendingState: "sending",
+    }
+    setPendingMessages((current) => ({ ...current, [clientId]: { message: optimistic, input: request } }))
+    try {
+      await sendMessage(request)
+      setPendingMessages((current) => {
+        if (!current[clientId]) return current
+        const next = { ...current }
+        delete next[clientId]
+        return next
+      })
+    } catch (error) {
+      setPendingMessages((current) => {
+        const record = current[clientId]
+        if (!record) return current
+        return { ...current, [clientId]: { ...record, message: { ...record.message, pendingState: "failed" } } }
+      })
+      throw error
+    }
+  }, [community.meId, mode, sendMessage])
+
+  const retryMessage = useCallback(async (clientId: string) => {
+    const record = pendingMessages[clientId]
+    if (!record) return
+    await sendWithPending(record.input)
+  }, [pendingMessages, sendWithPending])
 
   /* Unread, the way a chat app does it: a channel you're not looking at gets a
      mark when someone else writes there, and loses it when you open it. Only
@@ -205,9 +367,11 @@ export function CommunityProvider({
     location.hash = v === "modules" ? "#modules" : "#home"
   }, [])
 
-  /** Forgets the local identity and reloads into "who are you?". */
+  /** Forgets the local identity (and its token) and reloads into the door:
+      "who are you?" ungated, the join screen when the course is gated. */
   const switchPerson = useCallback(() => {
     clearMe()
+    clearToken()
     location.reload()
   }, [])
 
@@ -220,21 +384,24 @@ export function CommunityProvider({
     }
   }, [unread])
 
-  const communityWithUnread = useMemo<Community>(
-    () =>
-      unread.size
-        ? { ...community, channels: community.channels.map((c) => (unread.has(c.id) ? { ...c, unread: true } : c)) }
-        : community,
-    [community, unread],
-  )
+  const communityWithUnread = useMemo<Community>(() => {
+    const canonicalClientIds = new Set(community.messages.map((message) => message.clientId).filter(Boolean))
+    const pending = Object.values(pendingMessages)
+      .filter((record) => !record.message.clientId || !canonicalClientIds.has(record.message.clientId))
+      .map((record) => record.message)
+    const next = pending.length ? { ...community, messages: [...community.messages, ...pending] } : community
+    return unread.size
+      ? { ...next, channels: next.channels.map((c) => (unread.has(c.id) ? { ...c, unread: true } : c)) }
+      : next
+  }, [community, pendingMessages, unread])
 
   const byId = useMemo(() => {
-    const members = new Map(community.members.map((m) => [m.id, m]))
-    const cards = new Map(community.cards.map((c) => [c.id, c]))
-    const threads = new Map(community.threads.map((t) => [t.id, t]))
-    const messages = new Map(community.messages.map((m) => [m.id, m]))
+    const members = new Map(communityWithUnread.members.map((m) => [m.id, m]))
+    const cards = new Map(communityWithUnread.cards.map((c) => [c.id, c]))
+    const threads = new Map(communityWithUnread.threads.map((t) => [t.id, t]))
+    const messages = new Map(communityWithUnread.messages.map((m) => [m.id, m]))
     return { members, cards, threads, messages }
-  }, [community])
+  }, [communityWithUnread])
 
   const openThread = useCallback((threadId: string) => {
     setPanels((p) => {
@@ -294,6 +461,7 @@ export function CommunityProvider({
   /** A member's live presence; "away" for an id that doesn't resolve (never
       seen it, so the safest reading is "not here"). */
   const presenceOf = useCallback((memberId: string): Presence => byId.members.get(memberId)?.presence ?? "away", [byId.members])
+  const typingMemberIds = useCallback((channelId: string): string[] => typing[channelId] ?? [], [typing])
 
   const value = useMemo<CommunityCtx>(() => {
     /* Lookups throw on broken ids: an invalid id in demo.ts is a bug we want to
@@ -313,7 +481,10 @@ export function CommunityProvider({
       now,
       mode,
       connected,
-      sendMessage,
+      workspace,
+      typingMemberIds,
+      sendMessage: sendWithPending,
+      retryMessage,
       replyInThread,
       runnerInfo,
       me: member(community.meId),
@@ -323,6 +494,7 @@ export function CommunityProvider({
       showChannel,
       goTo,
       switchPerson,
+      createInvite,
       uploadMaterial,
       patchModule,
       reconcileReport,
@@ -347,7 +519,10 @@ export function CommunityProvider({
     now,
     mode,
     connected,
-    sendMessage,
+    workspace,
+    typingMemberIds,
+    sendWithPending,
+    retryMessage,
     replyInThread,
     runnerInfo,
     activeChannelId,
@@ -356,6 +531,7 @@ export function CommunityProvider({
     showChannel,
     goTo,
     switchPerson,
+    createInvite,
     uploadMaterial,
     patchModule,
     reconcileReport,
@@ -469,11 +645,23 @@ export type ConnectionState =
   | { phase: "error"; detail: string; retry: () => void }
   | { phase: "choosing-person"; courseName: string; people: Person[]; choose: (p: Person) => void }
   | {
+      /** gated course, no valid token yet: the door (DECISIONS.md §20) */
+      phase: "join"
+      courseName: string
+      subtitle: string
+      /** token parsed from a #join?token=… invite link, if the person came by one */
+      inviteToken: string | null
+      claim: (ownerToken: string) => Promise<void>
+      join: (name: string) => Promise<void>
+    }
+  | {
       phase: "ready"
       community: Community
       initialChannelId: string
       now: Date
       connected: boolean
+      workspace: WorkspaceActions
+      typing: Readonly<Record<string, string[]>>
       sendMessage: (input: MessageInput) => Promise<void>
       startThread: (messageId: string) => Promise<Thread>
       runnerInfo: (memberId: string) => RunnerInfo | undefined
@@ -483,27 +671,32 @@ export type ConnectionState =
         input: { difficulty?: { level: DifficultyLevel; rationale?: string }; objectives?: string[] },
       ) => Promise<Module>
       reconcileReport: (reportId: string, input: { accepted: string[]; note: string }) => Promise<Report>
+      createInvite: () => Promise<{ token: string; joinHash: string }>
     }
 
 /** The connected source: hydrates with GET /api/community, applies WS events
     with the reducer, and resolves the local identity (localStorage["ada:me"]). */
 export function useConnectedCommunity(server: string): ConnectionState {
-  const [loadState, setLoadState] = useState<{ phase: "loading" } | { phase: "error"; detail: string } | { phase: "ready" }>({
-    phase: "loading",
-  })
+  const [loadState, setLoadState] = useState<
+    { phase: "loading" } | { phase: "error"; detail: string } | { phase: "unauthorized"; courseName: string; subtitle: string } | { phase: "ready" }
+  >({ phase: "loading" })
   const [live, dispatch] = useReducer(reduceLive, null)
   const [meId, setMeId] = useState<string | null>(readStoredMe)
   const [connected, setConnected] = useState(false)
   const [now, setNow] = useState(() => new Date())
   const [attempt, setAttempt] = useState(0)
+  const [typing, setTyping] = useState<Record<string, string[]>>({})
+  const eventConnection = useRef<ReturnType<typeof connectEvents> | null>(null)
+  const typingTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>())
 
   // Bootstrap: GET first, WS only after. Events that land in between are
-  // lost; for this weekend's local scope that's good enough (see AGENTS.md
+  // lost; for the current local scope that's good enough (see AGENTS.md
   // §decisions).
   useEffect(() => {
     let isActive = true
     let closeWs: (() => void) | null = null
-    fetchCommunity(server)
+    const activeTypingTimers = typingTimers.current
+    fetchCommunity(server, meId ?? undefined)
       .then((snapshot) => {
         if (!isActive) return
         dispatch({ type: "hydrate", snapshot })
@@ -526,7 +719,7 @@ export function useConnectedCommunity(server: string): ConnectionState {
         let resyncing: Promise<void> | null = null
         const resync = () => {
           if (resyncing) return resyncing
-          resyncing = fetchCommunity(server)
+          resyncing = fetchCommunity(server, meId ?? undefined)
             .then((fresh) => {
               if (!isActive) return
               dispatch({ type: "resync", snapshot: fresh })
@@ -538,8 +731,42 @@ export function useConnectedCommunity(server: string): ConnectionState {
             })
           return resyncing
         }
-        closeWs = connectEvents(server, {
+        const connection = connectEvents(server, {
           onEvent: (event) => {
+            if (event.type === "typing.updated") {
+              const { channelId, memberId, typing: isTyping } = event.payload
+              const key = `${channelId}\u0000${memberId}`
+              const oldTimer = activeTypingTimers.get(key)
+              if (oldTimer) clearTimeout(oldTimer)
+              activeTypingTimers.delete(key)
+              setTyping((current) => {
+                const ids = current[channelId] ?? []
+                const nextIds = isTyping
+                  ? ids.includes(memberId) ? ids : [...ids, memberId]
+                  : ids.filter((id) => id !== memberId)
+                if (nextIds === ids) return current
+                if (nextIds.length === 0) {
+                  const next = { ...current }
+                  delete next[channelId]
+                  return next
+                }
+                return { ...current, [channelId]: nextIds }
+              })
+              if (isTyping) {
+                activeTypingTimers.set(key, setTimeout(() => {
+                  activeTypingTimers.delete(key)
+                  setTyping((current) => {
+                    const nextIds = (current[channelId] ?? []).filter((id) => id !== memberId)
+                    if (nextIds.length === 0) {
+                      const next = { ...current }
+                      delete next[channelId]
+                      return next
+                    }
+                    return { ...current, [channelId]: nextIds }
+                  })
+                }, 4_000))
+              }
+            }
             dispatch({ type: "event", event })
             setNow((prev) => nowWithEvent(prev, event))
           },
@@ -548,7 +775,9 @@ export function useConnectedCommunity(server: string): ConnectionState {
             setConnected(ok)
             if (ok) void resync()
           },
-        })
+        }, meId ?? undefined)
+        eventConnection.current = connection
+        closeWs = connection.close
         const onVisible = () => {
           if (document.visibilityState === "visible") void resync()
         }
@@ -560,16 +789,31 @@ export function useConnectedCommunity(server: string): ConnectionState {
           document.removeEventListener("visibilitychange", onVisible)
           window.removeEventListener("online", onOnline)
           closeEvents()
+          if (eventConnection.current === connection) eventConnection.current = null
         }
       })
-      .catch((e: unknown) => {
-        if (isActive) setLoadState({ phase: "error", detail: e instanceof Error ? e.message : String(e) })
+      .catch(async (e: unknown) => {
+        if (!isActive) return
+        if (e instanceof UnauthorizedError) {
+          // A gated course: not an outage — show the door, with the course's
+          // public face on it when the server can say who it is.
+          try {
+            const info = await fetchCourseInfo(server)
+            if (isActive) setLoadState({ phase: "unauthorized", courseName: info.name, subtitle: info.subtitle })
+          } catch {
+            if (isActive) setLoadState({ phase: "unauthorized", courseName: "This course", subtitle: "" })
+          }
+          return
+        }
+        setLoadState({ phase: "error", detail: e instanceof Error ? e.message : String(e) })
       })
     return () => {
       isActive = false
       closeWs?.()
+      for (const timer of activeTypingTimers.values()) clearTimeout(timer)
+      activeTypingTimers.clear()
     }
-  }, [server, attempt])
+  }, [server, attempt, meId])
 
   // Clock tick for the day labels (never goes backward).
   useEffect(() => {
@@ -596,7 +840,9 @@ export function useConnectedCommunity(server: string): ConnectionState {
   const sendMessage = useCallback(
     async (input: MessageInput) => {
       if (!meId) throw new Error("You haven't chosen who you are yet.")
-      await postMessage(server, { ...input, authorId: meId })
+      const { channelId, ...request } = input
+      const message = await createMessageRest(server, channelId, request, meId)
+      dispatch({ type: "event", event: { type: "message.created", payload: { message } } })
     },
     [server, meId],
   )
@@ -643,12 +889,153 @@ export function useConnectedCommunity(server: string): ConnectionState {
     [server, meId],
   )
 
+  /* The two doors of a gated course. Success stores the person token and the
+     identity, then re-runs the bootstrap (which now authenticates). */
+  const enter = useCallback((joined: { personId: string; personToken: string }) => {
+    storeToken(joined.personToken)
+    storeMe(joined.personId)
+    setMeId(joined.personId)
+    // Every person enters the shared chat workspace through Inbox.
+    location.hash = "#inbox"
+    setLoadState({ phase: "loading" })
+    setAttempt((n) => n + 1)
+  }, [])
+  const claim = useCallback(
+    async (ownerToken: string) => {
+      enter(await claimOwner(server, ownerToken))
+    },
+    [server, enter],
+  )
+  // App subscribes to hash changes, so read this on every render: a signed-out
+  // teacher can open a newly generated invite in the same tab without a reload.
+  const inviteToken = parseJoinToken(location.hash)
+  const join = useCallback(
+    async (name: string) => {
+      if (!inviteToken) throw new Error("This link has no invite token.")
+      enter(await joinCourse(server, inviteToken, name))
+    },
+    [server, inviteToken, enter],
+  )
+  const createInvite = useCallback(async () => {
+    if (!meId) throw new Error("You haven't chosen who you are yet.")
+    return createInviteRest(server, meId)
+  }, [server, meId])
+
+  const workspace = useMemo<WorkspaceActions>(() => {
+    const actor = (): string => {
+      if (!meId) throw new Error("You haven't chosen who you are yet.")
+      return meId
+    }
+    const emit = (event: ServerEvent): void => dispatch({ type: "event", event })
+    return {
+      available: true,
+      updateCommunity: async (input) => {
+        const community = await updateCommunityRest(server, input, actor())
+        emit({ type: "community.updated", payload: { community } })
+      },
+      updateProfile: async (input) => {
+        const member = await updateProfileRest(server, actor(), input, actor())
+        emit({ type: "member.updated", payload: { member } })
+      },
+      createChannel: async (input) => {
+        const channel = await createChannelRest(server, input, actor())
+        emit({ type: "channel.created", payload: { channel } })
+        return channel
+      },
+      updateChannel: async (channelId, input) => {
+        const channel = await updateChannelRest(server, channelId, input, actor())
+        emit({ type: "channel.updated", payload: { channel } })
+        return channel
+      },
+      replaceChannelMembers: async (channelId, input) => {
+        const channel = await replaceChannelMembersRest(server, channelId, input, actor())
+        emit({ type: "channel.updated", payload: { channel } })
+        return channel
+      },
+      joinChannel: async (channelId) => {
+        const channel = await joinChannelRest(server, channelId, actor())
+        emit({ type: "channel.updated", payload: { channel } })
+        return channel
+      },
+      leaveChannel: async (channelId) => {
+        const channel = await leaveChannelRest(server, channelId, actor())
+        emit({ type: "channel.updated", payload: { channel } })
+        return channel
+      },
+      deleteChannel: async (channelId) => {
+        const memberId = actor()
+        await deleteChannelRest(server, channelId, memberId)
+        emit({ type: "channel.deleted", payload: { channelId, deletedAt: new Date().toISOString(), deletedBy: memberId } })
+      },
+      createAgent: async (input) => {
+        const result = await createAgentRest(server, input, actor())
+        emit({ type: "member.updated", payload: { member: result.agent } })
+        return result
+      },
+      updateAgent: async (agentId, input) => {
+        const agent = await updateAgentRest(server, agentId, input, actor())
+        emit({ type: "member.updated", payload: { member: agent } })
+        return agent
+      },
+      rotateAgentToken: async (agentId) => {
+        const result = await rotateAgentTokenRest(server, agentId, actor())
+        emit({ type: "member.updated", payload: { member: result.agent } })
+        return result
+      },
+      deleteAgent: async (agentId) => {
+        await deleteAgentRest(server, agentId, actor())
+        emit({ type: "member.deleted", payload: { memberId: agentId } })
+      },
+      editMessage: async (messageId, input) => {
+        const message = await editMessageRest(server, messageId, input, actor())
+        emit({ type: "message.updated", payload: { message } })
+        return message
+      },
+      deleteMessage: async (messageId) => {
+        const message = await deleteMessageRest(server, messageId, actor())
+        emit({ type: "message.deleted", payload: { message } })
+        return message
+      },
+      addReaction: async (messageId, emoji) => {
+        const reactions = await addReactionRest(server, messageId, { emoji }, actor())
+        emit({ type: "message.reactions.updated", payload: { messageId, reactions } })
+      },
+      removeReaction: async (messageId, emoji) => {
+        const reactions = await removeReactionRest(server, messageId, emoji, actor())
+        emit({ type: "message.reactions.updated", payload: { messageId, reactions } })
+      },
+      markChannelRead: async (channelId) => {
+        const memberId = actor()
+        const lastReadAt = new Date().toISOString()
+        await markChannelReadRest(server, channelId, { lastReadAt }, memberId)
+        emit({ type: "channel.read", payload: { channelId, memberId, lastReadAt } })
+      },
+      uploadAttachment: async (channelId, file) => uploadAttachmentRest(server, channelId, file, file.name, actor()),
+      deleteAttachment: async (attachmentId) => {
+        await deleteAttachmentRest(server, attachmentId, actor())
+      },
+      downloadAttachment: async (attachmentId, filename) => {
+        const blob = await downloadAttachmentRest(server, attachmentId, actor())
+        const url = URL.createObjectURL(blob)
+        const anchor = document.createElement("a")
+        anchor.href = url
+        anchor.download = filename
+        anchor.click()
+        setTimeout(() => URL.revokeObjectURL(url), 0)
+      },
+      setTyping: (channelId, isTyping) => eventConnection.current?.setTyping(channelId, isTyping),
+    }
+  }, [meId, server])
+
   const community = useMemo<Community | null>(
     () => (live && meId !== null ? { ...live.snapshot, meId } : null),
     [live, meId],
   )
 
   if (loadState.phase === "error") return { phase: "error", detail: loadState.detail, retry }
+  if (loadState.phase === "unauthorized") {
+    return { phase: "join", courseName: loadState.courseName, subtitle: loadState.subtitle, inviteToken, claim, join }
+  }
   if (loadState.phase === "loading" || !live) return { phase: "loading" }
   if (live.snapshot.channels.length === 0) {
     return { phase: "error", detail: "The course doesn't have any channels yet. Run `npm run seed` in the server.", retry }
@@ -668,13 +1055,24 @@ export function useConnectedCommunity(server: string): ConnectionState {
     ).id,
     now,
     connected,
+    workspace,
+    typing,
     sendMessage,
     startThread,
     runnerInfo,
     uploadMaterial,
     patchModule,
     reconcileReport,
+    createInvite,
   }
+}
+
+/** `#join?token=…` from an invite link; null for every other hash. */
+function parseJoinToken(hash: string): string | null {
+  if (!hash.startsWith("#join")) return null
+  const query = hash.slice(hash.indexOf("?") + 1)
+  if (!hash.includes("?")) return null
+  return new URLSearchParams(query).get("token")
 }
 
 /** A card is "new" during the first 24 h since it was published. */

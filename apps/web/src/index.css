@@ -61,6 +61,13 @@
   --color-ok: #d9f4e6;
   --color-ok-ink: #1f7a4a;
 
+  /* Buzz-parity workspace shell. The gradient is the reference's one
+     continuous chrome canvas; education changes the content, not the frame. */
+  --color-workspace-accent: #8839ef;
+  --color-workspace-accent-ink: #ffffff;
+  --color-workspace-gradient-top: #e6e6b6;
+  --color-workspace-gradient-bottom: #c4d0da;
+
   /* work-channel status */
   --color-status-active: #3fbf6b;
   --color-status-submitted: #2f55d4;
@@ -87,8 +94,8 @@
   --color-card-foreground: var(--color-ink);
   --color-popover: var(--color-panel);
   --color-popover-foreground: var(--color-ink);
-  --color-primary: var(--color-ink);
-  --color-primary-foreground: #ffffff;
+  --color-primary: var(--color-workspace-accent);
+  --color-primary-foreground: var(--color-workspace-accent-ink);
   --color-secondary: var(--color-panel-2);
   --color-secondary-foreground: var(--color-ink);
   --color-muted: var(--color-panel-2);
@@ -124,6 +131,30 @@
 
 :root {
   --radius: 10px;
+  color-scheme: light;
+}
+
+:root.dark {
+  --color-ground: #24273a;
+  --color-panel: #1a1a1a;
+  --color-panel-2: #242424;
+  --color-panel-3: #303030;
+  --color-line: #33343b;
+  --color-line-strong: #484954;
+  --color-ink: #e9eaf2;
+  --color-ink-2: #c5c6d0;
+  --color-ink-3: #a9abb8;
+  --color-ink-4: #686a76;
+  --color-workspace-accent: #c6a0f6;
+  --color-workspace-accent-ink: #24273a;
+  --color-workspace-gradient-top: #4a4616;
+  --color-workspace-gradient-bottom: #0a1423;
+  --color-seal-soft: #36304a;
+  --color-alert-soft: #472c32;
+  --color-alert-ink: #f5a29b;
+  --color-ok: #263d34;
+  --color-ok-ink: #8bd5ae;
+  color-scheme: dark;
 }
 
 @layer base {
@@ -132,12 +163,16 @@
   }
   html {
     @apply font-sans antialiased;
+    height: 100%;
     font-size: 16px;
     text-rendering: optimizeLegibility;
     font-feature-settings: "cv11", "ss01", "tnum";
   }
   body {
     @apply bg-ground text-ink;
+    min-height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
     font-size: 0.875rem;
     line-height: 1.5;
     letter-spacing: -0.006em;
@@ -145,6 +180,11 @@
   ::selection {
     background: color-mix(in oklch, var(--color-sun) 60%, transparent);
   }
+}
+
+#root {
+  height: 100%;
+  min-height: 100%;
 }
 
 @layer components {
@@ -182,6 +222,27 @@
     font-weight: 600;
     line-height: 1;
     white-space: nowrap;
+  }
+
+  .workspace-gradient {
+    background: linear-gradient(
+      180deg,
+      var(--color-workspace-gradient-top) 0%,
+      var(--color-workspace-gradient-bottom) 100%
+    );
+  }
+
+  .workspace-content-surface {
+    background: var(--color-panel);
+    border-radius: 1rem;
+    box-shadow: 0 1px 1px rgb(0 0 0 / 0.08), 0 10px 32px -20px rgb(0 0 0 / 0.35);
+  }
+
+  .conversation-copy {
+    font-family: var(--font-sans);
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    letter-spacing: -0.004em;
   }
 }
 

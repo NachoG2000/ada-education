@@ -9,10 +9,14 @@
   "scripts": {
     "dev": "tsx src/cli.ts",
     "check": "tsc --noEmit",
-    "check:scripted": "tsx scripts/scripted-check.ts"
+    "check:scripted": "tsx scripts/scripted-check.ts",
+    "check:providers": "tsx scripts/provider-check.ts"
   },
   "dependencies": {
     "@ada/protocol": "*",
     "ws": "^8.18.0"
+  },
+  "engines": {
+    "node": ">=24"
   }
 }
