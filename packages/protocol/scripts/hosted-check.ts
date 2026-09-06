@@ -4,6 +4,11 @@ import {
   communityWorkspaceSnapshotSchema,
   createCommunityResultSchema,
   createInviteInputSchema,
+  inviteListResultSchema,
+  inviteRedeemResultSchema,
+  inviteRevokeResultSchema,
+  updateMembershipRoleInputSchema,
+  updateUserInputSchema,
   runnerMessageCreateSchema,
   runnerServerFrameSchema,
   runnerWorkSchema,
@@ -106,6 +111,31 @@ check(agentEnrollmentResultSchema.safeParse({
 }).success, "the explicit enrollment response carries the one-time runner credential")
 check(!createInviteInputSchema.safeParse({ role: "student", mode: "single-use", maxUses: 2 }).success,
   "single-use invite contracts reject multiple uses")
+const invite = {
+  id: "invite-1",
+  communityId: "community-1",
+  role: "student" as const,
+  mode: "single-use" as const,
+  createdBy: "user-1",
+  createdAt: at,
+  uses: 0,
+  maxUses: 1,
+}
+check(inviteListResultSchema.safeParse([invite]).success,
+  "invite lists accept safe metadata")
+check(!inviteListResultSchema.safeParse([{ ...invite, code: "x".repeat(32) }]).success,
+  "invite lists reject raw credentials")
+check(inviteRevokeResultSchema.safeParse({ ...invite, revokedAt: at }).success,
+  "invite revocation returns timestamped safe metadata")
+check(inviteRedeemResultSchema.safeParse({
+  community: { ...community, membership },
+  membership,
+  consumed: false,
+}).success, "invite redemption reports whether it consumed the code")
+check(updateUserInputSchema.safeParse({ displayName: "New Name" }).success,
+  "profile updates accept a validated display name")
+check(updateMembershipRoleInputSchema.safeParse({ role: "teacher" }).success,
+  "membership role updates accept only known roles")
 check(!runnerMessageCreateSchema.safeParse({
   type: "message.create",
   ref: "request-1",

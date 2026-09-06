@@ -110,6 +110,7 @@ function agentFromRow(database: DatabaseSync, row: Row): Agent {
     createdAt: asString(row.created_at),
     updatedAt: asString(row.updated_at),
     inactiveAt: asString(row.inactive_at),
+    avatarUrl: asString(row.avatar_url),
   }
 }
 
@@ -181,6 +182,7 @@ export function updateProfile(database: DatabaseSync, actorId: string, memberId:
 export function createAgent(database: DatabaseSync, actorId: string, input: {
   name: string
   description?: string
+  avatarUrl?: string
   instructions: string
   scope: Agent["scope"]
   runtime: string
@@ -200,11 +202,11 @@ export function createAgent(database: DatabaseSync, actorId: string, input: {
     database.prepare(`
       INSERT INTO members (
         id, kind, name, scope, created_by, figure_seed, figure_color, instructions,
-        provider_mode, provider_model, runtime, model, token, description, status,
+        provider_mode, provider_model, runtime, model, token, description, avatar_url, status,
         created_at, updated_at
-      ) VALUES (?, 'agent', ?, ?, ?, ?, ?, ?, 'subscription', ?, ?, ?, ?, ?, 'active', ?, ?)
+      ) VALUES (?, 'agent', ?, ?, ?, ?, ?, ?, 'subscription', ?, ?, ?, ?, ?, ?, 'active', ?, ?)
     `).run(id, input.name.trim(), input.scope, actorId, input.figureSeed ?? id, input.figureColor ?? null,
-      input.instructions, model, input.runtime, model, token, input.description ?? null, createdAt, createdAt)
+      input.instructions, model, input.runtime, model, token, input.description ?? null, input.avatarUrl ?? null, createdAt, createdAt)
     for (const channelId of [...new Set(input.channelIds)]) {
       database.prepare("INSERT INTO channel_members (channel_id, member_id) VALUES (?, ?)").run(channelId, id)
     }
@@ -225,6 +227,7 @@ export function updateAgent(database: DatabaseSync, actorId: string, agentId: st
     const add = (column: string, value: string | null) => { sets.push(`${column} = ?`); values.push(value) }
     if (input.name !== undefined) add("name", input.name.trim())
     if (input.description !== undefined) add("description", input.description)
+    if (input.avatarUrl !== undefined) add("avatar_url", input.avatarUrl)
     if (input.instructions !== undefined) add("instructions", input.instructions)
     if (input.scope !== undefined) add("scope", input.scope)
     if (input.runtime !== undefined) add("runtime", input.runtime)

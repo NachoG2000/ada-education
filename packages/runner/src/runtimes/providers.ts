@@ -49,6 +49,7 @@ function secretsFor(options: ProviderOptions): string[] {
   const env = { ...process.env, ...options.env }
   return [
     ...(options.secrets ?? []),
+    env.CLAUDE_CODE_OAUTH_TOKEN,
     env.OPENAI_API_KEY,
     env.ANTHROPIC_API_KEY,
     env.ANTHROPIC_AUTH_TOKEN,
@@ -75,13 +76,22 @@ type ChildResult = { code: number | null; stdout: string; stderr: string; spawnE
 
 function runChild(binary: string, args: string[], options: ProviderOptions, provider: ProviderName): Promise<ChildResult> {
   const env = { ...process.env, ...options.env }
+  if (env.ADA_PROVIDER_AUTH && !["subscription", "api-key"].includes(env.ADA_PROVIDER_AUTH)) throw new ProviderError("ADA_PROVIDER_AUTH must be subscription or api-key.", "auth")
+  if (env.ADA_PROVIDER_AUTH === "api-key") {
+    if (provider !== "claude") throw new ProviderError("API-key mode currently supports Claude. Use subscription mode for Codex.", "auth")
+    const key = env.ANTHROPIC_API_KEY
+    if (!key) throw new ProviderError("The installation administrator must configure the provider API key.", "auth")
+    // Explicit API mode must not fall back to a subscription token.
+    delete env.CLAUDE_CODE_OAUTH_TOKEN
+    delete env.ANTHROPIC_AUTH_TOKEN
+  }
   // Ada bearer credentials are transport-only. Never pass them to a provider,
   // even when this runner was launched from another Ada process.
   for (const key of Object.keys(env)) {
     if (/^ADA_.*(?:TOKEN|SECRET|CODE|KEY)$/i.test(key)) delete env[key]
     // This development runner is explicitly subscription-backed. Provider API
     // keys would silently switch billing away from the user's CLI login.
-    if (["OPENAI_API_KEY", "ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN"].includes(key)) delete env[key]
+    if (["OPENAI_API_KEY", "ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN"].includes(key) && env.ADA_PROVIDER_AUTH !== "api-key") delete env[key]
     // Avoid inheriting a parent agent session while preserving user-selected
     // config locations that may contain the CLI's normal login state.
     if (provider === "claude" && key === "CLAUDECODE") delete env[key]

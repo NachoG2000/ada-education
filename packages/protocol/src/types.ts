@@ -51,6 +51,7 @@ export interface Person {
   tone: "card" | "cardstock" | "seal-soft" | "red-soft"
   role?: "teacher" | "student"
   presence: Presence
+  joinedAt?: string
 }
 
 export interface Agent {
@@ -77,6 +78,7 @@ export interface Agent {
   createdAt?: string
   updatedAt?: string
   inactiveAt?: string
+  avatarUrl?: string | null
 }
 
 export type Member = Person | Agent
@@ -172,6 +174,9 @@ export interface Channel {
   memberCount?: number
   work?: { status: WorkStatus; due?: string }
   unread?: boolean
+  kind?: "channel" | "dm"
+  agentId?: string
+  ownerId?: string
 }
 
 export interface WorkChannelInput {
@@ -206,6 +211,7 @@ export interface ReplaceChannelMembersInput {
 export interface CreateAgentInput {
   name: string
   description?: string
+  avatarUrl?: string
   instructions: string
   scope: Agent["scope"]
   runtime: AgentRuntime
@@ -218,6 +224,7 @@ export interface CreateAgentInput {
 export interface UpdateAgentInput {
   name?: string
   description?: string
+  avatarUrl?: string
   instructions?: string
   scope?: Agent["scope"]
   runtime?: AgentRuntime
@@ -231,6 +238,7 @@ export interface UpdateAgentInput {
 export interface AgentEnrollment {
   runnerToken: string
   setupCommand: string
+  issuedAt?: string
 }
 
 export interface AgentCreateResult {
@@ -246,6 +254,7 @@ export interface AgentTokenRotationResult {
 export interface CommunityUpdateInput {
   name?: string
   subtitle?: string
+  term?: string
 }
 
 export interface ProfileUpdateInput {
@@ -388,4 +397,5 @@ export interface Community {
   reports: Report[]
   meId: string
   updatedAt?: string
+  term?: string
 }

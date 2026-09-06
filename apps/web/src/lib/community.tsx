@@ -232,6 +232,9 @@ export function CommunityProvider({
   community,
   initialChannelId,
   initialPanels = [],
+  controlledPanels,
+  onOpenThread,
+  onClosePanel,
   now,
   mode = "demo",
   connected = true,
@@ -250,6 +253,10 @@ export function CommunityProvider({
   initialChannelId: string
   /** initial stack for the contextual panel; the first one stays on top */
   initialPanels?: Panel[]
+  /** Hosted routing owns contextual thread state so browser history can restore it. */
+  controlledPanels?: Panel[]
+  onOpenThread?: (threadId: string) => void
+  onClosePanel?: () => void
   now: Date
   mode?: "demo" | "connected"
   connected?: boolean
@@ -408,7 +415,8 @@ export function CommunityProvider({
       const base = p.filter((x) => x.kind !== "thread")
       return [{ kind: "thread", threadId }, ...base].slice(0, 2) as Panel[]
     })
-  }, [])
+    onOpenThread?.(threadId)
+  }, [onOpenThread])
   const openCard = useCallback((cardId: string) => {
     setPanels((p) => {
       const rest = p.filter((x) => !(x.kind === "card" && x.cardId === cardId))
@@ -423,7 +431,10 @@ export function CommunityProvider({
       return [{ kind: "agent", agentId }, ...base].slice(0, 2) as Panel[]
     })
   }, [])
-  const closePanel = useCallback(() => setPanels([]), [])
+  const closePanel = useCallback(() => {
+    setPanels([])
+    onClosePanel?.()
+  }, [onClosePanel])
   const popPanel = useCallback(() => setPanels((p) => p.slice(1)), [])
 
   /* Open a thread on a message that doesn't have one yet: the server creates it
@@ -501,7 +512,7 @@ export function CommunityProvider({
       moduleCards,
       myFeedback,
       presenceOf,
-      panels,
+      panels: controlledPanels ?? panels,
       openThread,
       openCard,
       openAgent,
@@ -538,6 +549,7 @@ export function CommunityProvider({
     moduleCards,
     myFeedback,
     presenceOf,
+    controlledPanels,
     panels,
     byId,
     openThread,

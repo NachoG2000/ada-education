@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS members (
   model TEXT,
   token TEXT UNIQUE,
   description TEXT,
+  avatar_url TEXT,
   status TEXT NOT NULL DEFAULT 'active',
   created_at TEXT NOT NULL DEFAULT '1970-01-01T00:00:00.000Z',
   updated_at TEXT NOT NULL DEFAULT '1970-01-01T00:00:00.000Z',
@@ -254,11 +255,13 @@ CREATE TABLE IF NOT EXISTS tenant_invites (
   community_id TEXT NOT NULL REFERENCES tenant_communities(id) ON DELETE CASCADE,
   code_digest TEXT NOT NULL UNIQUE,
   role TEXT NOT NULL CHECK (role IN ('teacher', 'student')),
+  mode TEXT NOT NULL DEFAULT 'reusable' CHECK (mode IN ('single-use', 'reusable')),
   max_uses INTEGER,
   uses INTEGER NOT NULL DEFAULT 0,
   created_by TEXT NOT NULL REFERENCES tenant_users(id),
   created_at TEXT NOT NULL,
-  expires_at TEXT
+  expires_at TEXT,
+  revoked_at TEXT
 );
 
 CREATE INDEX IF NOT EXISTS tenant_invites_community ON tenant_invites(community_id, created_at);

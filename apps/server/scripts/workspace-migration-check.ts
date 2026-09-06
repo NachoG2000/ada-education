@@ -4,6 +4,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { DatabaseSync } from "node:sqlite"
 import { openDatabase } from "../src/db.js"
+import { LATEST_SCHEMA_VERSION } from "../src/migrations.js"
 import { seedCourse } from "../src/seed.js"
 
 const scratch = mkdtempSync(join(tmpdir(), "ada-workspace-migration-"))
@@ -37,13 +38,15 @@ try {
   legacy.close()
 
   const migrated = openDatabase(legacyPath)
-  assert.equal((migrated.prepare("PRAGMA user_version").get() as { user_version: number }).user_version, 4)
+  assert.equal((migrated.prepare("PRAGMA user_version").get() as { user_version: number }).user_version, LATEST_SCHEMA_VERSION)
   assert.equal((migrated.prepare("SELECT visibility FROM channels WHERE id = 'private-room'").get() as { visibility: string }).visibility, "private")
   assert.equal((migrated.prepare("SELECT token FROM members WHERE id = 'teacher'").get() as { token: string }).token, "person-live-token")
+  assert.equal((migrated.prepare("SELECT COUNT(*) AS count FROM pragma_table_info('tenant_invites') WHERE name IN ('mode', 'revoked_at')").get() as { count: number }).count, 2, "invite management columns migrate together")
+  assert.equal((migrated.prepare("SELECT COUNT(*) AS count FROM pragma_table_info('members') WHERE name = 'avatar_url'").get() as { count: number }).count, 1, "retained agents gain the shared avatar field")
   migrated.close()
 
   const reopened = openDatabase(legacyPath)
-  assert.equal((reopened.prepare("PRAGMA user_version").get() as { user_version: number }).user_version, 4, "second boot leaves the migration complete")
+  assert.equal((reopened.prepare("PRAGMA user_version").get() as { user_version: number }).user_version, LATEST_SCHEMA_VERSION, "second boot leaves the migration complete")
   assert.equal((reopened.prepare("SELECT COUNT(*) AS count FROM pragma_table_info('channels') WHERE name = 'visibility'").get() as { count: number }).count, 1, "second boot does not duplicate migrated columns")
   reopened.close()
 
@@ -63,6 +66,7 @@ try {
   seedCourse({ courseDir, dbPath: seededPath })
 
   const live = openDatabase(seededPath)
+  assert.equal((live.prepare("SELECT COUNT(*) AS count FROM pragma_table_info('tenant_invites') WHERE name IN ('mode', 'revoked_at')").get() as { count: number }).count, 2, "fresh databases match the migrated invite shape")
   live.prepare("UPDATE members SET token = ? WHERE id = 'ada'").run("rotated-live-token")
   live.prepare("INSERT INTO channels (id, name, group_name, visibility, status, created_by) VALUES ('dynamic', 'Dynamic', 'course', 'open', 'active', 'teacher')").run()
   live.prepare("INSERT INTO channel_members (channel_id, member_id) VALUES ('dynamic', 'teacher')").run()

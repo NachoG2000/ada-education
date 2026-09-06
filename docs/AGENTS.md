@@ -1,10 +1,15 @@
-# docs/ — pages for people, future direction
+# docs/ — current guides and future references
 
-**What it is:** Self-contained HTML (no build, double-click and go) that explains Ada to humans. **It doesn't describe today's code**: it describes the full product, in the direction it's growing toward. Every page carries a banner that says so. If they contradict the code or `openspec/`, the code and spec win.
+`README.md` is the documentation index. `architecture.md` describes the mounted hosted implementation and links to contributor instructions. Keep it aligned with the code and `DECISIONS.md` §22–§24.
+
+The self-contained HTML pages (no build, double-click and go) describe future direction. Every page carries a banner that says so. If they contradict the code or current specifications, the code and spec win.
 
 - `how-it-works.html` — mental model: server / runner / runtime / folder, the sequence of a mention, where `data/` lives, three-layer isolation, the three tiers (local / self-host / hosted).
 - `usecases-api.html` — use cases and API surface for the expanded MVP.
 
-**Today (real scope, `DECISIONS.md` §19; deployment shape from §15):** of everything these pages show, only the fully local install exists (server + runner + client on one machine, course defined by a config file).
+`history/` preserves former workspace instructions for the retained singleton/fixture APIs and old web client. Those files are historical descriptions, not current setup instructions.
 
-Rules: same visual language as `src/index.css` (the tokens are copied into each page); English; if `DECISIONS.md` §14-§15 or the spec changes, update the page in the same task; check the render (SVG diagrams) before closing out.
+Rules: English; preserve historical decisions; keep current and future material explicitly labeled. If changing an HTML page or its SVG diagrams, check its render before closing out. The reference tokens are copied from `apps/web/src/index.css`. Add current setup/architecture documentation in Markdown rather than expanding the future API sketch into a second source of truth.
+
+`agent-host.md` is the current local automatic-agent and installation-auth
+runbook (§25). Preserve the external server/runner boundary when updating it.

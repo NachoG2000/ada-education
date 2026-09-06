@@ -5,3 +5,5 @@
 export * from "./types.js"
 export * from "./events.js"
 export * from "./hosted.js"
+
+export * from "./agent-templates.js"

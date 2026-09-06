@@ -15,10 +15,8 @@ dist-ssr
 # Env files
 .env
 .env.*
-# ...except the web client's, which carries no secret: it only says the SPA
-# talks to its own origin (VITE_ADA_SERVER=/). Without it a fresh clone builds
-# the synthetic demo instead of the real client — Vite inlines this at build
-# time, so a runtime variable can't fix it afterwards.
+# The tracked web configuration contains only VITE_ADA_SERVER=/, no secret.
+# The hosted client also defaults to the page origin when this file is absent.
 !apps/web/.env
 
 # Editor directories and files
@@ -46,3 +44,9 @@ apps/server/data/
 
 # ada-runner local state (card id map); the wiki itself is versioned
 data/**/agents/*/.ada/
+
+# personal drafts (applications, notes); never part of the public repo
+private/
+
+# Installation agent host credentials and private workspaces
+.ada/

@@ -23,7 +23,7 @@ const checks = [
   ["DECISIONS.md", [/## 20\. Railway one-click template.*\(08\/23/, /owner token/, /single-use\s+invite/i]],
   ["deploy/README.md", [/ADA_OWNER_TOKEN/, /\/health/, /Generate Template from Project/]],
   ["deploy/AGENTS.md", [/first[- ]boot/i, /never echo/i]],
-  ["README.md", [/Deployment and hosted runners are deliberately outside issue #1/, /one-time setup command/]],
+  ["README.md", [/not the runbook for this multi-community version/, /one-time setup command/]],
   ["AGENTS.md", [/check:gated/]],
   ["apps/server/AGENTS.md", [/ADA_REQUIRE_MEMBERSHIP/, /api\/claim/]],
   ["packages/runner/AGENTS.md", [/Materials are supplied to the provider/]],
@@ -31,16 +31,23 @@ const checks = [
   // Buzz parity workspace (§21): visible chat/config shell with the old role
   // pages explicitly retired and the TypeScript server/runner boundary kept.
   ["DECISIONS.md", [/## 21\. Buzz desktop as the SPA interaction reference/, /Inbox, channels, Agents and scoped Settings/, /No Rust\/Tauri/]],
-  ["AGENTS.md", [/components\/hosted/, /check:workspace/, /no cards UI, Modules, My study, Inbox/]],
-  ["PRODUCT.md", [/Current visible product, 2026-08-24/, /chat\/configuration-first workspace/]],
-  ["DESIGN.md", [/Current visible workspace — Buzz frame/, /300px sidebar/, /below 600px/]],
+  ["AGENTS.md", [/components\/hosted/, /check:workspace/, /TanStack Router/, { not: /There is no product router/ }]],
+  ["PRODUCT.md", [/Current product contract \(2026-09-05\)/, /Historical visible product, 2026-08-24/, /chat\/configuration-first workspace/]],
+  ["DESIGN.md", [/Historical visible workspace — Buzz frame/, /300px sidebar/, /below 600px/]],
   ["research/2026-08-24-buzz-parity-implementation.md", [/Base UI/, /Hono/, /AI Elements/]],
   // Current hosted-service foundation (GitHub issue #1 / DECISIONS §22).
   ["DECISIONS.md", [/## 22\./, /User identity is independent of membership/i, /Claude or Codex subscription/i]],
   ["apps/server/AGENTS.md", [/tenant_users/, /first frame/, /last-teacher/]],
-  ["apps/web/AGENTS.md", [/HostedApp/, /community rail/, /no mounted card UI/i]],
+  ["apps/web/AGENTS.md", [/HostedApp/, /community rail/, /Card publication events are intentionally ignored/]],
   ["packages/runner/AGENTS.md", [/subscription-backed/, /first WebSocket frame/, /provider API keys/]],
   ["deploy/README.md", [/not the issue #1 hosted-service runbook/i, /not a supported deployment recipe/i]],
+  // Public repository baseline: usable setup, current map, and retained history.
+  ["README.md", [/Node.js 24/, /npm ci/, /npm run check/, /CONTRIBUTING.md/, /docs\/architecture.md/]],
+  ["CONTRIBUTING.md", [/check:hosted/, /check:legacy/, /fake local binaries/, /routeTree.gen.ts/]],
+  ["docs/architecture.md", [/first frame/, /read-only view/, /legacy-fixture-cli.ts/]],
+  ["docs/history/web-client-2026-08.md", [/not the mounted hosted routes/, /ada:token/, /#modules/]],
+  ["docs/history/server-fixture-api-2026-08.md", [/compatibility paths/, /api\/claim/, /ADA_REQUIRE_MEMBERSHIP/]],
+  ["DECISIONS.md", [/## 24\. Consolidate the public repository/, /npm run check/]],
 ]
 // The hackathon cover slide lives with the pitch history, not at the root.
 const mustExist = ["pitch/slide1.png"]

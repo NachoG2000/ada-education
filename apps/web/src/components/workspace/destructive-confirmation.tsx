@@ -110,9 +110,9 @@ export function DeleteAgentConfirmation({
     <DestructiveConfirmation
       open={open}
       onOpenChange={onOpenChange}
-      title={`Remove ${agent.name}?`}
-      description="Agents with authored history cannot be deleted safely. Deactivate this agent to preserve its messages and cards."
-      confirmLabel="Remove agent"
+      title={`Delete ${agent.name}?`}
+      description="The runner will stop working. Existing messages and direct-message history remain available as read-only history."
+      confirmLabel="Delete agent"
       onConfirm={onConfirm}
       pending={pending}
       error={error}

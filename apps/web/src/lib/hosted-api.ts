@@ -2,21 +2,26 @@ import {
   browserAuthFrameSchema,
   browserServerFrameSchema,
   activeAgentSchema,
+  activeMembershipSchema,
   agentEnrollmentResultSchema,
   agentDmSchema,
   communityChannelSchema,
+  communitySummarySchema,
   rotateAgentEnrollmentResultSchema,
   communityWorkspaceSnapshotSchema,
   createCommunityResultSchema,
   createUserResultSchema,
   deletedAgentSchema,
   inviteCreateResultSchema,
+  inviteListResultSchema,
   inviteRedeemResultSchema,
+  inviteRevokeResultSchema,
   messageTombstoneSchema,
   publicDirectorySchema,
   scopedMessageSchema,
   scopedThreadSchema,
   sessionOverviewSchema,
+  updateUserResultSchema,
   type CommunityMember,
   type CommunityWorkspaceSnapshot,
   type CreateCommunityAgentInput,
@@ -26,6 +31,9 @@ import {
   type CreateScopedMessageInput,
   type CreateScopedThreadInput,
   type EditScopedMessageInput,
+  type UpdateMembershipRoleInput,
+  type UpdateCommunityChannelInput,
+  type UpdateUserInput,
   type ScopedServerEvent,
 } from "@ada/protocol";
 import { scopedServerEventSchema } from "@ada/protocol";
@@ -108,6 +116,15 @@ export const restoreSession = (server: string, token: string) =>
   request<unknown>(server, "/api/session", token).then((result) =>
     sessionOverviewSchema.parse(result),
   );
+export const updateUser = (
+  server: string,
+  token: string,
+  input: UpdateUserInput,
+) =>
+  request<unknown>(server, "/api/users/me", token, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  }).then((result) => updateUserResultSchema.parse(result));
 export const createCommunity = (
   server: string,
   token: string,
@@ -117,6 +134,16 @@ export const createCommunity = (
     method: "POST",
     body: JSON.stringify(input),
   }).then((result) => createCommunityResultSchema.parse(result));
+export const updateCommunity = (
+  server: string,
+  token: string,
+  communityId: string,
+  input: { name?: string; term?: string },
+) =>
+  request<unknown>(server, communityPath(communityId), token, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  }).then((result) => communitySummarySchema.parse(result));
 export const redeemInvite = (server: string, token: string, code: string) =>
   request<unknown>(server, "/api/invites/redeem", token, {
     method: "POST",
@@ -150,6 +177,39 @@ export const createInvite = (
     method: "POST",
     body: JSON.stringify(input),
   }).then((result) => inviteCreateResultSchema.parse(result));
+export const listInvites = (
+  server: string,
+  token: string,
+  communityId: string,
+) =>
+  request<unknown>(server, communityPath(communityId, "/invites"), token).then(
+    (result) => inviteListResultSchema.parse(result),
+  );
+export const revokeInvite = (
+  server: string,
+  token: string,
+  communityId: string,
+  inviteId: string,
+) =>
+  request<unknown>(
+    server,
+    communityPath(communityId, `/invites/${path(inviteId)}`),
+    token,
+    { method: "DELETE" },
+  ).then((result) => inviteRevokeResultSchema.parse(result));
+export const updateMembershipRole = (
+  server: string,
+  token: string,
+  communityId: string,
+  userId: string,
+  input: UpdateMembershipRoleInput,
+) =>
+  request<unknown>(
+    server,
+    communityPath(communityId, `/members/${path(userId)}`),
+    token,
+    { method: "PATCH", body: JSON.stringify(input) },
+  ).then((result) => activeMembershipSchema.parse(result));
 export const removeMember = (
   server: string,
   token: string,
@@ -187,7 +247,7 @@ export const updateChannel = (
   token: string,
   communityId: string,
   channelId: string,
-  input: Record<string, unknown>,
+  input: UpdateCommunityChannelInput,
 ) =>
   request<unknown>(
     server,

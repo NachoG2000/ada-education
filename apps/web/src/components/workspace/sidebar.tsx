@@ -1,17 +1,20 @@
 import { useState } from "react"
 import {
   BotIcon,
+  CheckIcon,
   ChevronDownIcon,
   HashIcon,
-  InboxIcon,
   LockIcon,
   MoreHorizontalIcon,
+  LogOutIcon,
   PlusIcon,
   SearchIcon,
   SettingsIcon,
+  SquarePenIcon,
+  UserPlusIcon,
   UsersIcon,
 } from "lucide-react"
-import { MemberAvatar } from "@/components/ada/identity"
+import { WorkspaceAvatar as MemberAvatar } from "./workspace-avatar"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
@@ -20,15 +23,21 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Separator } from "@/components/ui/separator"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { ContextMenu, ContextMenuContent, ContextMenuGroup, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger } from "@/components/ui/context-menu"
 import type { AppRoute } from "@/lib/routes"
-import { navigateTo } from "@/lib/routes"
+import { useAppNavigation } from "@/lib/routes"
 import { useCommunity } from "@/lib/community"
 import { cn } from "@/lib/utils"
 import type { Channel } from "@/lib/types"
+import { useHostedWorkspace } from "./hosted-context"
+import type { ChannelAuxiliaryKind } from "./channel-details"
+import { DestructiveConfirmation } from "./destructive-confirmation"
+import { toast } from "@/components/ui/toast"
 
 interface WorkspaceSidebarProps {
   route: AppRoute
@@ -36,6 +45,7 @@ interface WorkspaceSidebarProps {
   onBrowseChannels: () => void
   onCreateChannel: (group: Channel["group"]) => void
   onOpenSearch: () => void
+  onOpenChannelAuxiliary: (channelId: string, kind: ChannelAuxiliaryKind) => void
   onNavigate?: () => void
 }
 
@@ -45,19 +55,23 @@ export function WorkspaceSidebar({
   onBrowseChannels,
   onCreateChannel,
   onOpenSearch,
+  onOpenChannelAuxiliary,
   onNavigate,
 }: WorkspaceSidebarProps) {
-  const { community, me, setActiveChannelId, switchPerson } = useCommunity()
-  const visibleChannels = community.channels
-  const groups: Array<{ key: Channel["group"]; label: string; channels: Channel[] }> = [
-    { key: "course", label: "Course", channels: visibleChannels.filter((channel) => channel.group === "course") },
-    { key: "work", label: "Work", channels: visibleChannels.filter((channel) => channel.group === "work") },
-    { key: "private", label: "Private", channels: visibleChannels.filter((channel) => channel.group === "private") },
-  ]
+  const { community, me, setActiveChannelId, workspace } = useCommunity()
+  const hosted = useHostedWorkspace()
+  const navigateTo = useAppNavigation(community.id)
+  const courseChannels = community.channels.filter((channel) => channel.kind !== "dm" && channel.status !== "archived")
+  const directMessages = community.channels.filter((channel) => channel.kind === "dm" && channel.ownerId === me.id)
+  const studentConversations = me.kind === "person" && me.role === "teacher"
+    ? community.channels.filter((channel) => channel.kind === "dm" && channel.ownerId !== me.id)
+    : []
+  const [confirmation, setConfirmation] = useState<{ channel: Channel; action: "leave" | "archive" } | null>(null)
+  const [mutationPending, setMutationPending] = useState(false)
 
   const selectRoute = (next: AppRoute) => {
     if (next.kind === "channel") setActiveChannelId(next.channelId)
-    navigateTo(next)
+    void navigateTo(next)
     onNavigate?.()
   }
 
@@ -68,9 +82,6 @@ export function WorkspaceSidebar({
           {community.initial || community.name.slice(0, 1).toUpperCase()}
         </div>
         <Separator className="my-2 w-7" />
-        <CompactNavButton label="Inbox" active={route.kind === "inbox"} onClick={() => selectRoute({ kind: "inbox" })}>
-          <InboxIcon />
-        </CompactNavButton>
         <CompactNavButton label="Search" onClick={onOpenSearch}><SearchIcon /></CompactNavButton>
         <CompactNavButton label="Agents" active={route.kind === "agents"} onClick={() => selectRoute({ kind: "agents" })}>
           <BotIcon />
@@ -79,7 +90,7 @@ export function WorkspaceSidebar({
           <CompactNavButton label="Settings" active={route.kind === "settings"} onClick={() => selectRoute({ kind: "settings" })}>
             <SettingsIcon />
           </CompactNavButton>
-          <button type="button" onClick={switchPerson} className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label={`Signed in as ${me.name}. Switch person.`}>
+          <button type="button" onClick={hosted.requestSignOut} className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label={`Signed in as ${me.name}. Sign out.`}>
             <MemberAvatar member={me} size={28} presence />
           </button>
         </div>
@@ -99,20 +110,27 @@ export function WorkspaceSidebar({
             <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-primary text-xs font-semibold text-primary-foreground">
               {community.initial || community.name.slice(0, 1).toUpperCase()}
             </span>
-            <span className="min-w-0 flex-1 truncate font-semibold">{community.name}</span>
+            <span className="min-w-0 flex-1"><span className="block truncate font-semibold">{community.name}</span><span className="block truncate text-[10px] font-normal text-sidebar-foreground/55">{hosted.activeCommunity.term}</span></span>
             <ChevronDownIcon data-icon="inline-end" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="min-w-56">
             <DropdownMenuGroup>
-              <DropdownMenuItem onClick={() => selectRoute({ kind: "settings", section: "course" })}><SettingsIcon />Course settings</DropdownMenuItem>
-              <DropdownMenuItem onClick={onBrowseChannels}><HashIcon />Browse channels</DropdownMenuItem>
+              {hosted.communities.map((item) => <DropdownMenuItem key={item.id} onClick={() => hosted.switchCommunity(item.id)}>{item.id === hosted.activeCommunity.id ? <CheckIcon /> : <span className="size-4" />}<span className="min-w-0 flex-1"><span className="block truncate">{item.name}</span><span className="block truncate text-xs text-muted-foreground">{item.term}</span></span></DropdownMenuItem>)}
             </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuItem onClick={() => selectRoute({ kind: "settings", section: "community" })}><SettingsIcon />Community settings</DropdownMenuItem>
+              {me.kind === "person" && me.role === "teacher" ? <DropdownMenuItem onClick={hosted.requestInvite}><UserPlusIcon />Invite people</DropdownMenuItem> : null}
+              <DropdownMenuItem onClick={onBrowseChannels}><HashIcon />Browse channels</DropdownMenuItem>
+              <DropdownMenuItem onClick={hosted.requestAddCommunity}><PlusIcon />Add a community</DropdownMenuItem>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup><DropdownMenuItem variant="destructive" disabled={!hosted.canLeaveCommunity} title={hosted.leaveCommunityBlockedReason} onClick={hosted.requestLeaveCommunity}><LogOutIcon />Leave community{hosted.leaveCommunityBlockedReason ? <span className="ml-auto text-xs">Another teacher required</span> : null}</DropdownMenuItem></DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
 
       <nav className="px-2" aria-label="Primary">
-        <SidebarNavButton active={route.kind === "inbox"} onClick={() => selectRoute({ kind: "inbox" })} icon={<InboxIcon />} label="Inbox" />
         <SidebarNavButton active={route.kind === "agents"} onClick={() => selectRoute({ kind: "agents" })} icon={<BotIcon />} label="Agents" />
       </nav>
 
@@ -129,17 +147,9 @@ export function WorkspaceSidebar({
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 pb-3">
-        {groups.map((group) => (
-          <ChannelGroup
-            key={group.key}
-            label={group.label}
-            channels={group.channels}
-            activeId={route.kind === "channel" ? route.channelId : undefined}
-            onSelect={(channelId) => selectRoute({ kind: "channel", channelId })}
-            onCreate={() => onCreateChannel(group.key)}
-            canCreate={me.kind === "person" && (me.role === "teacher" || group.key === "private")}
-          />
-        ))}
+        <ChannelGroup label="Channels" channels={courseChannels} activeId={route.kind === "channel" ? route.channelId : undefined} onSelect={(channelId) => selectRoute({ kind: "channel", channelId })} onCreate={() => onCreateChannel("course")} canCreate={me.kind === "person" && me.role === "teacher"} teacher={me.kind === "person" && me.role === "teacher"} onDetails={onOpenChannelAuxiliary} onConfirm={setConfirmation} />
+        <ChannelGroup label="Direct messages" channels={directMessages} activeId={route.kind === "channel" ? route.channelId : undefined} onSelect={(channelId) => selectRoute({ kind: "channel", channelId })} onCreate={() => selectRoute({ kind: "new-message" })} canCreate teacher={false} onDetails={onOpenChannelAuxiliary} onConfirm={setConfirmation} />
+        {studentConversations.length ? <ChannelGroup label="Student conversations" channels={studentConversations} activeId={route.kind === "channel" ? route.channelId : undefined} onSelect={(channelId) => selectRoute({ kind: "channel", channelId })} onCreate={() => undefined} canCreate={false} defaultOpen={false} teacher onDetails={onOpenChannelAuxiliary} onConfirm={setConfirmation} /> : null}
         <div className="mt-2 px-1">
           <Button type="button" variant="ghost" size="sm" className="w-full justify-start text-muted-foreground" onClick={onBrowseChannels}>
             <PlusIcon data-icon="inline-start" />Browse channels
@@ -150,10 +160,10 @@ export function WorkspaceSidebar({
       <div className="shrink-0 px-2 pb-2">
         <Separator className="mb-2 opacity-50" />
         <div className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-sidebar-accent">
-          <button type="button" onClick={switchPerson} className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring" title="Switch person">
+          <button type="button" onClick={() => selectRoute({ kind: "settings", section: "profile" })} className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label="Open profile settings">
             <MemberAvatar member={me} size={30} presence />
           </button>
-          <button type="button" onClick={() => selectRoute({ kind: "settings", section: "course" })} className="min-w-0 flex-1 text-left outline-none focus-visible:underline">
+          <button type="button" onClick={() => selectRoute({ kind: "settings", section: "profile" })} className="min-w-0 flex-1 text-left outline-none focus-visible:underline">
             <span className="block truncate text-sm font-medium">{me.name}</span>
             <span className="block truncate text-[11px] text-sidebar-foreground/60">{me.kind === "person" ? me.role ?? "member" : "agent"}</span>
           </button>
@@ -164,12 +174,31 @@ export function WorkspaceSidebar({
             <DropdownMenuContent align="end">
               <DropdownMenuGroup>
                 <DropdownMenuItem onClick={() => selectRoute({ kind: "settings" })}><SettingsIcon />Settings</DropdownMenuItem>
-                <DropdownMenuItem onClick={switchPerson}><UsersIcon />Switch person</DropdownMenuItem>
+                <DropdownMenuItem onClick={hosted.requestSignOut}><LogOutIcon />Sign out</DropdownMenuItem>
               </DropdownMenuGroup>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </div>
+      <DestructiveConfirmation
+        open={Boolean(confirmation)}
+        onOpenChange={(open) => { if (!open) setConfirmation(null) }}
+        title={confirmation?.action === "archive" ? `Archive #${confirmation.channel.name}?` : `Leave #${confirmation?.channel.name}?`}
+        description={confirmation?.action === "archive" ? "History stays readable, but new messages are disabled." : "You can rejoin later if the channel remains public."}
+        confirmLabel={confirmation?.action === "archive" ? "Archive channel" : "Leave channel"}
+        pending={mutationPending}
+        onConfirm={async () => {
+          if (!confirmation) return
+          setMutationPending(true)
+          try {
+            if (confirmation.action === "archive") await workspace.updateChannel(confirmation.channel.id, { status: "archived" })
+            else await workspace.leaveChannel(confirmation.channel.id)
+            setConfirmation(null)
+            toast.add({ title: confirmation.action === "archive" ? "Channel archived" : "Channel left" })
+            if (route.kind === "channel" && route.channelId === confirmation.channel.id) void navigateTo({ kind: "inbox" })
+          } finally { setMutationPending(false) }
+        }}
+      />
     </aside>
   )
 }
@@ -181,6 +210,10 @@ function ChannelGroup({
   onSelect,
   onCreate,
   canCreate,
+  defaultOpen = true,
+  teacher,
+  onDetails,
+  onConfirm,
 }: {
   label: string
   channels: Channel[]
@@ -188,8 +221,12 @@ function ChannelGroup({
   onSelect: (channelId: string) => void
   onCreate: () => void
   canCreate: boolean
+  defaultOpen?: boolean
+  teacher: boolean
+  onDetails: (channelId: string, kind: ChannelAuxiliaryKind) => void
+  onConfirm: (value: { channel: Channel; action: "leave" | "archive" }) => void
 }) {
-  const [open, setOpen] = useState(true)
+  const [open, setOpen] = useState(defaultOpen)
   return (
     <Collapsible open={open} onOpenChange={setOpen} className="mt-1">
       <div className="group/section flex h-7 items-center gap-1 px-1">
@@ -200,15 +237,16 @@ function ChannelGroup({
           <span className="truncate">{label}</span>
         </CollapsibleTrigger>
         {canCreate ? (
-          <Button type="button" variant="ghost" size="icon-xs" className="opacity-70 sm:opacity-0 sm:group-hover/section:opacity-100 focus-visible:opacity-100" onClick={onCreate} aria-label={`Create ${label.toLowerCase()} channel`}>
-            <PlusIcon />
+          <Button type="button" variant="ghost" size="icon-xs" className="opacity-70 sm:opacity-0 sm:group-hover/section:opacity-100 focus-visible:opacity-100" onClick={onCreate} aria-label={label === "Direct messages" ? "New message" : "Create channel"}>
+            {label === "Direct messages" ? <SquarePenIcon /> : <PlusIcon />}
           </Button>
         ) : null}
       </div>
       <CollapsibleContent>
         <div className="flex flex-col gap-px">
           {channels.map((channel) => (
-            <button
+            <ContextMenu key={channel.id}>
+            <ContextMenuTrigger render={<button
               key={channel.id}
               type="button"
               onClick={() => onSelect(channel.id)}
@@ -218,14 +256,24 @@ function ChannelGroup({
                 channel.id === activeId && "bg-background/80 font-medium text-sidebar-accent-foreground",
                 channel.status === "archived" && "text-sidebar-foreground/50",
               )}
-            >
+            />}>
               {channel.visibility === "private" || channel.group === "private" ? <LockIcon className="size-3.5 shrink-0 opacity-60" /> : <HashIcon className="size-3.5 shrink-0 opacity-60" />}
               <span className="min-w-0 flex-1 truncate">{channel.name}</span>
               {channel.status === "archived" ? <Badge variant="secondary" className="px-1 py-0 text-[9px] leading-4">Archived</Badge> : null}
               {channel.unread ? <span className="size-1.5 shrink-0 rounded-full bg-primary" aria-label="Unread" /> : null}
-            </button>
+            </ContextMenuTrigger>
+            <ContextMenuContent>
+              <ContextMenuGroup>
+                <ContextMenuItem onClick={() => onSelect(channel.id)}><HashIcon />Open</ContextMenuItem>
+                <ContextMenuItem onClick={() => { void navigator.clipboard.writeText(`#${channel.name}`); toast.add({ title: "Channel name copied" }) }}><CheckIcon />Copy name</ContextMenuItem>
+                <ContextMenuItem onClick={() => onDetails(channel.id, "members")}><UsersIcon />View members</ContextMenuItem>
+                {teacher && channel.kind !== "dm" ? <ContextMenuItem onClick={() => onDetails(channel.id, "settings")}><SettingsIcon />Channel settings</ContextMenuItem> : null}
+              </ContextMenuGroup>
+              {channel.kind !== "dm" ? <><ContextMenuSeparator /><ContextMenuGroup>{teacher ? <ContextMenuItem variant="destructive" onClick={() => onConfirm({ channel, action: "archive" })}>Archive channel</ContextMenuItem> : <ContextMenuItem variant="destructive" onClick={() => onConfirm({ channel, action: "leave" })}>Leave channel</ContextMenuItem>}</ContextMenuGroup></> : null}
+            </ContextMenuContent>
+            </ContextMenu>
           ))}
-          {channels.length === 0 ? <p className="px-2 py-1 text-xs text-sidebar-foreground/50">No {label.toLowerCase()} channels</p> : null}
+          {channels.length === 0 ? <p className="px-2 py-1 text-xs text-sidebar-foreground/50">{label === "Channels" ? "No channels yet" : `No ${label.toLowerCase()} yet`}</p> : null}
         </div>
       </CollapsibleContent>
     </Collapsible>

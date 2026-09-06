@@ -86,6 +86,9 @@ try {
   const dana = await post("/api/users", undefined, { displayName: "Dana Student" })
   const erin = await post("/api/users", undefined, { displayName: "Erin Student" })
   check(typeof alice.token === "string" && alice.token.length >= 40, "user token is high entropy")
+  const renamedUser = await expectStatus("/api/users/me", alice.token, 200, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ displayName: " Alice   Teacher Updated " }) }) as Json
+  check(renamedUser.displayName === "Alice Teacher Updated" && !JSON.stringify(renamedUser).includes(alice.token), "profile update normalizes the global display name without returning credentials")
+  await expectStatus("/api/users/me", alice.token, 400, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ displayName: "" }) })
 
   const first = await post("/api/communities", alice.token, { name: "Alpha", term: "2026" })
   const second = await post("/api/communities", cara.token, { name: "Beta", term: "2026" })
@@ -95,16 +98,27 @@ try {
   await expectStatus(`/api/communities/${beta}`, alice.token, 403)
 
   const invite = await post(`/api/communities/${alpha}/invites`, alice.token, { role: "student", mode: "single-use" })
-  await post("/api/invites/redeem", bob.token, { code: invite.code })
+  const firstRedeem = await post("/api/invites/redeem", bob.token, { code: invite.code })
   const redeemAgain = await post("/api/invites/redeem", bob.token, { code: invite.code })
-  check(redeemAgain.membership.status === "active", "invite redemption is idempotent for an existing member")
+  check(firstRedeem.consumed === true && redeemAgain.consumed === false && redeemAgain.membership.status === "active", "invite redemption reports consumption and is idempotent for an existing member")
   await expectStatus("/api/invites/redeem", cara.token, 409, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ code: invite.code }) })
   const reusable = await post(`/api/communities/${alpha}/invites`, alice.token, { role: "student", mode: "reusable", maxUses: 2 })
   await post("/api/invites/redeem", cara.token, { code: reusable.code })
   await post("/api/invites/redeem", dana.token, { code: reusable.code })
   await expectStatus("/api/invites/redeem", erin.token, 409, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ code: reusable.code }) })
+  const revocable = await post(`/api/communities/${alpha}/invites`, alice.token, { role: "student", mode: "reusable", maxUses: 5 })
+  const inviteList = await expectStatus(`/api/communities/${alpha}/invites`, alice.token, 200) as Json[]
+  check(inviteList.some((item) => item.id === revocable.invite.id && item.mode === "reusable") && !JSON.stringify(inviteList).includes(revocable.code) && !JSON.stringify(inviteList).includes("codeDigest"), "invite listing returns active safe metadata only")
+  await expectStatus(`/api/communities/${alpha}/invites`, bob.token, 403)
+  await expectStatus(`/api/communities/${alpha}/invites/${revocable.invite.id}`, cara.token, 403, { method: "DELETE" })
+  const revoked = await expectStatus(`/api/communities/${alpha}/invites/${revocable.invite.id}`, alice.token, 200, { method: "DELETE" }) as Json
+  check(typeof revoked.revokedAt === "string" && !("code" in revoked), "invite revocation returns safe timestamped metadata")
+  await expectStatus("/api/invites/redeem", erin.token, 409, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ code: revocable.code }) })
+  const afterRevoke = await expectStatus(`/api/communities/${alpha}/invites`, alice.token, 200) as Json[]
+  check(!afterRevoke.some((item) => item.id === revocable.invite.id), "revoked invites leave the active list")
   const betaInvite = await post(`/api/communities/${beta}/invites`, cara.token, { role: "student", mode: "reusable" })
   await post("/api/invites/redeem", alice.token, { code: betaInvite.code })
+  await expectStatus(`/api/communities/${beta}/invites`, alice.token, 403)
   const aliceSession = await request("/api/session", { headers: auth(alice.token) })
   check((aliceSession.body as Json).communities.some((item: Json) => item.id === beta && item.membership.role === "student"), "one global user can carry independent per-community roles")
 
@@ -119,6 +133,12 @@ try {
   check((browse.body as Json[]).some((item) => item.id === channelId && !("memberIds" in item)), "browse exposes metadata only")
   await expectStatus(`/api/communities/${alpha}/channels/${channelId}/messages`, bob.token, 404)
   await post(`/api/communities/${alpha}/channels/${channelId}/join`, bob.token, {})
+  await expectStatus(`/api/communities/${alpha}/members/${bob.user.id}`, dana.token, 403, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ role: "teacher" }) })
+  const promoted = await expectStatus(`/api/communities/${alpha}/members/${bob.user.id}`, alice.token, 200, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ role: "teacher" }) }) as Json
+  check(promoted.role === "teacher", "teachers can promote an active member")
+  const demoted = await expectStatus(`/api/communities/${alpha}/members/${bob.user.id}`, alice.token, 200, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ role: "student" }) }) as Json
+  check(demoted.role === "student", "teachers can demote another teacher while one remains")
+  await expectStatus(`/api/communities/${alpha}/members/${alice.user.id}`, alice.token, 409, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ role: "student" }) })
   const agentResult = await post(`/api/communities/${alpha}/agents`, alice.token, { name: "Ada Alpha", instructions: "Help", runtime: "claude", model: "test", channelIds: [channelId] })
   const agent = agentResult.agent as Json
   const runnerToken = agentResult.enrollment.runnerToken as string
@@ -146,6 +166,10 @@ try {
   check(browser.frames[0]?.payload?.communityId === alpha, "browser ready is bound to community")
   const outsider = await wsFrame(`${base.replace("http", "ws")}/ws`, { type: "auth", token: cara.token, communityId: alpha })
   check(browserServerFrameSchema.safeParse(browser.frames[0]).success && browserServerFrameSchema.safeParse(outsider.frames[0]).success, "browser ready frames satisfy the shared protocol")
+  await expectStatus(`/api/communities/${alpha}/members/${bob.user.id}`, alice.token, 200, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ role: "teacher" }) })
+  await new Promise((resolve) => setTimeout(resolve, 40))
+  check(browser.frames.some((frame) => frame.type === "event" && frame.payload?.event?.type === "membership.updated" && frame.payload.event.payload.membership.userId === bob.user.id), "membership role changes use the viewer-scoped event envelope")
+  await expectStatus(`/api/communities/${alpha}/members/${bob.user.id}`, alice.token, 200, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ role: "student" }) })
   const privateMessage = await post(`/api/communities/${alpha}/channels/${dmId}/messages`, bob.token, { paragraphs: [[{ kind: "text", text: "private" }]] })
   await post(`/api/communities/${alpha}/threads`, bob.token, { channelId: dmId, rootMessageId: privateMessage.id })
   await new Promise((resolve) => setTimeout(resolve, 50))
@@ -220,6 +244,7 @@ try {
   const db = new DatabaseSync(process.env.ADA_DB as string)
   check(Number((db.prepare("SELECT COUNT(*) AS n FROM pragma_table_info('tenant_users') WHERE name = 'token'").get() as Json).n) === 0, "tenant users do not persist raw bearer token columns")
   check(Number((db.prepare("SELECT COUNT(*) AS n FROM pragma_table_info('tenant_agents') WHERE name = 'runner_token'").get() as Json).n) === 0, "tenant agents do not persist raw runner token columns")
+  check(Number((db.prepare("SELECT COUNT(*) AS n FROM pragma_table_info('tenant_invites') WHERE name IN ('mode', 'revoked_at')").get() as Json).n) === 2, "invite mode and revocation are persisted by the current migration")
   const storedUserDigest = (db.prepare("SELECT token_digest FROM tenant_users WHERE id = ?").get(alice.user.id) as Json).token_digest
   const storedRunnerDigest = (db.prepare("SELECT runner_token_digest FROM tenant_agents WHERE id = ?").get(agent.id) as Json).runner_token_digest
   check(typeof storedUserDigest === "string" && storedUserDigest.length === 64 && storedUserDigest !== alice.token, "the database stores only the user token digest")

@@ -29,7 +29,7 @@ import {
   findTenantUserByToken,
   getTenantAgentById,
   getTenantCommunity,
-  listTenantChannelAgents,
+  tenantWorkAgentsForMessage,
   listTenantAgentContext,
   listTenantMembers,
   canReadTenantChannel,
@@ -203,12 +203,7 @@ export function startServer(): RunningServer {
         return { cardId: card.id, channelId: card.channelId }
       },
       workAgentsForMessage(message) {
-        return listTenantChannelAgents(database, message.communityId, message.channelId, hostedPresence)
-          .filter((agent) => {
-            const mention = `@${agent.name}`.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-            const pattern = new RegExp(`(?:^|\\s)${mention}(?=$|\\s|[.,!?;:])`, "i")
-            return message.paragraphs.flat().some((block) => block.kind === "text" && pattern.test(block.text))
-          })
+        return tenantWorkAgentsForMessage(database, message, hostedPresence)
       },
     },
   }

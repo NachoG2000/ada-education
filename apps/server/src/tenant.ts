@@ -7,6 +7,7 @@
    only its SHA-256 digest is persisted. */
 import { createHash, randomBytes, randomUUID } from "node:crypto"
 import type { DatabaseSync } from "node:sqlite"
+import { agentTemplates, type RunnerHostAgent } from "@ada/protocol"
 import type { Channel, Message, Person, Presence } from "@ada/protocol"
 import { WorkspaceError } from "./workspace-errors.js"
 
@@ -44,11 +45,13 @@ export type TenantInvite = {
   id: string
   communityId: string
   role: TenantRole
+  mode: "single-use" | "reusable"
   maxUses: number | null
   uses: number
   createdBy: string
   createdAt: string
   expiresAt?: string
+  revokedAt?: string
 }
 export type TenantAgent = {
   kind: "agent"
@@ -117,6 +120,7 @@ function fail(code: "invalid_input" | "unauthorized" | "forbidden" | "not_found"
 }
 
 function transaction<T>(database: DatabaseSync, action: () => T): T {
+  if (database.isTransaction) return action()
   database.exec("BEGIN IMMEDIATE")
   try {
     const result = action()
@@ -149,6 +153,21 @@ function communityFromRow(row: Row, role?: TenantRole): TenantCommunity {
     createdAt: str(row.created_at) ?? "",
     updatedAt: str(row.updated_at) ?? "",
     ...(role ? { role } : {}),
+  }
+}
+
+function inviteFromRow(row: Row): TenantInvite {
+  return {
+    id: str(row.id) ?? "",
+    communityId: str(row.community_id) ?? "",
+    role: (str(row.role) ?? "student") as TenantRole,
+    mode: (str(row.mode) ?? (Number(row.max_uses) === 1 ? "single-use" : "reusable")) as TenantInvite["mode"],
+    maxUses: row.max_uses === null || row.max_uses === undefined ? null : Number(row.max_uses),
+    uses: Number(row.uses ?? 0),
+    createdBy: str(row.created_by) ?? "",
+    createdAt: str(row.created_at) ?? "",
+    ...(str(row.expires_at) ? { expiresAt: str(row.expires_at) } : {}),
+    ...(str(row.revoked_at) ? { revokedAt: str(row.revoked_at) } : {}),
   }
 }
 
@@ -239,8 +258,8 @@ function agentFromRow(database: DatabaseSync, row: Row, presence: ReadonlyMap<st
     model: str(row.model) ?? "",
     createdBy: str(row.created_by) ?? "",
     status: (str(row.status) ?? "active") as TenantAgent["status"],
-    channelIds: (database.prepare("SELECT id FROM tenant_channels WHERE community_id = ? AND (dm_agent_id = ? OR id IN (SELECT channel_id FROM tenant_channel_members WHERE member_id = ?)) ORDER BY id")
-      .all(str(row.community_id) ?? "", id, id) as Row[]).map((item) => str(item.id) ?? ""),
+    channelIds: (database.prepare("SELECT id FROM tenant_channels WHERE community_id = ? AND kind != 'dm' AND id IN (SELECT channel_id FROM tenant_channel_members WHERE member_id = ?) ORDER BY id")
+      .all(str(row.community_id) ?? "", id) as Row[]).map((item) => str(item.id) ?? ""),
     presence: presence.get(id) ?? "offline",
     createdAt: str(row.created_at) ?? "",
     updatedAt: str(row.updated_at) ?? "",
@@ -321,7 +340,7 @@ export function findTenantAgentByToken(database: DatabaseSync, rawToken: string)
 
 export function createTenantUser(database: DatabaseSync, displayName: string): { user: TenantUser; token: string } {
   const name = displayName.trim().replace(/\s+/g, " ")
-  if (!name || name.length > 120) fail("invalid_input", "displayName must be between 1 and 120 characters", "displayName")
+  if (!name || name.length > 160) fail("invalid_input", "displayName must be between 1 and 160 characters", "displayName")
   const rawToken = token()
   const timestamp = now()
   return transaction(database, () => {
@@ -331,6 +350,17 @@ export function createTenantUser(database: DatabaseSync, displayName: string): {
       .run(id, name, initials(name), digest(rawToken), timestamp, timestamp)
     const row = database.prepare("SELECT * FROM tenant_users WHERE id = ?").get(id) as Row
     return { user: userFromRow(row), token: rawToken }
+  })
+}
+
+export function updateTenantUser(database: DatabaseSync, userId: string, displayName: string): TenantUser {
+  userRow(database, userId)
+  const name = displayName.trim().replace(/\s+/g, " ")
+  if (!name || name.length > 160) fail("invalid_input", "displayName must be between 1 and 160 characters", "displayName")
+  return transaction(database, () => {
+    database.prepare("UPDATE tenant_users SET display_name = ?, initials = ?, updated_at = ? WHERE id = ?")
+      .run(name, initials(name), now(), userId)
+    return userFromRow(userRow(database, userId))
   })
 }
 
@@ -346,7 +376,7 @@ export function listTenantCommunities(database: DatabaseSync, userId: string): T
   return sessionForUser(database, userId).communities
 }
 
-export function createTenantCommunity(database: DatabaseSync, userId: string, name: string, term: string): TenantCommunity {
+export function createTenantCommunity(database: DatabaseSync, userId: string, name: string, term: string, starters?: { runtime: "claude" | "codex"; model: string }): TenantCommunity {
   userRow(database, userId)
   const cleanName = name.trim().replace(/\s+/g, " ")
   const cleanTerm = term.trim().replace(/\s+/g, " ")
@@ -359,6 +389,11 @@ export function createTenantCommunity(database: DatabaseSync, userId: string, na
       .run(id, cleanName, cleanTerm, userId, timestamp, timestamp)
     database.prepare("INSERT INTO tenant_memberships (community_id, user_id, role, created_at, updated_at) VALUES (?, ?, 'teacher', ?, ?)")
       .run(id, userId, timestamp, timestamp)
+    if (starters) {
+      for (const template of agentTemplates) createTenantAgent(database, id, userId, {
+        name: template.name, instructions: template.instructions, ...starters, channelIds: [],
+      })
+    }
     return communityFromRow(database.prepare("SELECT * FROM tenant_communities WHERE id = ?").get(id) as Row, "teacher")
   })
 }
@@ -368,18 +403,43 @@ export function getTenantCommunity(database: DatabaseSync, communityId: string, 
   return communityFromRow(row, role(database, communityId, userId))
 }
 
-export function createTenantInvite(database: DatabaseSync, communityId: string, actorId: string, inviteRole: TenantRole, maxUses: number | null, expiresAt?: string): TenantInvite & { code: string } {
+export function createTenantInvite(database: DatabaseSync, communityId: string, actorId: string, inviteRole: TenantRole, inviteMode: TenantInvite["mode"], maxUses: number | null, expiresAt?: string): TenantInvite & { code: string } {
   teacher(database, communityId, actorId)
+  if (inviteMode !== "single-use" && inviteMode !== "reusable") fail("invalid_input", "mode must be single-use or reusable", "mode")
+  if (inviteMode === "single-use" && maxUses !== 1) fail("invalid_input", "single-use invites must have one use", "maxUses")
   if (maxUses !== null && (!Number.isInteger(maxUses) || maxUses < 1 || maxUses > 100_000)) fail("invalid_input", "maxUses must be null or an integer between 1 and 100000", "maxUses")
   const code = randomBytes(32).toString("base64url")
   const createdAt = now()
   const id = `invite-${randomUUID()}`
   transaction(database, () => {
     if (expiresAt && Number.isNaN(Date.parse(expiresAt))) fail("invalid_input", "expiresAt must be an ISO timestamp", "expiresAt")
-    database.prepare(`INSERT INTO tenant_invites (id, community_id, code_digest, role, max_uses, uses, created_by, created_at, expires_at)
-      VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?)`).run(id, communityId, digest(code), inviteRole, maxUses, actorId, createdAt, expiresAt ?? null)
+    database.prepare(`INSERT INTO tenant_invites (id, community_id, code_digest, role, mode, max_uses, uses, created_by, created_at, expires_at)
+      VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`).run(id, communityId, digest(code), inviteRole, inviteMode, maxUses, actorId, createdAt, expiresAt ?? null)
   })
-  return { id, communityId, role: inviteRole, maxUses, uses: 0, createdBy: actorId, createdAt, ...(expiresAt ? { expiresAt } : {}), code }
+  return { id, communityId, role: inviteRole, mode: inviteMode, maxUses, uses: 0, createdBy: actorId, createdAt, ...(expiresAt ? { expiresAt } : {}), code }
+}
+
+export function listTenantInvites(database: DatabaseSync, communityId: string, actorId: string): TenantInvite[] {
+  teacher(database, communityId, actorId)
+  const timestamp = now()
+  const rows = database.prepare(`SELECT * FROM tenant_invites
+    WHERE community_id = ? AND revoked_at IS NULL
+      AND (expires_at IS NULL OR expires_at > ?)
+      AND (max_uses IS NULL OR uses < max_uses)
+    ORDER BY created_at DESC, id DESC`).all(communityId, timestamp) as Row[]
+  return rows.map(inviteFromRow)
+}
+
+export function revokeTenantInvite(database: DatabaseSync, communityId: string, actorId: string, inviteId: string): TenantInvite {
+  teacher(database, communityId, actorId)
+  const row = database.prepare("SELECT * FROM tenant_invites WHERE community_id = ? AND id = ?").get(communityId, inviteId) as Row | undefined
+  if (!row) fail("not_found", "Invite does not exist")
+  if (str(row.revoked_at)) return inviteFromRow(row)
+  return transaction(database, () => {
+    database.prepare("UPDATE tenant_invites SET revoked_at = ? WHERE community_id = ? AND id = ?")
+      .run(now(), communityId, inviteId)
+    return inviteFromRow(database.prepare("SELECT * FROM tenant_invites WHERE community_id = ? AND id = ?").get(communityId, inviteId) as Row)
+  })
 }
 
 export function redeemTenantInvite(database: DatabaseSync, code: string, userId: string): { membership: TenantMembership; consumed: boolean } {
@@ -388,6 +448,7 @@ export function redeemTenantInvite(database: DatabaseSync, code: string, userId:
   return transaction(database, () => {
     const row = database.prepare("SELECT * FROM tenant_invites WHERE code_digest = ?").get(digest(code.trim())) as Row | undefined
     if (!row) fail("not_found", "Invite code does not exist")
+    if (str(row.revoked_at)) fail("conflict", "Invite code has been revoked")
     const expiresAt = str(row.expires_at)
     if (expiresAt && Date.parse(expiresAt) <= Date.now()) fail("conflict", "Invite code has expired")
     const maxUses = row.max_uses === null || row.max_uses === undefined ? null : Number(row.max_uses)
@@ -418,6 +479,25 @@ export function listTenantMembers(database: DatabaseSync, communityId: string, a
   const rows = database.prepare(`SELECT m.*, u.* FROM tenant_memberships m JOIN tenant_users u ON u.id = m.user_id
     WHERE m.community_id = ? AND m.status = 'active' ORDER BY m.created_at`).all(communityId) as Row[]
   return rows.map((row) => ({ ...userFromRow(row), communityId, role: (str(row.role) ?? "student") as TenantRole }))
+}
+
+export function updateTenantMembershipRole(database: DatabaseSync, communityId: string, actorId: string, targetId: string, nextRole: TenantRole): TenantMembership {
+  teacher(database, communityId, actorId)
+  if (nextRole !== "teacher" && nextRole !== "student") fail("invalid_input", "role must be teacher or student", "role")
+  const target = membershipRow(database, communityId, targetId)
+  const currentRole = (str(target.role) ?? "student") as TenantRole
+  if (currentRole === nextRole) {
+    return { ...userFromRow(userRow(database, targetId)), communityId, role: currentRole }
+  }
+  if (currentRole === "teacher" && nextRole === "student") {
+    const count = Number((database.prepare("SELECT COUNT(*) AS n FROM tenant_memberships WHERE community_id = ? AND role = 'teacher' AND status = 'active'").get(communityId) as Row).n ?? 0)
+    if (count <= 1) fail("conflict", "A community must retain at least one teacher")
+  }
+  return transaction(database, () => {
+    database.prepare("UPDATE tenant_memberships SET role = ?, updated_at = ? WHERE community_id = ? AND user_id = ? AND status = 'active'")
+      .run(nextRole, now(), communityId, targetId)
+    return { ...userFromRow(userRow(database, targetId)), communityId, role: nextRole }
+  })
 }
 
 export function removeTenantMember(database: DatabaseSync, communityId: string, actorId: string, targetId: string): TenantMembership {
@@ -682,7 +762,7 @@ export function updateTenantAgent(database: DatabaseSync, communityId: string, a
         input.instructions ?? str(current.instructions) ?? "", input.runtime ?? str(current.runtime) ?? "claude", input.model ?? str(current.model) ?? "",
         status, status === "deleted" ? str(current.deleted_at) ?? timestamp : null, status === "deleted" ? actorId : null, timestamp, agentId, communityId)
     if (input.channelIds) {
-      database.prepare("DELETE FROM tenant_channel_members WHERE member_id = ? AND community_id = ? AND member_kind = 'agent'").run(agentId, communityId)
+      database.prepare("DELETE FROM tenant_channel_members WHERE member_id = ? AND community_id = ? AND member_kind = 'agent' AND channel_id IN (SELECT id FROM tenant_channels WHERE community_id = ? AND kind != 'dm')").run(agentId, communityId, communityId)
       for (const channelId of [...new Set(input.channelIds)]) database.prepare("INSERT INTO tenant_channel_members (channel_id, community_id, member_id, member_kind, created_at) VALUES (?, ?, ?, 'agent', ?)").run(channelId, communityId, agentId, timestamp)
     }
     if (status === "deleted") {
@@ -941,4 +1021,30 @@ export function syncLegacyToTenant(database: DatabaseSync): void {
         .run(str(card.id) ?? `card-${randomUUID()}`, communityId, str(card.channel_id) ?? "", str(card.author_id) ?? "", str(card.path) ?? str(card.id) ?? "", str(card.title) ?? "", str(card.type) ?? "note", str(card.body) ?? "", Number(card.version ?? 1), str(card.replaces) ?? null, str(card.published_at) ?? timestamp)
     })
   }
+}
+
+/** Called only after installation-host authentication, never with a user token. */
+export function enrollRunnerHost(database: DatabaseSync, known: { agentId: string; runnerToken: string }[], defaults: { runtime: "claude" | "codex"; model: string }): RunnerHostAgent[] {
+  const credentials = new Map(known.map((entry) => [entry.agentId, entry.runnerToken]))
+  return transaction(database, () => {
+    const rows = database.prepare("SELECT id, community_id, runner_token_digest FROM tenant_agents WHERE status = 'active' ORDER BY id").all() as Row[]
+    return rows.map((row) => {
+      const agentId = str(row.id)!
+      const existing = credentials.get(agentId)
+      const runnerToken = existing && digest(existing) === row.runner_token_digest ? existing : token()
+      database.prepare("UPDATE tenant_agents SET runner_token_digest = ?, runtime = ?, model = ? WHERE id = ?")
+        .run(digest(runnerToken), defaults.runtime, defaults.model, agentId)
+      return { agentId, communityId: str(row.community_id)!, runnerToken, ...defaults }
+    })
+  })
+}
+
+export function tenantWorkAgentsForMessage(database: DatabaseSync, message: TenantMessage, presence: ReadonlyMap<string, Presence | "offline"> = new Map()): TenantAgent[] {
+  const channel = channelRow(database, message.communityId, message.channelId)
+  if (channel.status !== "active") return []
+  return listTenantChannelAgents(database, message.communityId, message.channelId, presence).filter((agent) => {
+    if (channel.kind === "dm") return channel.dm_agent_id === agent.id && channel.created_by === message.authorId
+    const mention = `@${agent.name}`.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+    return message.paragraphs.flat().some((block) => block.kind === "text" && new RegExp(`(?:^|\\s)${mention}(?=$|\\s|[.,!?;:])`, "i").test(block.text))
+  })
 }

@@ -6,7 +6,6 @@ import { HostedApp } from "@/components/hosted";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/toast";
 import { FigureSheet } from "@/screens/FigureSheet";
-import { parseHash } from "@/lib/routes";
 
 /* The hosted shell uses the configured API or the page's same-origin server. */
 const SERVER = configuredServer();
@@ -19,8 +18,7 @@ const SERVER = configuredServer();
 
 export default function App() {
   const hash = useSyncExternalStore(subscribeToHash, readHash);
-  const boundaryKey =
-    parseHash(hash).kind === "figures" ? "figures" : "workspace";
+  const boundaryKey = hash === "#figures" ? "figures" : "workspace";
 
   /* Last resort: whatever breaks, the person gets a screen that says so and a
      way to try again — never a blank page. The boundaries further in
@@ -39,7 +37,7 @@ export default function App() {
 }
 
 function screen(hash: string) {
-  if (parseHash(hash).kind === "figures") return <FigureSheet />;
+  if (hash === "#figures") return <FigureSheet />;
   return <HostedApp server={SERVER ?? location.origin} />;
 }
 

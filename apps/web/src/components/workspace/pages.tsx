@@ -13,13 +13,14 @@ import {
   LaptopIcon,
   MoonIcon,
   MessageSquareTextIcon,
-  PaletteIcon,
+  MessageSquareIcon,
   PlusIcon,
   RefreshCwIcon,
   SunIcon,
   UsersIcon,
 } from "lucide-react"
-import { MemberAvatar, PresenceTag } from "@/components/ada/identity"
+import { PresenceTag } from "@/components/ada/identity"
+import { WorkspaceAvatar as MemberAvatar } from "./workspace-avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
@@ -29,13 +30,16 @@ import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { isTeacher, useCommunity } from "@/lib/community"
-import type { SettingsSection } from "@/lib/routes"
-import { navigateTo } from "@/lib/routes"
+import { useAppNavigation, type SettingsSection } from "@/lib/routes"
 import { useConversationSpacingPreferences, useThemePreferences, type ThemePreference } from "@/lib/preferences"
 import { cn } from "@/lib/utils"
+import { useHostedWorkspace } from "./hosted-context"
+import type { Agent } from "@/lib/types"
+import { useClock } from "./use-clock"
 
 export function InboxPage() {
   const { community, member, me, openThread } = useCommunity()
+  const navigateTo = useAppNavigation(community.id)
   const activity = [...community.messages]
     .filter((message) => !message.threadId && !message.deletedAt)
     .sort((a, b) => b.at.localeCompare(a.at))
@@ -53,7 +57,7 @@ export function InboxPage() {
     .slice(0, 12)
 
   const openActivity = (message: typeof community.messages[number]) => {
-    navigateTo({ kind: "channel", channelId: message.channelId })
+    void navigateTo({ kind: "channel", channelId: message.channelId })
     if (message.threadId) openThread(message.threadId)
   }
 
@@ -68,7 +72,7 @@ export function InboxPage() {
               <button
                 key={channel.id}
                 type="button"
-                onClick={() => navigateTo({ kind: "channel", channelId: channel.id })}
+                onClick={() => void navigateTo({ kind: "channel", channelId: channel.id })}
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-left outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <span className="flex size-8 items-center justify-center rounded-lg bg-muted"><HashIcon aria-hidden /></span>
@@ -142,19 +146,70 @@ export function InboxPage() {
   )
 }
 
+export function NewMessagePage() {
+  const { community } = useCommunity()
+  const hosted = useHostedWorkspace()
+  const navigateTo = useAppNavigation(community.id)
+  const [query, setQuery] = useState("")
+  const [pendingId, setPendingId] = useState<string>()
+  const [error, setError] = useState<string>()
+  const agents = community.members
+    .filter((member): member is Agent => member.kind === "agent" && member.status !== "inactive")
+    .filter((agent) => agent.name.toLowerCase().includes(query.trim().toLowerCase()))
+
+  const select = async (agentId: string) => {
+    setPendingId(agentId)
+    setError(undefined)
+    try {
+      const channelId = await hosted.createAgentDm(agentId)
+      await navigateTo({ kind: "channel", channelId })
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "The conversation could not be opened.")
+    } finally {
+      setPendingId(undefined)
+    }
+  }
+
+  return (
+    <PageScroller>
+      <PageHeader title="New message" description="Start a private conversation with an agent in this community." />
+      <Field className="mt-7" data-invalid={Boolean(error)}>
+        <FieldLabel htmlFor="message-recipient">To</FieldLabel>
+        <Input id="message-recipient" autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Find an agent" aria-invalid={Boolean(error)} />
+        {error ? <p className="text-sm text-destructive" role="alert">{error}</p> : <FieldDescription>Teachers can read student-agent conversations.</FieldDescription>}
+      </Field>
+      <div className="mt-5 overflow-hidden rounded-xl border">
+        {agents.map((agent, index) => (
+          <div key={agent.id}>
+            {index ? <Separator /> : null}
+            <button type="button" disabled={Boolean(pendingId)} onClick={() => void select(agent.id)} className="flex w-full items-center gap-3 px-4 py-3 text-left outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:opacity-60">
+              <MemberAvatar member={agent} size={36} presence />
+              <span className="min-w-0 flex-1"><span className="block truncate text-sm font-medium">{agent.name}</span><span className="block truncate text-xs text-muted-foreground">Classroom agent</span></span>
+              <span className="text-xs text-muted-foreground">{pendingId === agent.id ? "Opening…" : "Message"}</span>
+            </button>
+          </div>
+        ))}
+        {agents.length === 0 ? <div className="flex flex-col items-center gap-2 px-6 py-12 text-center"><MessageSquareIcon className="text-muted-foreground" /><p className="text-sm font-medium">No matching agents</p><p className="text-xs text-muted-foreground">Try another name or ask a teacher to create an agent.</p></div> : null}
+      </div>
+    </PageScroller>
+  )
+}
+
 function messageText(message: { paragraphs: Array<Array<{ text: string }>> }): string {
   return message.paragraphs.flat().map((block) => block.text).join(" ")
 }
 
-export function AgentsPage({ onCreateAgent, onEditAgent }: { onCreateAgent: () => void; onEditAgent: (agentId: string) => void }) {
+export function AgentsPage({ onCreateAgent, onSelectAgent }: { onCreateAgent: () => void; onSelectAgent: (agentId: string) => void }) {
   const { community, me } = useCommunity()
+  const now = useClock()
   const agents = community.members.filter((member) => member.kind === "agent")
+  const teacher = isTeacher(me)
   return (
     <PageScroller wide>
       <PageHeader
         title="Agents"
         description="Set up and manage the agents that support this course."
-        action={<Button type="button" size="sm" onClick={onCreateAgent}><PlusIcon data-icon="inline-start" />New agent</Button>}
+        action={teacher ? <Button type="button" size="sm" onClick={onCreateAgent}><PlusIcon data-icon="inline-start" />Create agent</Button> : undefined}
       />
       {agents.length ? (
         <section className="mt-8" aria-labelledby="course-agents">
@@ -168,20 +223,19 @@ export function AgentsPage({ onCreateAgent, onEditAgent }: { onCreateAgent: () =
                 {index ? <Separator /> : null}
                 <button
                   type="button"
-                  onClick={() => onEditAgent(agent.id)}
-                  disabled={!isTeacher(me) && !(agent.scope === "personal" && agent.createdBy === me.id)}
-                  className="group flex w-full items-center gap-4 px-4 py-3.5 text-left outline-none enabled:hover:bg-muted enabled:focus-visible:ring-2 enabled:focus-visible:ring-inset enabled:focus-visible:ring-ring"
+                  onClick={() => onSelectAgent(agent.id)}
+                  className="group flex w-full items-center gap-4 px-4 py-3.5 text-left outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                 >
                   <MemberAvatar member={agent} size={42} presence />
                   <span className="min-w-0 flex-1">
                     <span className="flex flex-wrap items-center gap-2">
                       <span className="truncate text-sm font-semibold">{agent.name}</span>
-                      <Badge variant={agent.status === "inactive" ? "secondary" : "outline"}>{agent.status === "inactive" ? "Inactive" : agent.scope === "personal" ? "Personal" : "Course"}</Badge>
+                      <Badge variant="outline">{agentStatusLabel(agent, now)}</Badge>
                     </span>
                     <span className="mt-0.5 block line-clamp-1 text-xs text-muted-foreground">{agent.description || agent.instructions || "No description yet."}</span>
-                    <span className="mt-1 block text-xs text-muted-foreground">{agent.channelIds.length} channels · {agent.runtime ?? "scripted"}{agent.model ? ` · ${agent.model}` : ""}</span>
+                    <span className="mt-1 block text-xs text-muted-foreground">{agent.channelIds.length} channels</span>
                   </span>
-                  {isTeacher(me) || (agent.scope === "personal" && agent.createdBy === me.id) ? <ChevronRightIcon className="size-4 shrink-0 text-muted-foreground opacity-60" aria-hidden /> : null}
+                  <ChevronRightIcon className="size-4 shrink-0 text-muted-foreground opacity-60" aria-hidden />
                 </button>
               </div>
             ))}
@@ -194,23 +248,31 @@ export function AgentsPage({ onCreateAgent, onEditAgent }: { onCreateAgent: () =
             <EmptyTitle>No agents yet</EmptyTitle>
             <EmptyDescription>Create an agent, give it course instructions, and choose the channels where it can help.</EmptyDescription>
           </EmptyHeader>
-          <EmptyContent><Button type="button" onClick={onCreateAgent}><PlusIcon data-icon="inline-start" />Create agent</Button></EmptyContent>
+          {teacher ? <EmptyContent><Button type="button" onClick={onCreateAgent}><PlusIcon data-icon="inline-start" />Create agent</Button></EmptyContent> : null}
         </Empty>
       )}
     </PageScroller>
   )
 }
 
+function agentStatusLabel(agent: Agent, now: number): string {
+  if (agent.status === "inactive") return "Deleted"
+  if (agent.presence !== "away") return agent.presence[0].toUpperCase() + agent.presence.slice(1)
+  if (agent.createdAt && now - new Date(agent.createdAt).getTime() < 15_000) return "Starting…"
+  return "Offline"
+}
+
 const SETTINGS: Array<{ section: SettingsSection; label: string; icon: LucideIcon }> = [
-  { section: "course", label: "Course & profile", icon: UsersIcon },
-  { section: "appearance", label: "Appearance", icon: PaletteIcon },
-  { section: "runner", label: "Agent runner", icon: BotIcon },
+  { section: "profile", label: "Profile", icon: UsersIcon },
+  { section: "community", label: "Community", icon: UsersIcon },
+  { section: "members", label: "Members", icon: UsersIcon },
   { section: "invites", label: "Invites", icon: ExternalLinkIcon },
   { section: "shortcuts", label: "Shortcuts", icon: CommandIcon },
+  { section: "account", label: "Account", icon: BotIcon },
 ]
 
 export function SettingsPage({
-  section = "course",
+  section = "profile",
   onCreateInvite,
   onRotateAgent,
   onBack,
@@ -220,7 +282,9 @@ export function SettingsPage({
   onRotateAgent?: (agentId: string) => Promise<void>
   onBack: () => void
 }) {
-  const select = (next: SettingsSection) => navigateTo({ kind: "settings", section: next })
+  const { community } = useCommunity()
+  const navigateTo = useAppNavigation(community.id)
+  const select = (next: SettingsSection) => void navigateTo({ kind: "settings", section: next }, { replace: true })
   return (
     <div className="flex size-full min-h-0">
       <aside className="hidden w-60 shrink-0 flex-col border-r bg-sidebar/45 sm:flex" aria-label="Settings sections">
@@ -260,10 +324,10 @@ export function SettingsPage({
 }
 
 function SettingsPanel({ section, onCreateInvite, onRotateAgent }: { section: SettingsSection; onCreateInvite?: () => Promise<{ joinHash: string }>; onRotateAgent?: (agentId: string) => Promise<void> }) {
-  if (section === "appearance") return <AppearanceSettings />
-  if (section === "runner") return <RunnerSettings onRotateAgent={onRotateAgent} />
   if (section === "invites") return <InviteSettings onCreateInvite={onCreateInvite} />
   if (section === "shortcuts") return <ShortcutSettings />
+  if (section === "account") return <RunnerSettings onRotateAgent={onRotateAgent} />
+  if (section === "members") return <AppearanceSettings />
   return <CourseSettings />
 }
 

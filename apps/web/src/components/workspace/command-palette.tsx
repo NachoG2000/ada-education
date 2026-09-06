@@ -65,10 +65,14 @@ export function WorkspaceCommandPalette({
   members = [],
   messages = [],
   actions = [],
-  placeholder = "Search channels, people, agents, messages, or actions…",
+  placeholder = "Search channels, direct messages, people, agents, or actions…",
 }: WorkspaceCommandPaletteProps) {
+  const courseChannels = channels.filter(({ channel }) => channel.kind !== "dm")
+  const directMessages = channels.filter(({ channel }) => channel.kind === "dm")
+  const people = members.filter(({ member }) => member.kind === "person")
+  const agents = members.filter(({ member }) => member.kind === "agent")
   return (
-    <CommandDialog open={open} onOpenChange={onOpenChange} title="Search Ada" description="Find a channel, person, agent, message, or workspace action.">
+    <CommandDialog open={open} onOpenChange={onOpenChange} title="Search Ada" description="Find a channel, direct message, person, agent, or workspace action.">
       <CommandInput placeholder={placeholder} />
       <CommandList>
         <CommandEmpty>No matching workspace results.</CommandEmpty>
@@ -90,9 +94,9 @@ export function WorkspaceCommandPalette({
 
         {actions.length > 0 && (channels.length > 0 || members.length > 0 || messages.length > 0) && <CommandSeparator />}
 
-        {channels.length > 0 && (
+        {courseChannels.length > 0 && (
           <CommandGroup heading="Channels">
-            {channels.map(({ channel, onSelect }) => (
+            {courseChannels.map(({ channel, onSelect }) => (
               <CommandItem key={channel.id} value={`${channel.name} ${channel.description ?? ""} ${channel.group}`} onSelect={() => closeAndRun(onOpenChange, onSelect)}>
                 <HashIcon aria-hidden />
                 <span className="min-w-0 flex-1 truncate">{channel.name}<span className="ml-2 text-xs text-muted-foreground">{channel.group}</span></span>
@@ -101,17 +105,28 @@ export function WorkspaceCommandPalette({
           </CommandGroup>
         )}
 
-        {members.length > 0 && (
-          <CommandGroup heading="People and agents">
-            {members.map(({ member, onSelect }) => {
-              const Icon = member.kind === "agent" ? BotIcon : UserIcon
+        {directMessages.length > 0 && (
+          <CommandGroup heading="Direct messages">
+            {directMessages.map(({ channel, onSelect }) => <CommandItem key={channel.id} value={`${channel.name} direct message`} onSelect={() => closeAndRun(onOpenChange, onSelect)}><MessageSquareIcon /><span className="truncate">{channel.name}</span></CommandItem>)}
+          </CommandGroup>
+        )}
+
+        {people.length > 0 && (
+          <CommandGroup heading="People">
+            {people.map(({ member, onSelect }) => {
               return (
                 <CommandItem key={member.id} value={`${member.name} ${member.kind} ${member.kind === "agent" ? member.description ?? "" : ""}`} onSelect={() => closeAndRun(onOpenChange, onSelect)}>
-                  <Icon aria-hidden />
-                  <span className="min-w-0 flex-1 truncate">{member.name}<span className="ml-2 text-xs text-muted-foreground">{member.kind === "agent" ? "agent" : "person"}</span></span>
+                  <UserIcon aria-hidden />
+                  <span className="min-w-0 flex-1 truncate">{member.name}<span className="ml-2 text-xs text-muted-foreground">person</span></span>
                 </CommandItem>
               )
             })}
+          </CommandGroup>
+        )}
+
+        {agents.length > 0 && (
+          <CommandGroup heading="Agents">
+            {agents.map(({ member, onSelect }) => <CommandItem key={member.id} value={`${member.name} agent ${member.kind === "agent" ? member.description ?? "" : ""}`} onSelect={() => closeAndRun(onOpenChange, onSelect)}><BotIcon /><span className="min-w-0 flex-1 truncate">{member.name}<span className="ml-2 text-xs text-muted-foreground">agent</span></span></CommandItem>)}
           </CommandGroup>
         )}
 
@@ -132,4 +147,3 @@ export function WorkspaceCommandPalette({
     </CommandDialog>
   )
 }
-

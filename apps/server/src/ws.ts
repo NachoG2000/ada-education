@@ -461,6 +461,7 @@ export function createWebSocketHub(server: HttpServer, store: WsStore, onPresenc
       const work = {
         type: "work",
         payload: {
+          instructions: agent.instructions,
           workId: `work-${message.id}`,
           communityId: message.communityId,
           agentId: agent.id,
