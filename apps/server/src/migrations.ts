@@ -1,7 +1,7 @@
 import type { DatabaseSync } from "node:sqlite"
 
 /** The schema version represented by schema.sql and the migrations below. */
-export const LATEST_SCHEMA_VERSION = 4
+export const LATEST_SCHEMA_VERSION = 6
 
 const BACKFILL_TIME = "1970-01-01T00:00:00.000Z"
 
@@ -218,6 +218,28 @@ const MIGRATIONS: Migration[] = [
         ALTER TABLE tenant_channel_members_v4 RENAME TO tenant_channel_members;
         CREATE INDEX tenant_channel_members_community ON tenant_channel_members(community_id, member_id);
       `)
+    },
+  },
+  {
+    version: 5,
+    apply(database) {
+      /* Invite management needs the original mode and a recoverable
+         revocation marker. Existing one-use invites were created by the
+         issue #1 single-use flow; all other retained rows are reusable. */
+      database.exec(`
+        ALTER TABLE tenant_invites ADD COLUMN mode TEXT NOT NULL DEFAULT 'reusable'
+          CHECK (mode IN ('single-use', 'reusable'));
+        ALTER TABLE tenant_invites ADD COLUMN revoked_at TEXT;
+        UPDATE tenant_invites SET mode = 'single-use' WHERE max_uses = 1;
+      `)
+    },
+  },
+  {
+    version: 6,
+    apply(database) {
+      /* Keep the retained pre-tenancy workspace agent projection compatible
+         with the mounted hosted agent avatar field. */
+      database.exec(`ALTER TABLE members ADD COLUMN avatar_url TEXT;`)
     },
   },
 ]

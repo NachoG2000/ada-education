@@ -133,6 +133,14 @@ try {
   check(/must not contain credentials/.test(String(error)) && !String(error).includes("secret-token"), "server URL credentials are rejected without echoing them")
 }
 
+await runClaude({ ...base, env: { ...base.env, ADA_PROVIDER_AUTH: "api-key", ANTHROPIC_API_KEY: "test-only-api-key", CLAUDE_CODE_OAUTH_TOKEN: "test-only-oauth" } })
+const apiCall = JSON.parse(readFileSync(logFile, "utf8"))
+check(apiCall.hasProviderApiKey && !apiCall.hasAdaToken, "explicit API-key mode passes provider authentication without Ada transport credentials")
+await runClaude({ ...base, env: { ...base.env, ADA_PROVIDER_AUTH: "api-key", ANTHROPIC_API_KEY: "" } }).then(
+  () => check(false, "API-key mode refuses a missing key"),
+  (error: unknown) => check(error instanceof ProviderError && error.code === "auth", "API-key mode refuses a missing key instead of falling back to subscription"),
+)
+
 check(providerTestLimits.maxStdout >= 1024 * 1024 && providerTestLimits.maxStderr <= 128 * 1024, "provider capture limits are finite")
 
 rmSync(scratch, { recursive: true, force: true })

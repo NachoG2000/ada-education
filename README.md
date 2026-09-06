@@ -2,63 +2,117 @@
 
 **Humans and agents learn together, and what they learn stays with them.**
 
-Ada is a course community where people and AI agents share the same channels, and what the group understands once compiles into **cards**: markdown pages with a type, a version, sources and "replaces", living on the filesystem and versioned with git. Nothing the group can't `ls`.
+Ada is a course community where people and AI agents share channels. Its
+long-term purpose is to turn the group's understanding into **cards**:
+readable markdown pages with sources, versions, and a trail of corrections
+that outlives the conversation.
 
-Open source under **Apache-2.0**, built for **organizations that run cohort-based courses — bootcamps, academies, corporate training programs, universities**. The current milestone is a hosted-service demo foundation that is also easy to run locally. Work in progress.
+Open source under [Apache-2.0](LICENSE), for organizations that run
+cohort-based courses. The current version is a local, multi-community
+foundation. It supports real conversations and external agent runners;
+the card-memory pipeline exists in the backend, while its interface remains
+paused.
 
-## Current state
+## Run locally
 
-What exists today: a multi-community hosted-service foundation — a web client, tenant-scoped REST/WS server, and opt-in local Claude/Codex runner (see `DECISIONS.md` §22 and GitHub issue #1).
+You need **Node.js 24** (see [.nvmrc](.nvmrc)), npm, and Git. Run commands
+from the repository root. If you use nvm, run `nvm install` and `nvm use`.
 
-| Piece | State |
+```bash
+git clone https://github.com/NachoG2000/ada-education.git
+cd ada-education
+npm ci
+npm run dev
+```
+
+Open [localhost:5173](http://localhost:5173). Create an account, save its
+recovery token when prompted, then create a community. The database starts
+empty and migrates automatically; no seed, environment file, provider
+account, or external database is required to use the workspace.
+
+The web development server proxies API and WebSocket traffic to port 8787.
+Local data is stored in `apps/server/data/ada.db`, which is ignored by Git.
+The installation agent host also starts automatically. Stop the servers and
+agent workers with Ctrl+C.
+
+To run the built web client through the same local API server:
+
+```bash
+npm run build
+npm start
+```
+
+Open [localhost:8787](http://localhost:8787). This is a local production-build
+check, not a deployment runbook.
+
+## What works today
+
+- One account with teacher/student memberships across multiple communities.
+- Community, channel, member, invite, and agent management through the UI.
+- Routed channels, threads, direct messages, Agents, and Settings, with
+  browser history and responsive navigation.
+- Live messages, mentions, editing, deletion, and agent presence through
+  authenticated REST and WebSockets.
+- User-agent DMs visible to their participant and to teachers. Students see
+  this disclosure; teachers view the conversation read-only.
+- Automatically connected classroom agents with separate workspaces and editable rules.
+
+Cards are currently backend memory: there is no mounted cards, Modules, or
+My study interface. Search is limited to workspace navigation, not message
+history. Hosted runners, deployment, billing, notifications, reactions,
+attachments, and grading are outside this version's product scope.
+
+## Use agents
+
+Install Claude Code and sign in once on this machine (`claude auth login`).
+Then run `npm run dev`. New communities include a Course tutor and Knowledge
+curator. Open a direct conversation, or add an agent to a channel and mention
+it. Create additional agents with a name, rules, and optional channels; Ada
+connects them automatically. No per-agent model or runner setup is needed.
+
+The separate local host uses your Claude subscription by default. Keep it
+running while trying the system. Its credentials and workspaces live in the
+ignored `.ada/` directory. If provider login or usage limits prevent a reply,
+check the host terminal; students receive a short failure message.
+
+See [the agent host guide](docs/agent-host.md) for installation configuration,
+API-key mode, state recovery, and the retained manual one-time setup command.
+The server never executes models or stores provider API keys.
+
+## Verify a change
+
+```bash
+npm run check
+```
+
+This runs lint, documentation checks, TypeScript across all workspaces,
+hosted REST/WS and provider-adapter checks, a production web build, and the
+retained fixture/migration checks. Tests create disposable databases and
+course copies. The same command runs in [CI](.github/workflows/ci.yml).
+
+For a focused iteration, use `npm run check:hosted`, `npm run check:legacy`,
+or the individual commands in [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Repository map
+
+| Path | Responsibility |
 |---|---|
-| `apps/web` — React 19 + Vite SPA with the Buzz-shaped shadcn workspace shell | ✅ connected to the local server by default |
-| `apps/server` — tenant-scoped community API, SQLite persistence, messages, channels, DMs, agents, invites, and WS events | ✅ working locally |
-| `packages/runner` — outbound subscription runner for hosted agents | ✅ Claude and Codex adapters; no API key is handled by Ada |
-| cards/filesystem memory | ✅ backend pipeline remains available; card UI is intentionally not mounted in this milestone |
+| [apps/web](apps/web/AGENTS.md) | React 19, Vite, TanStack Router, and shadcn interface |
+| [apps/server](apps/server/AGENTS.md) | Hono API, SQLite, authorization, and WebSocket delivery |
+| [packages/protocol](packages/protocol/AGENTS.md) | Shared TypeScript types and Zod network contracts |
+| [packages/runner](packages/runner/AGENTS.md) | Outbound Claude/Codex runner and file publication |
+| [data](data/AGENTS.md) | Fictional legacy course fixtures used by compatibility checks |
+| [docs](docs/README.md) | Current architecture guide and labeled future design references |
+| [openspec](openspec/README.md) | Specifications and implementation history |
+| [research](research/README.md) | Evidence and recorded project reasoning |
 
-## What it does end to end
+Start with [the architecture](docs/architecture.md) to follow a message
+through the system, or [CONTRIBUTING.md](CONTRIBUTING.md) to make a change.
+[AGENTS.md](AGENTS.md) records repository rules for humans and coding agents.
 
-Users create an account once, then belong to many communities with a role per membership. The shell supports a community switcher, public channels, private user-agent DMs, threads, mentions, member management, invite codes, and agent setup. Messages and moderation events are persisted and projected over authenticated first-frame WebSockets.
-
-The former Modules/My study/card-file screens remain in the source tree as history but are not product routes in this phase. Cards are still markdown files in the runner's workspace and can be published through the backend; there is no card UI yet.
-
-```bash
-npm install
-npm run dev      # fresh web + server → http://localhost:5173
-```
-
-## Connect an agent locally
-
-Create an agent in the UI and run the one-time setup command it provides. The
-runner authenticates with its agent token over the first WebSocket frame and
-uses the creator's logged-in Claude or Codex subscription; Ada stores no
-provider API keys. It is intentionally opt-in, and an empty local database
-starts with the normal account/community onboarding flow.
-
-Deployment and hosted runners are deliberately outside issue #1. `deploy/`
-retains the earlier single-course Railway work and its compatibility check as
-history; it is not the runbook for this multi-community milestone.
-
-Verify the whole flow without a browser — it drives a real server and a real runner process against a throwaway copy of the course, and asserts the four steps above at the API:
-
-```bash
-npm run check:e2e -w @ada/server    # 15 checks
-npm run check:gated -w @ada/server  # membership gating + remote runner, 25 checks
-npm run check:seed -w @ada/server   # the seeded course the screens render
-npm run smoke                       # WS/REST smoke test
-```
-
-`npm run check:issue1` runs the hosted protocol, tenant/API/WS, and runner-provider checks. Legacy fixture checks remain available for the preserved Neural Networks import.
-
-## How it's designed (looking forward)
-
-An agent = **identity + folder + runner**. The server never runs models: intelligence comes in through a runner that lives wherever the agent creator's credentials live, executing the provider's unmodified binary (`claude`, `codex`, `pi` with open models). That's what lets it grow from "the teacher's laptop" to self-hosted and hosted without a rewrite.
-
-- 📖 [`docs/how-it-works.html`](docs/how-it-works.html) — the service, runner, and card-memory mental model.
-- 📖 [`docs/usecases-api.html`](docs/usecases-api.html) — use cases and API direction.
-- The pages retain future-facing material, with the current issue #1 boundary called out where it differs.
-
-## Working on the repo
-
-Start with [`AGENTS.md`](AGENTS.md) (map, rules, commands — for humans and AI agents alike). Documents of truth: `PROBLEM.md` (the problem), `DECISIONS.md` (decisions and their history), `PRODUCT.md` (product), `DESIGN.md` (design), `openspec/` (what's being built), `research/` (research with sources). Everything in English.
+The [problem](PROBLEM.md), [decisions](DECISIONS.md),
+[product direction](PRODUCT.md), and [design history](DESIGN.md) explain why
+Ada exists. Historical code and documents remain identified and preserved;
+they do not extend the current product scope. In particular,
+[deploy/](deploy/README.md) retains an earlier single-course deployment and
+is not the runbook for this multi-community version.

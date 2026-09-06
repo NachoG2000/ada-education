@@ -30,6 +30,9 @@ export const createUserInputSchema = z.object({
   displayName: nameSchema,
 }).strict()
 
+export const updateUserInputSchema = createUserInputSchema
+export const updateUserResultSchema = userSchema
+
 export const activeMembershipSchema = z.object({
   id: idSchema,
   userId: idSchema,
@@ -38,6 +41,10 @@ export const activeMembershipSchema = z.object({
   status: z.literal("active"),
   joinedAt: timestampSchema,
   updatedAt: timestampSchema.optional(),
+}).strict()
+
+export const updateMembershipRoleInputSchema = z.object({
+  role: membershipRoleSchema,
 }).strict()
 
 export const removedMembershipSchema = z.object({
@@ -119,6 +126,7 @@ export const communityMemberSchema = z.object({
 }).strict()
 
 export const createCommunityInputSchema = z.object({
+  starterAgents: z.boolean().optional(),
   name: nameSchema,
   term: z.string().trim().min(1).max(120),
 }).strict()
@@ -164,6 +172,10 @@ export const inviteCreateResultSchema = z.object({
   code: bearerTokenSchema,
 }).strict()
 
+/** Invite management responses never contain raw or digested credentials. */
+export const inviteListResultSchema = z.array(inviteMetadataSchema)
+export const inviteRevokeResultSchema = inviteMetadataSchema
+
 export const redeemInviteInputSchema = z.object({
   code: bearerTokenSchema,
 }).strict()
@@ -171,6 +183,7 @@ export const redeemInviteInputSchema = z.object({
 export const inviteRedeemResultSchema = z.object({
   community: communitySummarySchema,
   membership: activeMembershipSchema,
+  consumed: z.boolean(),
 }).strict()
 
 export const inviteCreateInputSchema = createInviteInputSchema
@@ -222,6 +235,8 @@ export const createCommunityChannelInputSchema = z.object({
   description: z.string().max(2_000).optional(),
   kind: z.literal("channel"),
   visibility: communityChannelVisibilitySchema,
+  memberIds: z.array(idSchema).max(10_000).optional(),
+  agentIds: z.array(idSchema).max(1_000).optional(),
 }).strict()
 
 export const updateCommunityChannelInputSchema = z.object({
@@ -229,6 +244,8 @@ export const updateCommunityChannelInputSchema = z.object({
   description: z.string().max(2_000).nullable().optional(),
   visibility: communityChannelVisibilitySchema.optional(),
   status: communityChannelStatusSchema.optional(),
+  memberIds: z.array(idSchema).max(10_000).optional(),
+  agentIds: z.array(idSchema).max(1_000).optional(),
 }).strict()
 
 export const joinChannelInputSchema = z.object({
@@ -305,14 +322,14 @@ export const createCommunityAgentInputSchema = z.object({
   name: nameSchema,
   avatarUrl: avatarUrlSchema,
   instructions: z.string().max(20_000),
-  runtime: agentRuntimeV2Schema,
-  model: z.string().trim().min(1).max(200),
+  runtime: agentRuntimeV2Schema.default("claude"),
+  model: z.string().trim().min(1).max(200).default("default"),
   channelIds: z.array(idSchema).max(1_000),
 }).strict()
 
 export const updateCommunityAgentInputSchema = z.object({
   name: nameSchema.optional(),
-  avatarUrl: avatarUrlSchema,
+  avatarUrl: avatarUrlSchema.optional(),
   instructions: z.string().max(20_000).optional(),
   runtime: agentRuntimeV2Schema.optional(),
   model: z.string().trim().min(1).max(200).optional(),
@@ -525,6 +542,7 @@ export const runnerPresenceSchema = z.object({
 export const runnerWorkSchema = z.object({
   type: z.literal("work"),
   payload: z.object({
+    instructions: z.string().max(20_000).optional(),
     workId: idSchema,
     communityId: idSchema,
     agentId: idSchema,
@@ -618,9 +636,12 @@ export const runnerServerFrameSchema = z.union([
 export type User = z.infer<typeof userSchema>
 export type CreateUserInput = z.infer<typeof createUserInputSchema>
 export type CreateUserResult = z.infer<typeof createUserResultSchema>
+export type UpdateUserInput = z.infer<typeof updateUserInputSchema>
+export type UpdateUserResult = z.infer<typeof updateUserResultSchema>
 export type SessionOverview = z.infer<typeof sessionOverviewSchema>
 export type Membership = z.infer<typeof membershipSchema>
 export type ActiveMembership = z.infer<typeof activeMembershipSchema>
+export type UpdateMembershipRoleInput = z.infer<typeof updateMembershipRoleInputSchema>
 export type RemovedMembership = z.infer<typeof removedMembershipSchema>
 export type LeftMembership = z.infer<typeof leftMembershipSchema>
 export type MembershipSummary = z.infer<typeof membershipSummarySchema>
@@ -633,6 +654,8 @@ export type InviteMode = z.infer<typeof inviteModeSchema>
 export type InviteMetadata = z.infer<typeof inviteMetadataSchema>
 export type CreateInviteInput = z.infer<typeof createInviteInputSchema>
 export type InviteCreateResult = z.infer<typeof inviteCreateResultSchema>
+export type InviteListResult = z.infer<typeof inviteListResultSchema>
+export type InviteRevokeResult = z.infer<typeof inviteRevokeResultSchema>
 export type RedeemInviteInput = z.infer<typeof redeemInviteInputSchema>
 export type InviteRedeemResult = z.infer<typeof inviteRedeemResultSchema>
 export type PublicDirectory = z.infer<typeof publicDirectorySchema>
@@ -648,7 +671,7 @@ export type DeletedAgent = z.infer<typeof deletedAgentSchema>
 export type AgentRecord = z.infer<typeof agentRecordSchema>
 export type CommunityAgent = z.infer<typeof communityAgentSchema>
 export type PublicAgentDirectoryEntry = z.infer<typeof publicAgentDirectoryEntrySchema>
-export type CreateCommunityAgentInput = z.infer<typeof createCommunityAgentInputSchema>
+export type CreateCommunityAgentInput = z.input<typeof createCommunityAgentInputSchema>
 export type UpdateCommunityAgentInput = z.infer<typeof updateCommunityAgentInputSchema>
 export type AgentEnrollmentResult = z.infer<typeof agentEnrollmentResultSchema>
 export type RotateAgentEnrollmentResult = z.infer<typeof rotateAgentEnrollmentResultSchema>
@@ -673,3 +696,21 @@ export type RunnerCardPublish = z.infer<typeof runnerCardPublishSchema>
 export type RunnerClientFrame = z.infer<typeof runnerClientFrameSchema>
 export type RunnerServerFrame = z.infer<typeof runnerServerFrameSchema>
 export type ScopedEventEnvelope = z.infer<typeof scopedEventEnvelopeSchema>
+
+/** Installation-only enrollment channel. Never exposed in browser snapshots. */
+export const runnerHostRequestSchema = z.object({
+  enrollments: z.array(z.object({
+    agentId: idSchema,
+    runnerToken: z.string().min(20).max(512),
+  }).strict()).max(10_000),
+}).strict()
+export const runnerHostResponseSchema = z.object({
+  agents: z.array(z.object({
+    agentId: idSchema,
+    communityId: idSchema,
+    runnerToken: z.string().min(20).max(512),
+    runtime: agentRuntimeV2Schema,
+    model: z.string().max(200),
+  }).strict()),
+}).strict()
+export type RunnerHostAgent = z.infer<typeof runnerHostResponseSchema>["agents"][number]

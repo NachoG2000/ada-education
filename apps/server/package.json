@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "start": "tsx src/index.ts",
     "dev": "tsx watch src/index.ts",
     "seed": "tsx src/seed.ts",
     "check": "tsc --noEmit",
@@ -12,7 +13,8 @@
     "check:e2e": "tsx scripts/e2e-flow.ts",
     "check:gated": "tsx scripts/gated-check.ts",
     "check:workspace": "tsx scripts/workspace-check.ts",
-    "check:issue1": "tsx scripts/issue1-flow.ts"
+    "check:issue1": "tsx scripts/issue1-flow.ts",
+    "check:agents": "tsx scripts/automatic-agents-check.ts"
   },
   "dependencies": {
     "@ada/protocol": "*",

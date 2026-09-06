@@ -320,7 +320,22 @@ async function runModel(prompt: string): Promise<string> {
   // pasted the bearer into a message or local file, it must not reach a model
   // prompt. The provider also receives the secret for error redaction only.
   const safePrompt = prompt.split(token).join("[redacted]")
-  return runProvider(runtime, { cwd, prompt: safePrompt, timeoutMs, ...(model ? { model } : {}), secrets: [token] })
+  if (process.send) {
+    await new Promise<void>((resolveGrant, rejectGrant) => {
+      const onMessage = (message: unknown) => {
+        if (message && typeof message === "object" && "type" in message && message.type === "run.granted") {
+          process.off("message", onMessage)
+          resolveGrant()
+        }
+      }
+      process.on("message", onMessage)
+      process.send!({ type: "run.acquire" }, (error) => { if (error) { process.off("message", onMessage); rejectGrant(error) } })
+    })
+  }
+  try {
+    return await runProvider(runtime, { cwd, prompt: safePrompt, timeoutMs, ...(model ? { model } : {}), secrets: [token] })
+  } finally { if (process.connected) process.send?.({ type: "run.release" }) }
+
 }
 
 /* ---- git: one commit per run (the wiki's version history) ------------------- */
@@ -449,7 +464,7 @@ async function handleMention(payload: Mention) {
     await request({
       type: "message.create",
       ref: randomUUID(),
-      payload: { communityId, agentId, channelId: payload.channelId, threadId: payload.threadId, paragraphs: [[{ kind: "text", text: `I couldn't answer this time (${(e as Error).message.split("\n")[0]}). Try mentioning me again.` }]] },
+      payload: { communityId, agentId, channelId: payload.channelId, threadId: payload.threadId, paragraphs: [[{ kind: "text", text: "I could not answer this time. Please try again. If this keeps happening, ask your administrator to check the shared agent connection." }]] },
     }).catch(() => {})
     presence("online")
     return
@@ -614,7 +629,10 @@ function connect() {
       if (frame.type !== "work") return
       const work = hostedWorkMention(frame.payload)
       if (!work) return
-      enqueue(() => handleMention(work))
+      enqueue(() => {
+        if (frame.payload.instructions !== undefined) agentInstructions = frame.payload.instructions.split(token).join("[redacted]")
+        return handleMention(work)
+      })
     }
   })
   ws.on("close", (code) => {
@@ -638,5 +656,10 @@ function connect() {
   })
 }
 
+// If the host dies, terminate the worker group including the active provider.
+if (process.send) process.once("disconnect", () => {
+  if (process.platform !== "win32") { try { process.kill(-process.pid, "SIGTERM") } catch { /* exiting below */ } }
+  process.exit(0)
+})
 log(`starting: wiki ${wikiDir}, raw ${rawDir}`)
 connect()

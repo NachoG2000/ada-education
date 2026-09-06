@@ -1,47 +1,52 @@
 # apps/server — the community server
 
-## Hosted service domain (current, 2026-09-03)
+## Hosted service domain (current, 2026-09-04)
 
-Schema version 4 adds the issue #1 domain alongside the retained fixture tables: global `tenant_users`; role-bearing `tenant_memberships`; `tenant_communities`; digest-only invite and runner credentials; community-scoped channels, channel membership, agents, messages, threads and backend cards. A fresh database starts empty and migrates automatically; `npm run seed` is an optional legacy fixture import, not startup.
+Schema versions 3-5 add the hosted domain alongside the retained fixture tables: global `tenant_users`; role-bearing `tenant_memberships`; `tenant_communities`; digest-only invite and runner credentials; community-scoped channels, channel membership, agents, messages, threads and backend cards. Version 5 adds persisted invite mode/revocation metadata. Version 6 keeps the retained workspace agent table compatible with the shared optional avatar URL. A fresh database starts empty and migrates automatically; `npm run seed` is an optional legacy fixture import, not startup.
 
-`api.ts` exposes account/session endpoints plus authenticated `/api/communities/:communityId/...` resources. The user bearer identifies the actor and the path identifies the tenant. `tenant.ts` owns tenant queries, atomic invite redemption, unique user-agent DMs, channel authorization, moderation tombstones, agent lifecycle and the last-teacher invariant. `ws.ts` requires browser and runner authentication in the first frame, filters events per viewer/channel, projects community-specific agent presence and sends correlated runner acknowledgements. Tokens never belong in URLs, logs, snapshots, ordinary events or model prompts. The server never runs a provider model or stores provider credentials.
+`api.ts` exposes account/session endpoints plus authenticated `/api/communities/:communityId/...` resources. The issue #3/#4 additions are `PATCH /api/users/me`, `PATCH /api/communities/:communityId/members/:userId`, and safe invite `GET`/`DELETE` routes; invite redemption now reports whether it consumed the credential. The user bearer identifies the actor and the path identifies the tenant. `tenant.ts` owns tenant queries, atomic invite redemption, unique user-agent DMs, channel authorization, moderation tombstones, agent lifecycle and the last-teacher invariant. Channel create/update accepts explicit user and agent assignments while preserving tenant and role validation. `ws.ts` requires browser and runner authentication in the first frame, filters events per viewer/channel, projects community-specific agent presence and sends correlated runner acknowledgements. Tokens never belong in URLs, logs, snapshots, ordinary events or model prompts. The server never runs a provider model or stores provider credentials.
 
 Run `npm run check:issue1 -w @ada/server` for the multi-community REST/WS/privacy/lifecycle flow and `npm run check -w @ada/server` for its typecheck. The older workspace, seed, gated, e2e and smoke checks remain required because the previous card/module/import paths are preserved.
 
 Configuration remains `PORT` (default `8787`), `ADA_DB` (default `apps/server/data/ada.db`) and optional `ADA_COURSE` for seed/legacy flows. Normal `npm run dev` does not seed.
 
-## Retained singleton fixture system (history and compatibility)
+## Running and checking
 
-The sections below document the pre-issue #1 course-local API and seed path. They remain executable for compatibility and backend card-memory checks, but they are not the mounted hosted UI or the current identity/tenancy contract.
+`npm run dev -w @ada/server` starts the API with file watching;
+`npm run start -w @ada/server` starts it without a watcher. The root
+`npm start` uses the latter and serves `apps/web/dist` after `npm run build`.
+A fresh database is migrated automatically; no seed is needed for hosted
+accounts or communities.
 
-## Workspace capability (2026-08-24)
+`npm run check:hosted` at the root checks current contracts and all
+workspaces; `npm run check:legacy` covers retained compatibility behavior.
+`npm run check` combines both with lint and documentation checks. Checks
+own throwaway data; never aim a mutation/smoke script at a real course.
 
-The server now exposes the complete chat/configuration persistence layer from `DECISIONS.md` §21. Schema version 2 is applied by `src/migrations.ts` through `PRAGMA user_version`; fresh and upgraded databases share the same shape, and seed upserts preserve live tokens and dynamic rows. Small service modules own viewer access, channels, members/agents, message lifecycle/reactions/reads and attachment bytes. `api.ts` exposes typed course/profile, channel/member, agent/token, message/reaction/read and multipart attachment routes with stable `{error, code, field?}` failures. `ws.ts` filters every channel event per socket viewer, accepts ephemeral `typing.set`, expires typing state, and closes a runner whose agent is deactivated/deleted.
+## Retained compatibility paths
 
-Run `npm run check:workspace -w @ada/server` for the fast migration/reseed/access/CRUD/attachment contract. The existing seed, smoke, gated and e2e checks remain required because module/card/runner behavior is intentionally retained behind the new visible shell.
+Legacy `db.ts`, workspace modules, seed import, and singleton routes retain
+modules, materials, reports, cards, and gated `/api/claim` behavior under
+`ADA_REQUIRE_MEMBERSHIP`. They are not the hosted identity contract.
+Read [the historical server guide](../../docs/history/server-fixture-api-2026-08.md)
+for their routes and fixtures. They remain covered by seed, workspace,
+end-to-end, gated, and smoke checks.
 
-**Legacy fixture path:** Hono still serves `GET /api/community`, messages, threads, publications, and the teacher's module/report workflow over REST; `ws` shares `/ws` for clients and `/ws/runner` for runners. SQLite lives in a file via `node:sqlite`/`DatabaseSync`; agent presence is kept in memory and mentions are delivered only to the connected runner.
+## Growth boundary
 
-Configuration: `PORT` (default `8787`), `ADA_DB` (default `apps/server/data/ada.db`), and `ADA_COURSE` (default `data/neural-networks-2026`). `npm run seed` loads the course from `community.json` idempotently via upserts: it doesn't duplicate or overwrite messages, cards, modules, assignments, feedback, or reports already stored. `npm run check` validates TypeScript; the reproducible smoke test is `npm run smoke` (`scripts/smoke-run.ts` copies the course to a temp dir, seeds a temp DB, starts the server on `SMOKE_PORT` 8799, runs `scripts/smoke.ts` against it and tears it down). `smoke.ts` writes into whatever it targets (a material, a report it files over the runner socket, a decision card, a difficulty change), so never point it at the demo DB. Two more checks, both against temp copies: `npm run check:seed` (`scripts/seed-check.ts`: seeds twice into a temp DB and asserts the demo snapshot — modules ready with resolving cards, feedback with gap cards, seeded history and cites, deterministic card ids, no dangling references) and `npm run check:e2e` (`scripts/e2e-flow.ts`: full teacher/student flow against the real scripted runner — upload → cards → suggestion, plan → report → #teachers, reconcile → decision card). Shared script helpers in `scripts/lib.ts`.
+Put tenant lifecycle and permission invariants in `tenant.ts`, transport in
+`api.ts`/`ws.ts`, schema upgrades in `migrations.ts`, and shared payloads in
+`packages/protocol`. Keep migrations compatible with both retained and
+hosted data. Model execution remains in the runner. Hosted runner operations,
+stronger login methods, and durable mention delivery are future changes.
 
-**Legacy fixture responsibility:** this path remains the source of truth for the seeded members, channels, messages, threads, published cards, modules, assignments, feedback and reports for one imported course. It detects `@agent` mentions and forwards them to the retained scripted runner.
+## Automatic agents (2026-09-06)
 
-**Schema (`schema.sql`, added 2026-08-23 for the teacher/student demo flow, `DECISIONS.md` §16):** `modules` (id, idx, slug, title, summary, channel_id, `objectives`/`difficulty` as JSON, status, revision), `materials` (per module, file metadata under `data/<course>/raw/`), `assignments` (per module, its work channel), `feedback` (per assignment+student, `body` JSON holds score/summary/strengths/gaps/nextSteps), `reports` (per agent+student+module, `body` JSON holds told/recommendations/cardIds, plus `status` and `reconciled` JSON). `cards.path` (already in the table) is now returned in the snapshot and used to give seeded/wiki cards a deterministic id: `card:<authorId>:<path>`.
-
-**Routes added on top of the existing message/thread/card ones:**
-- `POST /api/modules/:moduleId/materials` `{name, kind, size?, text?, authorId}` → `200 Module`. Writes the file under `raw/martin/modules/<moduleId>/<name>` (the given `text`, or for a non-markdown kind with no text a one-line placeholder), appends the material, sets the module `status` to `compiling`, broadcasts `module.updated`, then posts `@ada ingest <name> into <moduleId>` (lowercase id, so the existing `@mention` scan in `mentions.ts` fires) authored by `authorId` in the module's channel and runs the mention path with `{intent: "ingest", moduleId}` so the runner receives it on `agent.mention`.
-- `PATCH /api/modules/:moduleId` `{difficulty?: {level, rationale?}, objectives?, authorId}` → `200 Module`. Setting `difficulty` sets `level`/`rationale` and stamps `difficulty.setBy = authorId`, without touching the agent's last `evidence`/`suggestedBy` (so the UI can still show what Ada suggested even after the teacher overrides it); broadcasts `module.updated`.
-- `POST /api/reports/:reportId/reconcile` `{accepted: string[], note, authorId}` → `200 Report`. Publishes a `decision` card (path `<authorId>/decisions/<moduleId>-revision-<assignmentId|reportId>.md`) summarizing the accepted recommendations and the note, sets `module.revision`, marks the report `reconciled`, and broadcasts `card.published`, `report.updated`, `module.updated` in that order.
-- 404 for an unknown module/report id, 400 for a malformed body (mirrors the existing routes' error convention).
-
-**WS additions (`ws.ts`):** the runner can send `module.suggest {moduleId, status?, difficulty:{level, rationale, evidence}}` (the level only moves if no teacher has set it by hand yet — `difficulty.setBy` is checked — but rationale/evidence/suggestedBy are always recorded) and `report.create {studentId, moduleId, assignmentId?, told, recommendations, cardIds}`; both ack with `{module}`/`{report}` and broadcast `module.updated`/`report.updated`. `agent.mention` now optionally carries `intent`/`moduleId` (the material-upload flow above is the only caller today).
-
-**Seed (`seed.ts`) additions, read from `community.json`:** `modules[]` (with embedded `materials[]`), `assignments[]`, `feedback[]`, `reports[]` — all upserted by id; `at` fields accept either an ISO string or an `ago` shorthand (`"2d"`, `"3h"`, `"15m"`) resolved against the seed run's timestamp. `feedback[].gaps[].cardId`, `nextSteps[].cardId`, `reports[].cardIds[]`, and `reports[].reconciled.cardId` may be given as a wiki path instead of a card id — resolved once cards exist, throwing loudly (naming the offending id) if nothing matches. `messages[]` gains the same `ago`/`at` shorthand; `text` is split into paragraphs on blank lines, and `[[wiki/path.md]]` / `[[wiki/path.md|label]]` inside it becomes a cite block resolved against Ada's seeded cards by path (unresolved → left as plain text with a `console.warn`). `wikiCards: true` walks every `agents/ada/wiki/**.md` file (skipping `index.md`/`log.md`) and upserts each as a card authored by `ada`, using a small in-house frontmatter parser (no dependency added) for `title`, `type` (mapped topic/note/difficulty→`note`, question/answer→`answer`, decision/assignment/submission pass through), `channel` (default: the module id for `modules/<id>/…`, `questions` for `questions/…`, `general` otherwise), `sources`, `supersedes` (resolved even out of file order — a card is written only once its `supersedes` target already exists, so an arbitrary depth of chains works; a target that never resolves fails loudly), and `published` (default: seed time − 7 days). All seed-time card upserts (base docs and wiki cards alike) get the deterministic id `card:<authorId>:<path>` and never bump `version` on re-seed, so re-running the seed is a no-op on unchanged content.
-
-**Legacy gated scope (`DECISIONS.md` §19-§20):** the retained single-course routes can still require membership with `ADA_REQUIRE_MEMBERSHIP=1`. This does not describe the issue #1 `/api/communities/:communityId` routes, which always require their hosted bearer contract.
-
-**Membership routes and serving (2026-08-23, `DECISIONS.md` §20):** `GET /health` (always open, the deploy's healthcheck); `GET /api/course` (public face: exactly name/subtitle); `POST /api/claim {token}` (compared against `ADA_OWNER_TOKEN` in constant time → (re)mints the teacher's person token; re-claim rotates — recovery path); `POST /api/invites` (teacher-only → single-use token, stored in the `invites` table); `POST /api/join {token, name}` (creates a `student` person, joins them to the open channels — the ones every existing person is in — marks the invite used → 410 on reuse, broadcasts `member.joined`); `GET /api/modules/:id/materials/:mid/raw` (a material's stored bytes, for runners on another disk). Gated writes derive the author from the token and 403 a mismatched `authorId`. Person tokens live in `members.token` (the seed's upserts never touch a person's token). For the single seeded agent, a course-file re-seed preserves its live token; `ADA_AGENT_TOKEN` overrides it at seed time and on every server boot, so changing the deploy variable plus restarting rotates it. After `npm run build`, the server serves `apps/web/dist` same-origin (index.html fallback outside `/api`; `/assets` immutable) — one public service. `npm run check:gated` (`scripts/gated-check.ts`) drives all of it, including the real scripted runner working from a folder that doesn't share the server's disk.
-
-**How it grows (idea, not code):** hosted runner operations, stronger login methods, billing and an optional durable mention queue. The expanded API is sketched in `docs/usecases-api.html` (future inspiration).
-
-**Retained deployment history:** `deploy/` still builds and checks the earlier single-course container shape, but deployment and hosted runners are outside issue #1. Do not present that directory as the current multi-community production runbook. The current supported runner path is local and subscription-authenticated from the UI-generated command; Ada never receives provider credentials.
+`POST /api/runner-host/enroll` is an installation-only control endpoint,
+enabled by `ADA_RUNNER_HOST_TOKEN` (at least 32 characters). It accepts
+previous enrollments, rotates only missing/invalid credentials, and returns
+active agent configurations. Ordinary user/runner credentials cannot call it.
+The separate host executes models; provider API keys never reach this server.
+UI community creation requests two starter agents atomically. Work carries
+current rules; DMs implicitly address the agent. `check:agents` verifies
+the complete automatic lifecycle with fake providers and temporary data.

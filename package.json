@@ -8,18 +8,25 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "concurrently -n web,server \"npm run dev:web\" \"npm run dev:server\"",
+    "dev": "node scripts/dev.mjs",
     "dev:web": "npm run dev -w @ada/web",
     "dev:server": "npm run dev -w @ada/server",
     "runner": "tsx packages/runner/src/cli.ts",
     "seed": "npm run seed -w @ada/server",
+    "start": "npm run start -w @ada/server",
     "build": "npm run build -w @ada/web",
     "lint": "oxlint apps packages",
-    "typecheck": "tsc -b apps/web",
+    "typecheck": "npm run check -w @ada/protocol && npm run check -w @ada/server && npm run check -w @ada/runner && npm run typecheck:web",
+    "typecheck:web": "tsc -b apps/web",
+    "check": "npm run lint && npm run check:docs && npm run check:hosted && npm run check:legacy",
+    "check:docs": "node scripts/docs-check.mjs",
+    "check:hosted": "npm run typecheck && npm run check:hosted -w @ada/protocol && npm run check:issue1 -w @ada/server && npm run check:providers -w @ada/runner && npm run check:agents -w @ada/server && npm run build",
+    "check:legacy": "npm run check:workspace && npm run check:scripted -w @ada/runner && npm run check:seed -w @ada/server && npm run check:e2e -w @ada/server && npm run check:gated -w @ada/server && npm run smoke",
     "smoke": "npm run smoke -w @ada/server",
     "check:workspace": "npm run check:workspace -w @ada/server",
-    "check:issue1": "npm run check -w @ada/protocol && npm run check:hosted -w @ada/protocol && npm run check -w @ada/server && npm run check:issue1 -w @ada/server && npm run check -w @ada/runner && npm run check:providers -w @ada/runner && npm run build",
-    "check:docker": "bash deploy/check-docker.sh"
+    "check:issue1": "npm run check:hosted",
+    "check:docker": "bash deploy/check-docker.sh",
+    "runner:host": "tsx packages/runner/src/host.ts"
   },
   "devDependencies": {
     "concurrently": "^10.0.5",

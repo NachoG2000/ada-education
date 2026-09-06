@@ -17,3 +17,9 @@ Convention: one file per session or document, `YYYY-MM-DD-<topic>.md`. Every cla
 | `2026-09-01-instinct-thesis-memory-as-compiler.md` | Summary of the supplied “Instinct Thesis” and what it validates or leaves missing in Ada's memory model. |
 | `2026-09-03-codex-local-runner.md` | Official Codex CLI authentication and non-interactive command findings for issue #1's subscription-backed local runner. |
 | `2026-09-03-issue-1-implementation.md` | Scope, architecture boundaries, preservation record, baseline evidence, and primary review log for GitHub issue #1. |
+| `2026-09-03-buzz-interaction-inventory.md` | Buzz (`desktop/src`, `0720f5380`) and Ada interaction patterns inventoried side by side — entry point, container, steps, landing, confirmation, permissions — with `path:line` per source claim, plus the 2026-09-04 implementation/teacher-student/responsive QA addendum and the simple-visual clarification. Evidence for `openspec/changes/buzz-interaction-parity/` and issues #3/#4. |
+| `2026-09-05-application-demo-priorities.md` | Puentes application context; recommendation to demonstrate a small, inspectable course-memory loop with focused UI polish and a technically explainable repository. Exploration only, with source and verification limits. |
+| `2026-09-05-repository-consolidation.md` | Public-repository consolidation: reproducible setup, canonical local/CI checks, current architecture/contributor guides, preserved history, specification sync, and validation evidence. |
+
+- [Agent management and automatic execution](2026-09-06-agent-management-exploration.md):
+  user requirements, SDK/CLI comparison, and official authentication sources.

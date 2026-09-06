@@ -1,6 +1,8 @@
-# data/ — the courses (the memory lives here, not in the DB)
+# data/ — retained fictional course fixtures
 
-**Today:** the seed course `neural-networks-2026` has a `community.json` with 10 channels (course, `teachers`, one work channel, three private channels), 4 people, the `ada` agent, 3 course modules (`01-perceptron`, `02-mlp`, `03-backprop`), one assignment, feedback and one reconciled report for the cohort, and a living message history. `raw/martin/modules/<nn>-<slug>/*.md` holds the real teacher-authored study material for each module (no more placeholders). The server's seed reads `community.json` and publishes the base document as the `base` card, upserts `agents/ada/wiki/**/*.md` as cards (`wikiCards: true`), and inserts modules/assignments/feedback/reports/messages.
+**Current boundary:** this directory supplies the legacy seed and compatibility checks. `npm run dev` starts an empty hosted database; `npm run seed` does not create hosted users or memberships. Live hosted runner workspaces are created separately from these fixtures.
+
+**Fixture contents:** the seed course `neural-networks-2026` has a `community.json` with 11 channels (course, `teachers`, one work channel, three private channels), 4 people, the `ada` agent, 4 course modules (`01-perceptron`, `02-mlp`, `03-backprop`, `04-attention`), one assignment, feedback and one reconciled report for the cohort, and a living message history. `raw/martin/modules/<nn>-<slug>/*.md` holds the fictional sample study material for each module (no more placeholders). The server's seed reads `community.json` and publishes the base document as the `base` card, upserts `agents/ada/wiki/**/*.md` as cards (`wikiCards: true`), and inserts modules/assignments/feedback/reports/messages.
 
 **Seed keys in `community.json`** (see `DECISIONS.md` §18 and the exported
 types in `packages/protocol/src/types.ts` for the binding contract):
@@ -23,6 +25,6 @@ data/<course>/
     about/                       ← what the agent knows about each person
 ```
 
-Principles: everything is readable markdown (`ls` is the audit interface), git as versioning (one commit per runner run, in the repo that holds the folder), the server only stores the **published copy** of each card. In the public repo this course is a **sample**: in real use the folder lives wherever the runner lives, outside the code repo (`docs/como-funciona.html` §4).
+Principles: everything is readable markdown (`ls` is the audit interface), git as versioning (one commit per runner run, in the repo that holds the folder), the server only stores the **published copy** of each card. In the public repo this course is a **sample**: in real use the folder lives wherever the runner lives, outside the code repo (`docs/architecture.md`, "Active code and retained history").
 
 **How it grows (idea, not code):** one git repo per course, `people/<student>/wiki` for personal agents, permissions by folder composition (bind mounts / Archil) — `DECISIONS.md` §14.7.

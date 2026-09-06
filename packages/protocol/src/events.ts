@@ -189,6 +189,7 @@ export const replaceChannelMembersInputSchema = z.object({
 export const createAgentInputSchema = z.object({
   name: z.string().trim().min(1).max(80),
   description: z.string().max(2000).optional(),
+  avatarUrl: z.string().url().max(2_000).optional(),
   instructions: z.string().max(20_000),
   scope: z.enum(["community", "personal"]),
   runtime: agentRuntimeSchema,
@@ -201,6 +202,7 @@ export const createAgentInputSchema = z.object({
 export const updateAgentInputSchema = z.object({
   name: z.string().trim().min(1).max(80).optional(),
   description: z.string().max(2000).optional(),
+  avatarUrl: z.string().url().max(2_000).optional(),
   instructions: z.string().max(20_000).optional(),
   scope: z.enum(["community", "personal"]).optional(),
   runtime: agentRuntimeSchema.optional(),

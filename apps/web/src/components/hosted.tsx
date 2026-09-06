@@ -85,6 +85,8 @@ import type {
 } from "@ada/protocol";
 import { createUser, restoreSession } from "@/lib/hosted-api";
 import { clearToken, readStoredToken, storeToken } from "@/lib/auth";
+import { HostedWorkspaceSurface } from "@/components/hosted-surface";
+import { useAppNavigation, useAppRoute } from "@/lib/routes";
 
 type Phase =
   "loading" | "account" | "sign-in" | "credential" | "onboarding" | "workspace";
@@ -155,14 +157,16 @@ export function HostedApp({ server }: { server: string }) {
       });
       setPhase("workspace");
     } catch (cause) {
-      clearToken();
-      setSession(null);
-      setError(
-        cause instanceof HostedApiError && cause.status >= 500
-          ? cause.message
-          : "That saved session is no longer valid. Create an account or paste a user token.",
-      );
-      setPhase("account");
+      const invalidCredential = cause instanceof HostedApiError && (cause.status === 401 || cause.status === 403);
+      if (invalidCredential) {
+        clearToken();
+        setSession(null);
+        setError("That saved session is no longer valid. Create an account or paste a user token.");
+        setPhase("account");
+      } else {
+        setError(cause instanceof Error ? cause.message : "Ada could not restore this session.");
+        setPhase("loading");
+      }
     }
   }, [server]);
   useEffect(() => {
@@ -191,9 +195,11 @@ export function HostedApp({ server }: { server: string }) {
   if (phase === "loading")
     return (
       <Startup
-        title="Connecting to Ada…"
-        detail="Restoring your account securely."
-      />
+        title={error ? "Ada is temporarily unavailable" : "Connecting to Ada…"}
+        detail={error ?? "Restoring your account securely."}
+      >
+        {error ? <Button className="mt-5 w-full" onClick={() => void load()}>Retry</Button> : null}
+      </Startup>
     );
   if (phase === "account")
     return (
@@ -243,9 +249,11 @@ function CredentialStep({
   onContinue: () => void;
 }) {
   const [copied, setCopied] = useState(false);
+  const [saved, setSaved] = useState(false);
   const copy = async () => {
     await navigator.clipboard?.writeText(token);
     setCopied(true);
+    window.setTimeout(() => setCopied(false), 2_000);
   };
   return (
     <Startup
@@ -263,8 +271,16 @@ function CredentialStep({
         >
           {copied ? "Copied" : "Copy token"}
         </Button>
-        <Button className="w-full" onClick={onContinue}>
-          I saved it
+        <label className="flex items-start gap-2 rounded-md border p-3 text-sm">
+          <Checkbox
+            checked={saved}
+            onCheckedChange={(checked) => setSaved(checked === true)}
+            aria-label="I saved this token somewhere safe"
+          />
+          <span>I saved this token somewhere safe</span>
+        </label>
+        <Button className="w-full" disabled={!saved} onClick={onContinue}>
+          Continue
         </Button>
       </div>
     </Startup>
@@ -282,7 +298,7 @@ function Startup({
 }) {
   return (
     <main className="flex min-h-svh items-center justify-center bg-background p-6">
-      <div className="w-full max-w-sm rounded-xl border bg-card p-7 shadow-sm">
+      <div className="w-full max-w-sm rounded-lg border bg-card p-7">
         <p className="text-sm font-medium">{title}</p>
         {detail ? (
           <p className="mt-2 text-sm text-muted-foreground">{detail}</p>
@@ -441,8 +457,16 @@ function HostedSession({
   initial: Session;
   onSignOut: () => void;
 }) {
+  const route = useAppRoute();
+  const navigateTo = useAppNavigation();
+  const [user, setUser] = useState(initial.user);
   const [communities, setCommunities] = useState(initial.communities);
   const [activeId, setActiveId] = useState<string | undefined>(() => {
+    const routedCommunityId = "communityId" in route ? route.communityId : undefined;
+    if (
+      routedCommunityId &&
+      initial.communities.some((community) => community.id === routedCommunityId)
+    ) return routedCommunityId;
     try {
       const stored = localStorage.getItem("ada:community");
       return stored &&
@@ -456,6 +480,9 @@ function HostedSession({
   const [snapshot, setSnapshot] = useState<HostedSnapshot | null>(null);
   const [loadError, setLoadError] = useState<string>();
   const [pending, setPending] = useState(false);
+  const [pendingCommunityAction, setPendingCommunityAction] = useState<
+    "invite" | "leave" | undefined
+  >();
   const [onboarding, setOnboarding] = useState(
     initial.communities.length === 0,
   );
@@ -510,6 +537,7 @@ function HostedSession({
     setPending(true);
     try {
       const result = await createCommunity(server, initial.token, {
+        starterAgents: true,
         name,
         term,
       });
@@ -517,6 +545,7 @@ function HostedSession({
       setCommunities(next);
       activate(result.community.id);
       setOnboarding(false);
+      return result.community;
     } finally {
       setPending(false);
     }
@@ -529,6 +558,7 @@ function HostedSession({
       setCommunities(next);
       activate(result.community.id);
       setOnboarding(false);
+      return result;
     } finally {
       setPending(false);
     }
@@ -569,8 +599,14 @@ function HostedSession({
     return (
       <Onboarding
         pending={pending}
-        onCreate={create}
-        onRedeem={redeem}
+        onCreate={async (name, term) => {
+          const community = await create(name, term);
+          await navigateTo({ kind: "inbox", communityId: community.id }, { replace: true });
+        }}
+        onRedeem={async (code) => {
+          const result = await redeem(code);
+          await navigateTo({ kind: "inbox", communityId: result.community.id }, { replace: true });
+        }}
         onSignOut={onSignOut}
         onCancel={communities.length ? () => setOnboarding(false) : undefined}
       />
@@ -579,30 +615,41 @@ function HostedSession({
     return (
       <Onboarding
         pending={pending}
-        onCreate={create}
-        onRedeem={redeem}
+        onCreate={async (name, term) => {
+          const community = await create(name, term);
+          await navigateTo({ kind: "inbox", communityId: community.id }, { replace: true });
+        }}
+        onRedeem={async (code) => {
+          const result = await redeem(code);
+          await navigateTo({ kind: "inbox", communityId: result.community.id }, { replace: true });
+        }}
         onSignOut={onSignOut}
         onCancel={communities.length ? () => setOnboarding(false) : undefined}
       />
     );
   return (
-    <HostedWorkspace
+    <HostedWorkspaceSurface
       key={active.id}
       server={server}
       token={initial.token}
-      user={initial.user}
+      user={user}
       communities={communities}
       active={active}
       snapshot={snapshot}
+      pendingCommunityAction={pendingCommunityAction}
+      onPendingCommunityActionHandled={() => setPendingCommunityAction(undefined)}
       error={loadError}
       onRetry={() => void loadCommunity(active.id)}
-      onSwitch={(id) => {
+      onSwitch={(id, action) => {
         setSnapshot(null);
+        setPendingCommunityAction(action);
         activate(id);
       }}
       onCommunities={refreshWorkspace}
       onSnapshot={acceptSnapshot}
-      onAddCommunity={() => setOnboarding(true)}
+      onUser={setUser}
+      onCreateCommunity={({ name, term }) => create(name, term)}
+      onRedeemInvite={redeem}
       onLeaveCommunity={leaveActiveCommunity}
       onSignOut={onSignOut}
     />
@@ -642,7 +689,7 @@ function Onboarding({
   };
   return (
     <main className="flex min-h-svh items-center justify-center bg-background p-6">
-      <div className="w-full max-w-lg rounded-xl border bg-card p-7 shadow-sm">
+      <div className="w-full max-w-lg rounded-lg border bg-card p-7">
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-xl font-semibold">Choose your workspace</h1>
@@ -719,7 +766,7 @@ function Onboarding({
   );
 }
 
-function HostedWorkspace({
+export function HostedWorkspace({
   server,
   token,
   user,

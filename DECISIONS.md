@@ -1,8 +1,8 @@
 # DECISIONS.md — Ada Education
 
-Full project context. Read it whole before touching code. Updated 09/03.
+Full project context. Read it whole before touching code. Updated 09/05.
 
-> **What this file is:** direction and ideas, with their history (superseded sections stay marked, never deleted). **It does not describe the current code.** The actual state of the code lives in `AGENTS.md`. The current scope is **§22** (a hosted service to sell, demo first; issue #1); §19 was the open-source framing it superseded; §14 remains the architecture.
+> **What this file is:** direction and ideas, with their history (superseded sections stay marked, never deleted). **It does not describe the current code.** The actual state of the code lives in `AGENTS.md`. The current scope is **§22–§24** (hosted foundation, completed interaction parity, and repository consolidation); §19 was the open-source framing it superseded; §14 remains the architecture.
 
 ---
 
@@ -416,7 +416,7 @@ implementation that can be demoed end to end wins.
 1. **Product shape: a hosted service sold by subscription** to institutions
    with budget (schools, universities). This supersedes §19's open-source,
    local-first framing as *the* product. Whether the public Apache-2.0 repo
-   stays as open core or goes private is an open question in the issue.
+   stays as open core or goes private was an open question in the issue. **Repository visibility is resolved by §24: keep the public Apache-2.0 repository.**
 2. **Runners by environment.** Development and tests use a **local runner
    with the developer's own Claude or Codex subscription** (no API tokens
    spent; the pattern §14 already allows). Production uses **hosted runners
@@ -446,3 +446,103 @@ implementation that can be demoed end to end wins.
 **This phase is a local demo**: no deploy, billing, or video yet — foundations
 first. No grading, broad permissions, OAuth, hosted runners, proactive loops,
 cohort inheritance, search, notifications, or mobile-specific product work.
+
+## 23. Buzz interaction parity before any styling (09/03; implemented and QA'd 09/04)
+
+Decided with Ignacio on 2026-09-03, after issue #1 closed. Tracked in GitHub
+issue #3 (https://github.com/NachoG2000/ada-education/issues/3, the spec) and
+issue #4 (https://github.com/NachoG2000/ada-education/issues/4, QA of the
+Ada-only use cases). Spec: `openspec/changes/archive/2026-09-05-buzz-interaction-parity/`.
+Evidence: `research/2026-09-03-buzz-interaction-inventory.md`.
+
+**The problem is not the components, it is how they interact.** The issue #1
+shell copied Buzz's layout but not its interaction grammar: where Buzz opens a
+dialog, Ada shows an inline input; where Buzz has an Agents page, Ada has a
+sidebar section and a sheet; where Buzz has routes, Ada has component state.
+"Improving the UI by taste" has already failed twice (§21, §22); mirroring a
+product that has solved these interactions is the cheaper path.
+
+1. **Buzz is the interaction default for every shared use case, not the visual
+   default**: same entry point, same
+   container (dialog / auxiliary panel / route / popover / hover toolbar), same
+   landing after success, same confirmation rule. Ignacio reconfirmed during
+   implementation that the mounted UI stays deliberately simple: default
+   shadcn surfaces, borders, spacing, and states, without Buzz's gradient,
+   inset-window treatment, or decorative styling. The full interaction mapping
+   is `design.md` §7.
+2. **Revises §22 in three places**: a standalone **Agents page** (`/agents`),
+   a **Settings route** with scoped sections (Profile, Community, Members,
+   Invites, Shortcuts, Account) and a **⌘K palette** over channels, DMs,
+   people, agents and actions are now in scope, because Buzz has them as the
+   entry points of use cases Ada already has. Message search, notifications,
+   reactions, attachments, mute/star and every Buzz feature the hosted
+   protocol lacks stay out.
+3. **Deliberate deviations** (`design.md` §9): destructive actions keep a
+   confirmation even where Buzz has none; community settings live in the
+   Settings route; invite codes mint on click, not on dialog open; sign-out
+   confirms with one gate.
+4. **Ada-only use cases use the approved baseline in `design.md` §8**: hide
+   forbidden teacher controls; default invitations to student / three days /
+   one use; show user and runner credentials once; expose student-agent DM
+   privacy to the student and make the teacher view read-only; disable the
+   last teacher's leave/demote/remove controls with an explanation; keep
+   published cards visually unrendered; label the cohort field **Term**; keep
+   deleted-agent DMs as read-only history. Issue #4's implementation QA is
+   recorded in the issue research file.
+5. **Resolved implementation choices**: use TanStack Router with file-based
+   Vite integration; add authenticated profile PATCH, membership-role PATCH,
+   and safe invite list/revoke routes; keep **Term** editable; do not render a
+   card-publication system line. Schema version 5 adds invite mode/revocation;
+   version 6 keeps the retained workspace agent projection compatible with
+   the shared optional avatar URL.
+6. **Implementation result**: the mounted shell follows Buzz's routes and
+   task containers while retaining Ada's tenant, role, credential, DM, and
+   external-runner boundaries. Responsive teacher/student testing used the
+   production bundle at 1440, 1024, 767, and 360 pixels. The visual correction
+   above is part of the decision: future parity work must not treat Buzz's
+   appearance as a requirement.
+
+
+## 24. Consolidate the public repository before expansion (09/05)
+
+Ignacio confirmed that Ada should be a good public repository, then asked
+to consolidate the existing work and leave it organized for expansion.
+This resolves §22's repository-visibility question in favor of keeping the
+public Apache-2.0 project. It does not reverse the hosted-service product
+ambition or change the server/runner topology from §14.
+
+1. **Consolidate the implemented foundation.** Align documentation with the
+   routed tenant workspace, provide reproducible Node 24/npm setup, and
+   expose one complete `npm run check` gate locally and in GitHub Actions.
+   Reuse the existing protocol, server, runner, fixture, and build checks.
+2. **Make the repository navigable.** The root README explains current
+   behavior and startup; CONTRIBUTING explains changes and validation;
+   `docs/architecture.md` maps active code; historical instructions and
+   future HTML references are explicitly separated. Preserve old source
+   and design history rather than deleting it during housekeeping.
+3. **Close completed interaction planning.** Sync the completed Buzz-parity
+   requirements into current specs and archive that change after validation.
+   Preserve the older demo plan's unchecked historical tasks without
+   claiming they were implemented under the current scope.
+4. **Expansion remains a separate design step.** Course-memory behavior and
+   its visible interface are a proposed next feature, not part of this
+   consolidation. Define sources, admission, retrieval, correction, and
+   visibility before implementing it. Personal memory and hosted runners
+   remain future changes.
+
+Verification and sources for this consolidation are recorded in
+`research/2026-09-05-repository-consolidation.md`.
+
+
+## 25. Agents work after creation; execution belongs to the installation (2026-09-06)
+
+Supersedes the per-agent provider/model selection and manual enrollment UX in §§14, 21–23. The user explicitly requested a bot-like experience: create an agent, give it rules, and it works. For local iteration the developer's Claude login supplies execution; a future deployed installation uses an API key or another supported administrator-configured provider.
+
+1. Teachers configure name, rules, and channel assignments. They do not select a model or copy a runner command. Creation opens the agent details; connection happens automatically. Existing deletion/history and role boundaries remain.
+2. UI-created communities receive editable Course tutor and Knowledge curator agents. The same two templates are available alongside creating from scratch. These are new role labels, not a rename of the historical example agent Ada. Each copy has independent identity and memory; template updates do not overwrite it.
+3. `npm run dev` starts a separate installation agent host alongside web/server. It enrolls agents through a dedicated authenticated installation endpoint, persists credentials privately, and manages per-agent workers and folders. A local host serializes model invocations. Provider execution remains outside the community server.
+4. Keep the existing `claude -p` adapter. The SDK is not required for automatic lifecycle; revisit it for specific capabilities. Subscription mode remains the default. Explicit `ADA_PROVIDER_AUTH=api-key` requires a provider key on the runner host and must not silently fall back to subscription credentials.
+5. DMs implicitly address their agent; channels require mentions. New work includes the latest saved rules. Deletion revokes access and stops the worker/provider while preserving history and the agent's local files.
+6. This ships the local workflow and an authentication configuration boundary, not a managed hosting service, durable job queue, multi-host scheduler, or OS sandbox. New managed folders do not automatically import wiki files from older manually configured locations.
+
+Rationale and verified official sources: `research/2026-09-06-agent-management-exploration.md`. Implementation and verification: `openspec/changes/archive/2026-09-06-automatic-agents/` and `docs/agent-host.md`.

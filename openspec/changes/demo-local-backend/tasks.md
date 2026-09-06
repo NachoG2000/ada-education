@@ -1,3 +1,8 @@
+> **Historical plan, retained on 2026-09-05.** The current hosted scope is
+> `DECISIONS.md` §22–§24. Unchecked items below preserve the original cutoff;
+> they are not the current expansion backlog and are not marked complete by
+> repository consolidation. See `openspec/README.md`.
+
 ## 1. Repo and workspace (≈30 min)
 
 - [x] 1.1 `git init` at the root; `.gitignore` for `node_modules`, `dist`, `apps/server/data/*.db`, and `data/**/agents/*/.git/` (the wiki is versioned, not its inner `.git`).

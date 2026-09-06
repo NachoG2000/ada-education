@@ -7,6 +7,7 @@ import { bodyLimit } from "hono/body-limit"
 import type { Context } from "hono"
 import type { DatabaseSync } from "node:sqlite"
 import {
+  runnerHostRequestSchema,
   cardPublishInputSchema,
   communityUpdateInputSchema,
   createAgentInputSchema,
@@ -28,6 +29,8 @@ import {
   createUserInputSchema,
   editScopedMessageInputSchema,
   redeemInviteInputSchema,
+  updateMembershipRoleInputSchema,
+  updateUserInputSchema,
   updateCommunityAgentInputSchema,
   updateCommunityChannelInputSchema,
 } from "@ada/protocol"
@@ -112,6 +115,7 @@ import {
 import { WorkspaceError } from "./workspace-errors.js"
 import { hasWebDist, serveWebFile } from "./static.js"
 import {
+  enrollRunnerHost,
   canReadTenantChannel,
   createTenantAgent,
   createTenantAgentDm,
@@ -136,17 +140,22 @@ import {
   listTenantChannels,
   listTenantCommunities,
   listTenantMembers,
+  listTenantInvites,
   listTenantMessages,
   redeemTenantInvite,
   removeTenantMember,
+  revokeTenantInvite,
   rotateTenantAgentToken,
   sessionForUser,
   updateTenantAgent,
   updateTenantChannel,
   updateTenantCommunity,
+  updateTenantMembershipRole,
+  updateTenantUser,
   type TenantChannel,
   type TenantAgent,
   type TenantMembership,
+  type TenantInvite,
   type TenantUser,
 } from "./tenant.js"
 
@@ -211,6 +220,9 @@ export interface ApiHooks {
 }
 
 export interface ApiOptions extends ApiHooks {
+  runnerHostToken?: string
+  agentRuntime?: "claude" | "codex"
+  agentModel?: string
   presence?: ReadonlyMap<string, "online" | "away" | "thinking" | "publishing">
   /** Hosted runner presence is separate from the legacy seeded-course map. */
   hostedPresence?: ReadonlyMap<string, "online" | "offline" | "thinking" | "publishing">
@@ -269,6 +281,21 @@ function hostedMembership(database: DatabaseSync, communityId: string, userId: s
 
 function hostedUserProjection(user: TenantUser): { id: string; displayName: string; createdAt: string; updatedAt?: string } {
   return { id: user.id, displayName: user.displayName, createdAt: user.createdAt, ...(user.updatedAt ? { updatedAt: user.updatedAt } : {}) }
+}
+
+function hostedInvite(invite: TenantInvite): Record<string, unknown> {
+  return {
+    id: invite.id,
+    communityId: invite.communityId,
+    role: invite.role,
+    mode: invite.mode,
+    createdBy: invite.createdBy,
+    createdAt: invite.createdAt,
+    ...(invite.expiresAt ? { expiresAt: invite.expiresAt } : {}),
+    uses: invite.uses,
+    ...(invite.maxUses !== null ? { maxUses: invite.maxUses } : {}),
+    ...(invite.revokedAt ? { revokedAt: invite.revokedAt } : {}),
+  }
 }
 
 function hostedCommunitySummary(database: DatabaseSync, communityId: string, userId: string): Record<string, unknown> {
@@ -393,7 +420,7 @@ export function createApi(database: DatabaseSync, options: ApiOptions = {}): Hon
     /* Hosted issue #1 routes have their own global-user authentication and
        must remain reachable on a fresh, unseeded database. */
     const hostedPath = context.req.path
-    if (hostedPath === "/api/users" || hostedPath === "/api/session"
+    if (hostedPath === "/api/users" || hostedPath === "/api/users/me" || hostedPath === "/api/session"
       || hostedPath === "/api/invites/redeem" || hostedPath.startsWith("/api/communities")) return next()
     if (!requireMembership) return next()
     const path = context.req.path
@@ -487,6 +514,22 @@ export function createApi(database: DatabaseSync, options: ApiOptions = {}): Hon
     }
   })
 
+  app.patch("/api/users/me", async (context) => {
+    try {
+      const user = hostedUser(context, database)
+      const body = parseInput(updateUserInputSchema, await context.req.json<unknown>()) as { displayName: string }
+      const updated = updateTenantUser(database, user.id, body.displayName)
+      for (const community of listTenantCommunities(database, updated.id)) {
+        tenantEvent(community.id, "membership.updated", {
+          membership: hostedMembership(database, community.id, updated.id),
+        })
+      }
+      return context.json(hostedUserProjection(updated))
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
   app.get("/api/session", (context) => {
     try {
       const user = hostedUser(context, database)
@@ -509,11 +552,25 @@ export function createApi(database: DatabaseSync, options: ApiOptions = {}): Hon
     }
   })
 
+  const hostToken = options.runnerHostToken ?? process.env.ADA_RUNNER_HOST_TOKEN
+  const agentDefaults = { runtime: options.agentRuntime ?? (process.env.ADA_RUNTIME === "codex" ? "codex" : "claude") as "claude" | "codex", model: options.agentModel ?? process.env.ADA_MODEL ?? "default" }
+  app.post("/api/runner-host/enroll", bodyLimit({ maxSize: 6_000_000 }), async (context) => {
+    if (!hostToken || hostToken.length < 32 || !safeEqual(bearerToken(context) ?? "", hostToken)) return context.json({ error: "Not authorized" }, 401)
+    context.header("Cache-Control", "no-store")
+    try {
+      const input = runnerHostRequestSchema.parse(await context.req.json())
+      const agents = enrollRunnerHost(database, input.enrollments, agentDefaults)
+      const known = new Map(input.enrollments.map((entry) => [entry.agentId, entry.runnerToken]))
+      for (const agent of agents) if (known.get(agent.agentId) !== agent.runnerToken) options.onTenantAgentRevoked?.(agent.agentId, agent.communityId)
+      return context.json({ agents })
+    } catch { return context.json({ error: "Invalid host enrollment" }, 400) }
+  })
+
   app.post("/api/communities", async (context) => {
     try {
       const user = hostedUser(context, database)
-      const body = parseInput(createCommunityInputSchema, await context.req.json<unknown>()) as { name: string; term: string }
-      const community = createTenantCommunity(database, user.id, body.name, body.term)
+      const body = parseInput(createCommunityInputSchema, await context.req.json<unknown>()) as { name: string; term: string; starterAgents?: boolean }
+      const community = createTenantCommunity(database, user.id, body.name, body.term, body.starterAgents ? agentDefaults : undefined)
       const summary = hostedCommunitySummary(database, community.id, user.id)
       const { membership: _membership, ...record } = summary
       tenantEvent(community.id, "community.updated", { community: record })
@@ -589,8 +646,28 @@ export function createApi(database: DatabaseSync, options: ApiOptions = {}): Hon
     try {
       const { user, communityId } = hostedMember(context)
       const body = parseInput(createInviteInputSchema, await context.req.json<unknown>()) as { role: "teacher" | "student"; mode: "single-use" | "reusable"; maxUses?: number; expiresAt?: string }
-      const invite = createTenantInvite(database, communityId, user.id, body.role, body.mode === "single-use" ? 1 : body.maxUses ?? null, body.expiresAt)
-      return context.json({ invite: { id: invite.id, communityId, role: invite.role, mode: body.mode, createdBy: invite.createdBy, createdAt: invite.createdAt, ...(invite.expiresAt ? { expiresAt: invite.expiresAt } : {}), uses: invite.uses, ...(invite.maxUses !== null ? { maxUses: invite.maxUses } : {}) }, code: invite.code }, 201)
+      const invite = createTenantInvite(database, communityId, user.id, body.role, body.mode, body.mode === "single-use" ? 1 : body.maxUses ?? null, body.expiresAt)
+      return context.json({ invite: hostedInvite(invite), code: invite.code }, 201)
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.get("/api/communities/:communityId/invites", (context) => {
+    try {
+      const { user, communityId } = hostedMember(context)
+      return context.json(listTenantInvites(database, communityId, user.id).map(hostedInvite))
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.delete("/api/communities/:communityId/invites/:inviteId", (context) => {
+    try {
+      const { user, communityId } = hostedMember(context)
+      const inviteId = context.req.param("inviteId")
+      if (!inviteId) throw new WorkspaceError("invalid_input", "inviteId is required", "inviteId")
+      return context.json(hostedInvite(revokeTenantInvite(database, communityId, user.id, inviteId)))
     } catch (error) {
       return errorResponse(context, error)
     }
@@ -605,7 +682,7 @@ export function createApi(database: DatabaseSync, options: ApiOptions = {}): Hon
       const communityId = redeemed.membership.communityId
       const membership = hostedMembership(database, communityId, user.id)
       if (redeemed.consumed) tenantEvent(communityId, "membership.created", { membership })
-      return context.json({ community: hostedCommunitySummary(database, communityId, user.id), membership })
+      return context.json({ community: hostedCommunitySummary(database, communityId, user.id), membership, consumed: redeemed.consumed })
     } catch (error) {
       return errorResponse(context, error)
     }
@@ -616,6 +693,21 @@ export function createApi(database: DatabaseSync, options: ApiOptions = {}): Hon
       const { user, communityId } = hostedMember(context)
       const members = listTenantMembers(database, communityId, user.id)
       return context.json(members.map((member) => ({ id: `${communityId}:${member.id}`, userId: member.id, communityId, role: member.role, status: "active", joinedAt: member.createdAt, user: hostedUserProjection(member) })))
+    } catch (error) {
+      return errorResponse(context, error)
+    }
+  })
+
+  app.patch("/api/communities/:communityId/members/:userId", async (context) => {
+    try {
+      const { user, communityId } = hostedMember(context)
+      const targetId = context.req.param("userId")
+      if (!targetId) throw new WorkspaceError("invalid_input", "userId is required", "userId")
+      const body = parseInput(updateMembershipRoleInputSchema, await context.req.json<unknown>()) as { role: "teacher" | "student" }
+      updateTenantMembershipRole(database, communityId, user.id, targetId, body.role)
+      const membership = hostedMembership(database, communityId, targetId)
+      tenantEvent(communityId, "membership.updated", { membership })
+      return context.json(membership)
     } catch (error) {
       return errorResponse(context, error)
     }
@@ -670,8 +762,8 @@ export function createApi(database: DatabaseSync, options: ApiOptions = {}): Hon
   app.post("/api/communities/:communityId/channels", async (context) => {
     try {
       const { user, communityId } = hostedMember(context)
-      const body = parseInput(createCommunityChannelInputSchema, await context.req.json<unknown>()) as { name: string; description?: string; kind: "channel"; visibility: "public" | "private" }
-      const channel = createTenantChannel(database, communityId, user.id, { name: body.name, description: body.description, visibility: body.visibility === "public" ? "open" : "private", memberIds: [user.id] })
+      const body = parseInput(createCommunityChannelInputSchema, await context.req.json<unknown>()) as { name: string; description?: string; kind: "channel"; visibility: "public" | "private"; memberIds?: string[]; agentIds?: string[] }
+      const channel = createTenantChannel(database, communityId, user.id, { name: body.name, description: body.description, visibility: body.visibility === "public" ? "open" : "private", memberIds: body.memberIds, agentIds: body.agentIds })
       const projected = hostedChannel(database, channel)
       tenantEvent(communityId, "channel.created", { channel: projected })
       tenantEvent(communityId, "directory.updated", { channels: listTenantChannelDirectory(database, communityId, user.id), agents: hostedDirectoryAgents(database, communityId, user.id, options.hostedPresence) })
@@ -698,8 +790,8 @@ export function createApi(database: DatabaseSync, options: ApiOptions = {}): Hon
   app.patch("/api/communities/:communityId/channels/:channelId", async (context) => {
     try {
       const { user, communityId } = hostedMember(context)
-      const body = parseInput(updateCommunityChannelInputSchema, await context.req.json<unknown>()) as { name?: string; description?: string | null; visibility?: "public" | "private"; status?: "active" | "archived" }
-      const channel = updateTenantChannel(database, communityId, user.id, context.req.param("channelId"), { name: body.name, description: body.description, visibility: body.visibility ? body.visibility === "public" ? "open" : "private" : undefined, status: body.status })
+      const body = parseInput(updateCommunityChannelInputSchema, await context.req.json<unknown>()) as { name?: string; description?: string | null; visibility?: "public" | "private"; status?: "active" | "archived"; memberIds?: string[]; agentIds?: string[] }
+      const channel = updateTenantChannel(database, communityId, user.id, context.req.param("channelId"), { name: body.name, description: body.description, visibility: body.visibility ? body.visibility === "public" ? "open" : "private" : undefined, status: body.status, memberIds: body.memberIds, agentIds: body.agentIds })
       const projected = hostedChannel(database, channel)
       tenantEvent(communityId, channel.status === "archived" ? "channel.archived" : "channel.updated", { channel: projected })
       tenantEvent(communityId, "directory.updated", { channels: listTenantChannelDirectory(database, communityId, user.id), agents: hostedDirectoryAgents(database, communityId, user.id, options.hostedPresence) })
@@ -748,7 +840,7 @@ export function createApi(database: DatabaseSync, options: ApiOptions = {}): Hon
     try {
       const { user, communityId } = hostedMember(context)
       const body = parseInput(createCommunityAgentInputSchema, await context.req.json<unknown>()) as { name: string; avatarUrl?: string | null; instructions: string; runtime: "claude" | "codex"; model: string; channelIds: string[] }
-      const result = createTenantAgent(database, communityId, user.id, body)
+      const result = createTenantAgent(database, communityId, user.id, hostToken ? { ...body, ...agentDefaults } : body)
       const agent = hostedAgent(result.agent, user.id, database)
       tenantEvent(communityId, "agent.created", { agent })
       tenantEvent(communityId, "directory.updated", { channels: listTenantChannelDirectory(database, communityId, user.id), agents: hostedDirectoryAgents(database, communityId, user.id, options.hostedPresence) })
@@ -771,7 +863,7 @@ export function createApi(database: DatabaseSync, options: ApiOptions = {}): Hon
     try {
       const { user, communityId } = hostedMember(context)
       const body = parseInput(updateCommunityAgentInputSchema, await context.req.json<unknown>()) as { name?: string; avatarUrl?: string | null; instructions?: string; runtime?: "claude" | "codex"; model?: string; channelIds?: string[] }
-      const agent = updateTenantAgent(database, communityId, user.id, context.req.param("agentId"), body, options.hostedPresence)
+      const agent = updateTenantAgent(database, communityId, user.id, context.req.param("agentId"), hostToken ? { ...body, ...agentDefaults } : body, options.hostedPresence)
       const projected = hostedAgent(agent, user.id, database)
       tenantEvent(communityId, "agent.updated", { agent: projected })
       tenantEvent(communityId, "directory.updated", { channels: listTenantChannelDirectory(database, communityId, user.id), agents: hostedDirectoryAgents(database, communityId, user.id, options.hostedPresence) })

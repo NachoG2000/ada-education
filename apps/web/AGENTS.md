@@ -1,23 +1,48 @@
 # apps/web — the web client
 
-## Current workspace (2026-09-03)
+## Current workspace (2026-09-04)
 
-`App.tsx` mounts `HostedApp` for the product and keeps only the developer-only `#figures` hash. `components/hosted.tsx` is the responsive default-shadcn Buzz-shaped surface: account/onboarding gates, community rail, channel/DM sidebar, channel conversation, desktop or overlay thread, members, invites and agent setup. Dedicated Modules, My study, Inbox, standalone Agents/Settings and Card File pages are not mounted.
+`App.tsx` mounts `HostedApp` inside the supported TanStack Router/Vite setup and keeps only the developer-only `#figures` hash outside the product routes. `components/hosted.tsx` owns account restoration, the one-time token gate, and zero-community onboarding. `components/hosted-surface.tsx` adapts the viewer-filtered hosted snapshot into `CommunityProvider`; `components/workspace/shell.tsx` composes the conditional community rail, course sidebar, routed working surface, and one thread/channel/agent auxiliary surface. `lib/hosted-api.ts` remains the Zod-validated REST/WS boundary.
 
-`components/hosted.tsx` and `lib/hosted-api.ts` own the mounted hosted workspace: global identity, community switching, channels, DMs, members, invites, agents, messages and threads. REST carries mutations and the first WebSocket frame authenticates the user; subsequent server events are viewer-scoped. The old `components/ada`, Modules, My study and card-file screens remain as unmounted implementation history. UI primitives come from shadcn/Base UI; use their supported APIs when composing triggers.
+Mounted routes are `/`, `/join`, `/c/:communityId`, channel and thread routes, `/messages/new`, `/agents[/agentId]`, and `/settings?section=…`. Root/incomplete community routes restore the last valid joined channel, fall back to the first joined channel, or show the empty Inbox when that community has none. Reload and back/forward preserve channel, thread, agent, and Settings state. Settings section changes replace the current history entry.
 
-The pre-08/24 descriptions below document retained data/error-boundary behavior and retired implementation history. Where they describe the mounted shell, routes or hand-written event union, this section supersedes them.
+Buzz is the **interaction** reference only. Keep the presentation deliberately simple: official default-shadcn/Base UI primitives, neutral flat surfaces, normal borders/spacing, plain initial or image avatars, and ordinary responsive sheets. Do not add Buzz gradients, inset-window framing, decorative avatars, or other visual imitation. Creation and quick-edit flows use dialogs, management uses routes or one auxiliary panel, identities use popovers, and message actions use hover/focus controls. Use `render` when composing Base UI triggers so interactive elements are never nested.
 
-**Today:** the SPA runs connected by default: `.env` sets `VITE_ADA_SERVER=/`, which rides the Vite proxy into `apps/server`. With no stored identity, the hosted shell asks for a display name; the browser stores the user token locally. REST reads/mutations and authenticated first-frame WebSocket events keep the active community snapshot current. The mounted surface includes the community rail, channel/DM sidebar, chat composer with mention suggestions, thread panel, roster, channel/invite/agent management, one-time runner setup command, and responsive shadcn sheets. There is no synthetic `dev:demo` mode and no mounted card UI. The former card-file, Modules, and My study components are retained as unmounted implementation history.
+The retained fixture/hash client is documented separately under `docs/history/`; this guide describes the mounted product.
 
-There is no router dependency: `App.tsx` only distinguishes `#figures` from the hosted workspace. The hosted surface uses local component state plus a validated community snapshot; the older `lib/community.tsx` context belongs to unmounted history. Shadcn primitives live in `components/ui/`, and hosted network contracts come from `@ada/protocol`. Full detail is in the root `AGENTS.md` → Architecture.
+**Today:** the SPA runs connected by default: `.env` sets `VITE_ADA_SERVER=/`, which rides the Vite proxy into `apps/server`. With no stored identity, the hosted shell asks for a display name; the browser stores the user token locally after explicit backup acknowledgement. REST mutations and authenticated first-frame WebSocket events keep the active community snapshot current. The mounted surface includes role-aware community switching, channel browse/create/settings, member and invite management, routed Agents and Settings, user-agent DMs with teacher-visible privacy, message edit/delete/thread/mention behavior, command search, one-time runner enrollment, and responsive split/overlay panels. Card publication events are intentionally ignored by the mounted UI. There is no synthetic `dev:demo` mode, message search, reaction/attachment UI, or mounted card UI. The former card-file, Modules, My study, and older hosted component implementations are retained as unmounted history.
 
 **Local production:** after `npm run build`, `apps/server` serves `apps/web/dist` same-origin (`apps/server/src/static.ts`). `VITE_ADA_SERVER=/` also sends development requests through Vite's proxy; if the variable is absent, the mounted hosted client still defaults to the page origin.
 
-**Membership (2026-08-23, `DECISIONS.md` §20):** against a gated server, `fetchCommunity`'s 401 becomes the `join` phase instead of an error: `components/ada/join.tsx` shows the course's public face (`GET /api/course`) and either a name form (the tab arrived by an invite link, `#join?token=…`) or an owner-token form (claims the teacher). Success stores `localStorage["ada:token"]` next to `ada:me`; `lib/auth.ts` owns the token and `authHeaders()` rides every fetch (empty when there's no token, so ungated dev is byte-identical); the WS URL carries `?token=`. `switchPerson` clears the token too. The teacher's sidebar footer gains "Invite a student" (mints a single-use link via `POST /api/invites` and puts the full URL on the clipboard). `member.joined` events fold the new student into the snapshot live.
+## Retained implementation history
 
-**How it grows (don't implement without a spec):** per `openspec/changes/demo-local-backend/specs/web-client/`. Later (inspiration, not code: `docs/usecases-api.html`): agent creation from the UI, invite-link identity, Tauri packaging. (Live presence is already in — see "Today" — this list previously said otherwise; that was stale.)
+The fixture client, `lib/api.ts`, `lib/auth.ts`, `lib/demo.ts`, Modules
+(`#modules`), My study (`#home`), and card-file components remain in the
+source tree but are not mounted by the product router. Some shared
+components/providers are used by both paths; do not classify whole folders
+as retired without checking their imports. The old `ada:token` and
+`components/ada/join.tsx` flow is documented in
+[the historical web guide](../../docs/history/web-client-2026-08.md).
 
-**Modules and study (2026-08-23, DECISIONS.md §16):** the hash also carries two role screens, independent of the contextual panel — `#modules` (teacher, `screens/Modules.tsx` → `ModulesScreen`) and `#home` (student, `screens/Study.tsx` → `StudyScreen`); anything else is the channel screen. `screens/Channel.tsx` reads `view` from the context and gates by role at the top of the component: a student on `#modules` or a teacher on `#home` gets `location.replace`d to their own screen (in an effect), and the safer screen (home) renders in the meantime so the wrong role never even flashes the other one. The contextual panel (`PanelStack`) is shared unchanged by all three. `useCommunity()` grew: `view` (`"channel" | "modules" | "home"`, from the hash via `useSyncExternalStore`); `showChannel(id)` (switches to the channel screen and shows this channel, clearing the hash without a history entry); `goTo("modules" | "home")`; `switchPerson()` (forgets `localStorage["ada:me"]`, reloads into the picker); the REST wrappers `uploadMaterial(moduleId, input)`, `patchModule(moduleId, input)`, `reconcileReport(reportId, input)` (reject in demo; `useConnectedCommunity` adds `authorId` from the local identity when connected — mirrors `sendMessage`); `moduleCards(moduleId)` (a module's cards, oldest first, base docs excluded); `myFeedback()` (feedback addressed to me, newest first); `presenceOf(memberId)` (a member's live presence, `"away"` for an id that doesn't resolve). `AppSidebar` puts the role's landing entry (`RoleEntry`: "Modules" for a teacher, "My study" for a student) above the Course drawer, routes channel clicks through `showChannel`, lists a private channel only to its own members, and the footer member button is a real `<button title="Switch person">` wired to `switchPerson`. `Composer` (`components/ada/channel.tsx`) gained `channelId` (target channel, defaults to the active one — lets it post outside the open channel, e.g. the student's private channel from the study screen), `suggestions` (a row of pill chips above the field; clicking one fills the field and focuses it) and `autoFocus`.
+## Verification and growth
 
-Local rules: prefer product composition in `components/workspace/` or `components/ada/`; change `components/ui/` only to correct or install an official primitive. A broken id in `demo.ts` still takes down the row or panel that uses it (the lookups throw; boundaries contain the failure). Everything is English.
+Run `npm run typecheck:web`, `npm run lint`, and `npm run build` while
+iterating; `npm run check` is the complete repository gate. Route source
+files belong under `src/routes/`; Vite generates `src/routeTree.gen.ts`.
+Verify teacher/student capabilities, reload/history, and narrow-browser
+behavior for interface changes. The automated suite does not exercise the
+browser.
+
+New memory surfaces require an explicit scope/design change. Agent creation,
+invites, live presence, Agents, and Settings already exist. Product composition
+belongs in `components/workspace/`; modify `components/ui/` only to install
+or correct official primitives. Preserve the paused Card File implementation.
+
+## Automatic agent experience (2026-09-06)
+
+The mounted agent flow now asks for template, name, rules, and channels only.
+Creation opens details without enrollment. Agent details have About and Danger
+sections; runtime/model/setup controls are no longer mounted. The host connects
+agents automatically. UI-created communities request tutor/curator starters.
+Offline details explain the shared installation connection. Older enrollment
+components remain unmounted history. See `DECISIONS.md` §25.

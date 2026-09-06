@@ -66,8 +66,8 @@ try {
   check(created.enrollment.setupCommand.includes("--token '") && !created.enrollment.setupCommand.includes("API_KEY"), "setup command is shell-safe and contains no provider credential")
   const agentId = created.agent.id
 
-  const editedAgent = updateAgent(database, "teacher", agentId, { description: "Updated", figureSeed: "rerolled" })
-  check(editedAgent.description === "Updated" && editedAgent.figureSeed === "rerolled", "teacher can update agent configuration")
+  const editedAgent = updateAgent(database, "teacher", agentId, { description: "Updated", avatarUrl: "https://example.com/guide.png", figureSeed: "rerolled" })
+  check(editedAgent.description === "Updated" && editedAgent.avatarUrl === "https://example.com/guide.png" && editedAgent.figureSeed === "rerolled", "teacher can update agent configuration")
   const inactive = updateAgent(database, "teacher", agentId, { status: "inactive" })
   check(inactive.status === "inactive" && (database.prepare("SELECT token FROM members WHERE id = ?").get(agentId) as { token?: unknown }).token === null, "deactivation clears the token and preserves identity")
   const active = updateAgent(database, "teacher", agentId, { status: "active" })

@@ -1,10 +1,45 @@
 # Product
 
-> Product document (direction and ideas): describes the complete product, including what doesn't exist yet. **It does not represent the current code.** Actual state: `AGENTS.md`. Current scope: GitHub issue #1 and `DECISIONS.md` §22.
+> Product document (direction and ideas): describes the complete product, including what doesn't exist yet. **It does not represent the current code.** Actual state: `AGENTS.md`. Current scope: `DECISIONS.md` §22–§24; the current contract below takes precedence over the preserved product direction.
 
-> **Issue #1 implementation boundary (2026-09-03):** the visible product is the default shadcn Buzz-shaped community workspace: one global user identity, many communities with a role per membership, channels, DMs, members, invites, agents, messages, threads and runner setup. Cards remain backend memory with no card UI in this phase. Modules, My study, Inbox and standalone Agents/settings explorations below are retained product direction/history, not mounted routes.
+## Current product contract (2026-09-05)
 
-> **Current visible product, 2026-08-24 (`DECISIONS.md` §21):** a responsive, chat/configuration-first workspace adapted from Buzz desktop: Inbox, Course/Work/Private channels, messages and threads, command search, channel management, Agents and scoped Settings. Dedicated Modules, My study and Card File pages are retired from navigation; their persisted knowledge pipeline remains behind inline citations and publication messages. This note supersedes older page/layout/mobile/theme statements below, not the underlying course-memory model.
+The mounted product is the default-shadcn hosted community workspace with
+TanStack Router. A global user has teacher/student memberships across
+communities. Account backup/restoration, community and channel management,
+invites, member roles, agent enrollment, routed channels/threads/DMs/Agents/
+Settings, mentions, and live messages are implemented.
+
+User-agent DMs are visible to the participant and to teachers; teacher views
+are read-only and student views disclose that access. These DMs do not
+implement the teacher-inaccessible personal wiki envisioned in earlier
+product direction.
+
+Navigation search covers channels, DMs, people, agents, and available
+actions. Messages, card-memory search, notifications, reactions,
+attachments, grading, and work-channel lifecycle remain outside scope.
+Cards remain backend memory: the mounted UI ignores their publication
+events. Modules and My study are retained unmounted history. Empty Inbox is
+a fallback when a community has no joined channels, not a notification feed.
+
+Use plain neutral surfaces and initial/image avatars. Buzz defines
+interaction patterns, not decorative styling. The current visual contract
+is in `DESIGN.md`, "Current visible workspace — issues #1/#3/#4".
+
+Repository consolidation improves setup, documentation, and verification;
+it adds no product capabilities. A course-memory interface needs a separate
+scope/design change. See `docs/architecture.md` for current entry points.
+
+## Preserved product direction and earlier boundaries
+
+The following dated notes and sections preserve the expanded vision and
+previous UI contracts. They do not override the current contract above;
+references to personal agents, card screens, reports, and special channel
+types describe future or retired work unless explicitly included above.
+
+> **Historical issue #1 boundary (2026-09-03):** the visible product is the default shadcn Buzz-shaped community workspace: one global user identity, many communities with a role per membership, channels, DMs, members, invites, agents, messages, threads and runner setup. Cards remain backend memory with no card UI in this phase. Modules, My study, Inbox and standalone Agents/settings explorations below are retained product direction/history, not mounted routes.
+
+> **Historical visible product, 2026-08-24 (`DECISIONS.md` §21):** a responsive, chat/configuration-first workspace adapted from Buzz desktop: Inbox, Course/Work/Private channels, messages and threads, command search, channel management, Agents and scoped Settings. Dedicated Modules, My study and Card File pages are retired from navigation; their persisted knowledge pipeline remains behind inline citations and publication messages. This note supersedes older page/layout/mobile/theme statements below, not the underlying course-memory model.
 
 <!-- impeccable:product-schema 1 -->
 
@@ -88,3 +123,11 @@ Demo success: a first-time viewer sees, without explanation, that (1) agents are
 ## Accessibility & Inclusion
 
 No specific requirement established beyond good web practices. Content and UI in English.
+
+## Agent experience update (2026-09-06; DECISIONS.md §25)
+
+An agent is configured by its name, rules, and channels. Ada connects it
+automatically using installation configuration. The mounted flow has no
+runtime/model picker, credential input, or runner setup step. New communities
+start with editable tutor and curator agents. Direct messages address the
+agent implicitly; shared channels use mentions.

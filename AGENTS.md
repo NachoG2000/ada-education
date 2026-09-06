@@ -6,13 +6,17 @@ Repo rules for any agent working here (Claude Code, Codex, Cursor, whichever). `
 
 **Ada** (working name "Ada Education"): a course community where humans and AI agents share channels and knowledge compiles itself into **cards** (markdown pages with a type, a version, sources and "replaces"). **Open source (Apache-2.0)** for **organizations that run cohort-based courses — bootcamps, academies, corporate training programs, universities**; no specific organization is named in this repo (`DECISIONS.md` §19).
 
-**Current scope (`DECISIONS.md` §22, 09/03; GitHub issue #1):** a hosted-service demo foundation with global users, role-bearing memberships across multiple communities, UI-created communities/channels/members/agents, local Claude/Codex subscription runners, and Buzz's shell in default shadcn styles. The local TypeScript server + SQLite + external runner topology from §14 stays. There is no cards UI, Modules, My study, Inbox, standalone Agents page, or broad Settings area in this phase.
+**Current scope (`DECISIONS.md` §22–§24; GitHub issues #1, #3 and #4):** a hosted-service demo foundation with global users, role-bearing memberships across multiple communities, UI-created communities/channels/members/agents, local Claude/Codex subscription runners, route-backed channels/threads/Agents/Settings, and Buzz's interaction grammar rendered with deliberately plain default-shadcn components. The local TypeScript server + SQLite + external runner topology from §14 stays. There is no cards UI, Modules, My study, broad search, notifications, reactions, or attachments in this phase.
 
-**Active change:** GitHub issue #1 moves the local demo to user accounts,
-multi-community memberships, UI-created communities/channels/agents, and local
-Claude/Codex runners. The issue and `DECISIONS.md` §22 are the scope contract.
+**Foundation status:** the Buzz interaction parity and Ada-only QA from
+issues #3/#4 are complete and consolidated. The change is archived at
+`openspec/changes/archive/2026-09-05-buzz-interaction-parity/`; current
+requirements live in `openspec/specs/`. `DECISIONS.md` §23–§24 and
+`research/2026-09-05-repository-consolidation.md` record the baseline and
+verification. The older demo plan retains historical unchecked items;
+`openspec/README.md` explains why it is not the expansion backlog.
 
-**Actual state of the code today:** a Vite + React 19 SPA (`apps/web/`) with a responsive default-shadcn Buzz-style workspace: community switcher, channels, private user-agent DMs, live messages/threads, members, invites and agent setup. `#home` and `#modules` and the old card UI remain only as unmounted implementation history. Connected mode uses real tenant-scoped REST/first-frame WS mutations; there is no `dev:demo` mode. The Hono/SQLite server owns global users, memberships, communities, channels, agents, messages, DMs, viewer-filtered snapshots and channel-authorized events. `packages/protocol/` owns shared Zod inputs/events and `packages/runner/` provides Claude/Codex subscription adapters. Cards remain backend memory without mounted card UI. Read `DECISIONS.md` §14, §21 and §22 before touching architecture, agent memory or scope.
+**Actual state of the code today:** a Vite + React 19 SPA (`apps/web/`) with TanStack Router and a responsive three-ring workspace: conditional community rail, course sidebar, routed channel/DM/Agents/Settings surfaces, and split-or-overlay thread/channel/agent context. Buzz is only the interaction reference; the mounted look is ordinary default shadcn with neutral surfaces and no Buzz gradient, inset-window, or decorative avatar treatment. Account backup/sign-out gates, role-aware community/channel/invite/member/agent flows, private user-agent DMs, teacher read-only student conversations, live messages/threads, mentions, and automatically connected agents are mounted. `#home`, `#modules`, and the old card UI remain only as unmounted implementation history. Connected mode uses real tenant-scoped REST/first-frame WS mutations; there is no `dev:demo` mode. The Hono/SQLite server owns global users, memberships, communities, channels, agents, messages, DMs, viewer-filtered snapshots and channel-authorized events. `packages/protocol/` owns shared Zod inputs/events and `packages/runner/` provides Claude/Codex subscription adapters. Cards remain backend memory without mounted card UI. Read `DECISIONS.md` §14, §21, §22 and §23 before touching architecture, agent memory or scope.
 
 **Every area of the repo has its own short `AGENTS.md`** with what it is today and how it grows tomorrow (`apps/web/`, `docs/`, and every new workspace must bring its own). If you touch an area, keep its file up to date.
 
@@ -22,7 +26,8 @@ Documents of truth, in order of authority:
 - `PRODUCT.md` — users, fixed terminology, states that must be visible, brand constraints.
 - `DESIGN.md` — "The card file" design system (tokens, typography, named rules). The real tokens live in `apps/web/src/index.css` and may differ in detail; the code wins.
 - `research/` — research with sources, one file per session. Backing for `PROBLEM.md`; not an authority by itself.
-- `openspec/` — older specifications and archived change history.
+- `openspec/specs/` — current interaction contracts; `openspec/README.md` distinguishes these from implementation history.
+- `docs/architecture.md` — the mounted implementation map; `docs/README.md` indexes current guides and history.
 - `docs/*.html` — **future inspiration** (full architecture, use cases, expanded API). They don't describe the current code; where they contradict the code or the spec, those win.
 - `design/BRIEF.md` and `design/mockups/` — history, not authority. The HTML mockups are discarded.
 
@@ -51,11 +56,15 @@ How an agent applies this:
 Monorepo with **npm workspaces** (no Turborepo): `apps/web` (SPA), `apps/server` (local API), `packages/runner` (local subscription runner), `packages/protocol` (shared types and events), `data/<course>/` (legacy fixture courses), `deploy/` (retained pre-issue deployment history; deployment is outside issue #1). Every area has its `AGENTS.md`.
 
 ```bash
-npm install            # once, at the root (installs all workspaces)
-npm run seed           # loads data/neural-networks-2026 into the local DB
+npm ci                 # Node 24; install the locked root workspaces
+npm run seed           # optional legacy fixture import; does not populate hosted communities
 npm run dev            # fresh web + server → http://localhost:5173 (proxied to :8787)
-npm run runner         # opt-in hosted runner; use the one-time setup command from the UI
-npm run check:issue1   # protocol, server tenant-flow, and runner-provider checks
+npm run runner:host    # installation host (already started by npm run dev)
+npm run runner         # retained manual per-agent runner
+npm run check          # complete local/CI gate: lint, docs, hosted, and legacy
+npm run check:hosted   # all TypeScript, hosted REST/WS, providers, and web build
+npm run check:legacy   # retained fixture, migration, gated, and smoke checks
+npm run check:issue1   # compatibility alias for check:hosted
 npm run dev:web        # SPA only, with HMR → http://localhost:5173
 npm run dev:server     # server only → http://localhost:8787
 npm run check -w @ada/server # server typecheck
@@ -63,22 +72,25 @@ npm run smoke          # WS/REST smoke test against a throwaway copy of the cour
 npm run check:gated -w @ada/server  # membership gating end to end: claim, invites, token-derived authorship, WS auth, remote material sync (throwaway copy)
 npm run check:workspace # migration/reseed, private access, channel/agent/message/attachment API invariants (throwaway data)
 npm run build          # tsc -b && vite build of apps/web → apps/web/dist/
-npm run lint           # oxlint over apps and packages; known warnings: only-export-components (card.tsx, ui/sidebar.tsx, community.tsx, identity.tsx, tabs.tsx, button.tsx) and one set-state-in-effect (community.tsx)
-npm run typecheck      # tsc -b apps/web (noUnusedLocals/Parameters active: one unused variable breaks the build)
+npm start              # API + built SPA at :8787, without a watcher
+npm run check:docs     # current and historical documentation contracts
+npm run lint           # oxlint over apps and packages; known warnings: only-export-components (card.tsx, ui/sidebar.tsx, community.tsx, identity.tsx, tabs.tsx, button.tsx) and set-state-in-effect (community.tsx, use-mobile.ts)
+npm run typecheck      # protocol, server, runner, and web TypeScript
+npm run typecheck:web  # web only (noUnusedLocals/Parameters active)
 cd apps/web && npx shadcn add <component>   # primitives into src/components/ui (base-nova style, Base UI, lucide icons)
 ```
 
-Targeted executable checks live under each workspace; there is no unit-test framework. Figure-generator dev screen: open `http://localhost:5173/#figures`.
+Contributor setup and validation live in `CONTRIBUTING.md`. CI installs with `npm ci` on Node 24 and runs `npm run check`; provider checks use fake binaries and never require model credentials. Targeted executable checks live under each workspace; there is no unit-test framework. Figure-generator dev screen: open `http://localhost:5173/#figures`.
 
 ## Architecture
 
-**Mounted web client.** `apps/web/src/App.tsx` mounts `HostedApp` for every normal URL and keeps only `#figures` as a developer screen. `components/hosted.tsx` owns account restoration, one-time token display, onboarding, community selection and the responsive workspace state. `lib/hosted-api.ts` is the Zod-validated REST/WS client. There is no product router and no synthetic demo mode. The older context, workspace, card, Modules and My study code is retained but unmounted.
+**Mounted web client.** `main.tsx` mounts the TanStack Router from `router.tsx`; `App.tsx` selects `HostedApp` and retains only `#figures` as a developer screen. `components/hosted.tsx` owns account restoration, one-time token display and zero-community onboarding. `components/hosted-surface.tsx` hydrates tenant data into the shared context; `components/workspace/shell.tsx` composes the routed workspace and auxiliary surface. `lib/hosted-api.ts` is the Zod-validated REST/WS client. There is no synthetic demo mode. The old fixture client, Modules, My study and card UI remain unmounted; shared workspace/context components are active. See `docs/architecture.md` for the entry-point map and `docs/history/` for older descriptions.
 
 **Hosted domain.** A `User` is global. A `Membership` joins that user to one `Community` with a teacher/student role. Every community resource carries a `communityId`: channels, user-agent DMs, agents, messages, threads, invitations, card records and runner presence. REST identifies the user from a bearer token and the tenant from `/api/communities/:communityId`; browser and runner sockets send credentials in their first frame. The server stores only SHA-256 token digests.
 
 **Persistence and projection.** `apps/server/src/migrations.ts` upgrades the SQLite file without requiring a seed. `tenant.ts` owns tenant-aware queries and lifecycle rules; `api.ts` owns authenticated REST; `ws.ts` filters each event for the receiving user or runner. Full history is returned only to channel members, agent DMs are visible to their user/agent pair plus teachers, and public directory entries reveal only browseable metadata. Legacy course/card/module tables and fixture import remain available behind the current UI.
 
-**Runner.** `packages/runner/src/cli.ts` consumes the UI-generated setup command, bootstraps an isolated agent workspace, connects outbound, authenticates in the first frame and processes mentions serially. `claude` and `codex` run through their own subscription-authenticated CLIs; Ada strips provider API-key environment variables and never receives provider credentials. Changed wiki markdown is published as backend cards through correlated runner acknowledgements.
+**Runner.** `packages/runner/src/host.ts` manages installation enrollment and workers; `packages/runner/src/cli.ts` bootstraps an isolated agent workspace, connects outbound, authenticates in the first frame and processes mentions serially. `claude` and `codex` run through their own subscription-authenticated CLIs; Ada strips provider API-key environment variables and never receives provider credentials. Changed wiki markdown is published as backend cards through correlated runner acknowledgements.
 
 **Shared contracts.** `packages/protocol/src/hosted.ts` is the issue #1 boundary for hosted inputs, safe projections, events and runner frames. Network payloads are parsed at the web and runner boundaries. Raw user, invite and runner tokens occur only in their creation/rotation response or auth frame, never in ordinary projections or events.
 
@@ -96,6 +108,14 @@ The Card File tokens, figures and named visual rules remain in `apps/web/src/ind
 - Backend is settled by §§14/21: the local TypeScript server + external runner stays; Buzz is only the UI/interaction reference.
 - Out of scope for now (don't build): granular permissions, submission grading, collaborative editing, vector/global search, billing, OAuth/email auth, hosted runners, notifications, work-channel lifecycle, or a separate mobile product. Multi-community tenancy and responsive web are implemented. Nor gamification or per-student algorithmic personalization: `PROBLEM.md` §9 explains why they miss the problem.
 
-## HTML docs
+## Human documentation
 
-`docs/` holds self-contained HTML pages (no build, open by double-click) that explain the system to people. They are **future inspiration**: they describe the full product, not today's code, and each says so in its banner. `docs/how-it-works.html` = the mental model (server / runner / runtime / folder, the sequence of a mention, isolation, tiers). `docs/usecases-api.html` = use cases and the expanded MVP API. If `DECISIONS.md` §14-§15 or the OpenSpec change moves, they're updated in the same task.
+`docs/README.md` indexes the current `architecture.md`, contributor guide, historical workspace descriptions, and future references. Keep the current map aligned with code.
+
+`docs/` also holds self-contained HTML pages (no build, open by double-click) that explain the system to people. They are **future inspiration**: they describe the full product, not today's code, and each says so in its banner. `docs/how-it-works.html` = the mental model (server / runner / runtime / folder, the sequence of a mention, isolation, tiers). `docs/usecases-api.html` = use cases and the expanded MVP API. If `DECISIONS.md` §14-§15 or the OpenSpec change moves, they're updated in the same task.
+
+**Current agent experience (§25, 2026-09-06):** create name/rules/channels and
+Ada connects it automatically. UI-created communities get two editable
+starter agents. Runtime/authentication are installation concerns. Read
+`docs/agent-host.md`; the retained manual enrollment endpoints are not the
+mounted product flow. `npm run dev` starts web, server, and agent host.
