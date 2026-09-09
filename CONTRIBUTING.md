@@ -13,7 +13,7 @@ dependencies and include the updated `package-lock.json`. Do not create
 workspace-local lockfiles.
 
 `npm run dev` starts the API, web client, and automatic agent host together.
-Sign in to Claude once on your machine to use agents; see `docs/agent-host.md`. `npm run seed` imports the
+Sign in to Pi once with `npm run pi` → `/login` → ChatGPT Plus/Pro (Codex) to use agents; see `docs/agent-host.md`. `npm run seed` imports the
 legacy course for compatibility work; it is not required for onboarding and
 does not populate the current hosted community model.
 

@@ -1,0 +1,2 @@
+# Preserve document fixtures as binary data, including PDF cross-reference offsets.
+*.pdf binary

@@ -1,18 +1,14 @@
-import { useState, type ReactNode } from "react"
+import { useState } from "react"
 import type { LucideIcon } from "lucide-react"
 import {
   ArrowLeftIcon,
-  AtSignIcon,
   BotIcon,
   CheckIcon,
   ChevronRightIcon,
   CommandIcon,
   ExternalLinkIcon,
-  HashIcon,
-  InboxIcon,
   LaptopIcon,
   MoonIcon,
-  MessageSquareTextIcon,
   MessageSquareIcon,
   PlusIcon,
   RefreshCwIcon,
@@ -35,116 +31,8 @@ import { useConversationSpacingPreferences, useThemePreferences, type ThemePrefe
 import { cn } from "@/lib/utils"
 import { useHostedWorkspace } from "./hosted-context"
 import type { Agent } from "@/lib/types"
+import { PageHeader, PageScroller } from "./page-layout"
 import { useClock } from "./use-clock"
-
-export function InboxPage() {
-  const { community, member, me, openThread } = useCommunity()
-  const navigateTo = useAppNavigation(community.id)
-  const activity = [...community.messages]
-    .filter((message) => !message.threadId && !message.deletedAt)
-    .sort((a, b) => b.at.localeCompare(a.at))
-    .slice(0, 12)
-  const unread = community.channels.filter((channel) => channel.unread && channel.status !== "archived")
-  const directed = [...community.messages]
-    .filter((message) => !message.deletedAt && message.authorId !== me.id)
-    .filter((message) => {
-      const text = message.paragraphs.flat().map((block) => block.text).join(" ").toLowerCase()
-      const mention = text.includes(`@${me.id.toLowerCase()}`) || text.includes(`@${me.name.toLowerCase()}`)
-      const reply = Boolean(message.threadId)
-      return mention || reply
-    })
-    .sort((a, b) => b.at.localeCompare(a.at))
-    .slice(0, 12)
-
-  const openActivity = (message: typeof community.messages[number]) => {
-    void navigateTo({ kind: "channel", channelId: message.channelId })
-    if (message.threadId) openThread(message.threadId)
-  }
-
-  return (
-    <PageScroller>
-      <PageHeader title="Inbox" description="Course activity that needs your attention." />
-      {unread.length ? (
-        <section aria-labelledby="inbox-unread" className="mt-7">
-          <h2 id="inbox-unread" className="text-sm font-semibold">Unread channels</h2>
-          <div className="mt-2 flex flex-col gap-1">
-            {unread.map((channel) => (
-              <button
-                key={channel.id}
-                type="button"
-                onClick={() => void navigateTo({ kind: "channel", channelId: channel.id })}
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-left outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <span className="flex size-8 items-center justify-center rounded-lg bg-muted"><HashIcon aria-hidden /></span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium">{channel.name}</span>
-                  <span className="block truncate text-xs text-muted-foreground">{channel.description || "Unread course conversation"}</span>
-                </span>
-                <span className="size-2 rounded-full bg-primary" aria-label="Unread" />
-              </button>
-            ))}
-          </div>
-        </section>
-      ) : null}
-
-      {directed.length ? (
-        <section aria-labelledby="inbox-directed" className="mt-8">
-          <h2 id="inbox-directed" className="text-sm font-semibold">Mentions & replies</h2>
-          <div className="mt-2 flex flex-col">
-            {directed.map((message, index) => {
-              const author = member(message.authorId)
-              const channel = community.channels.find((item) => item.id === message.channelId)
-              if (!channel) return null
-              return <div key={`directed-${message.id}`}>{index ? <Separator /> : null}<button type="button" onClick={() => openActivity(message)} className="flex w-full items-start gap-3 rounded-lg px-2 py-3 text-left outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"><span className="mt-1 flex size-7 shrink-0 items-center justify-center rounded-md bg-secondary text-secondary-foreground">{message.threadId ? <MessageSquareTextIcon aria-hidden /> : <AtSignIcon aria-hidden />}</span><span className="min-w-0 flex-1"><span className="flex items-baseline gap-2"><span className="truncate text-sm font-medium">{author.name}</span><span className="truncate text-xs text-muted-foreground">#{channel.name}</span></span><span className="mt-0.5 line-clamp-2 text-sm leading-5 text-muted-foreground">{messageText(message)}</span></span><ChevronRightIcon className="mt-2 size-4 shrink-0 text-muted-foreground" aria-hidden /></button></div>
-            })}
-          </div>
-        </section>
-      ) : null}
-
-      <section aria-labelledby="inbox-recent" className="mt-8">
-        <h2 id="inbox-recent" className="text-sm font-semibold">Recent activity</h2>
-        {activity.length ? (
-          <div className="mt-2 flex flex-col">
-            {activity.map((message, index) => {
-              const author = member(message.authorId)
-              const channel = community.channels.find((item) => item.id === message.channelId)
-              const preview = message.paragraphs.flat().map((block) => block.text).join(" ")
-              if (!channel) return null
-              return (
-                <div key={message.id}>
-                  {index ? <Separator /> : null}
-                  <button
-                    type="button"
-                    onClick={() => openActivity(message)}
-                    className="group flex w-full items-start gap-3 rounded-lg px-2 py-3 text-left outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    <MemberAvatar member={author} size={34} presence />
-                    <span className="min-w-0 flex-1">
-                      <span className="flex items-baseline gap-2">
-                        <span className="truncate text-sm font-medium">{author.name}</span>
-                        <span className="truncate text-xs text-muted-foreground">#{channel.name}</span>
-                      </span>
-                      <span className="mt-0.5 line-clamp-2 text-sm leading-5 text-muted-foreground">{message.deletedAt ? "Message deleted" : preview}</span>
-                    </span>
-                    <ChevronRightIcon className="mt-2 size-4 shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100" aria-hidden />
-                  </button>
-                </div>
-              )
-            })}
-          </div>
-        ) : (
-          <Empty className="mt-8">
-            <EmptyHeader>
-              <EmptyMedia variant="icon"><InboxIcon /></EmptyMedia>
-              <EmptyTitle>Your inbox is clear</EmptyTitle>
-              <EmptyDescription>New replies and course activity will appear here.</EmptyDescription>
-            </EmptyHeader>
-          </Empty>
-        )}
-      </section>
-    </PageScroller>
-  )
-}
 
 export function NewMessagePage() {
   const { community } = useCommunity()
@@ -195,10 +83,6 @@ export function NewMessagePage() {
   )
 }
 
-function messageText(message: { paragraphs: Array<Array<{ text: string }>> }): string {
-  return message.paragraphs.flat().map((block) => block.text).join(" ")
-}
-
 export function AgentsPage({ onCreateAgent, onSelectAgent }: { onCreateAgent: () => void; onSelectAgent: (agentId: string) => void }) {
   const { community, me } = useCommunity()
   const now = useClock()
@@ -226,13 +110,13 @@ export function AgentsPage({ onCreateAgent, onSelectAgent }: { onCreateAgent: ()
                   onClick={() => onSelectAgent(agent.id)}
                   className="group flex w-full items-center gap-4 px-4 py-3.5 text-left outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                 >
-                  <MemberAvatar member={agent} size={42} presence />
+                  <MemberAvatar member={agent} size={36} presence />
                   <span className="min-w-0 flex-1">
                     <span className="flex flex-wrap items-center gap-2">
                       <span className="truncate text-sm font-semibold">{agent.name}</span>
                       <Badge variant="outline">{agentStatusLabel(agent, now)}</Badge>
                     </span>
-                    <span className="mt-0.5 block line-clamp-1 text-xs text-muted-foreground">{agent.description || agent.instructions || "No description yet."}</span>
+                    <span className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{agent.description || agent.instructions || "No description yet."}</span>
                     <span className="mt-1 block text-xs text-muted-foreground">{agent.channelIds.length} channels</span>
                   </span>
                   <ChevronRightIcon className="size-4 shrink-0 text-muted-foreground opacity-60" aria-hidden />
@@ -478,18 +362,5 @@ function ShortcutSettings() {
         ))}
       </div>
     </>
-  )
-}
-
-function PageScroller({ children, wide = false }: { children: ReactNode; wide?: boolean }) {
-  return <main className="size-full overflow-y-auto px-4 py-7 sm:px-6 sm:py-8"><div className={cn("mx-auto w-full", wide ? "max-w-6xl" : "max-w-3xl")}>{children}</div></main>
-}
-
-function PageHeader({ title, description, action }: { title: string; description: string; action?: ReactNode }) {
-  return (
-    <header className="flex flex-wrap items-start justify-between gap-4">
-      <div className="min-w-0"><h1 className="text-2xl font-semibold tracking-[-0.025em]">{title}</h1><p className="mt-1 max-w-[68ch] text-sm leading-5 text-muted-foreground">{description}</p></div>
-      {action}
-    </header>
   )
 }

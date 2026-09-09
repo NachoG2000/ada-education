@@ -7,3 +7,7 @@ export * from "./events.js"
 export * from "./hosted.js"
 
 export * from "./agent-templates.js"
+
+export * from "./mentions.js"
+export * from "./education.js"
+export * from "./memory.js"

@@ -1,6 +1,20 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+import { readAdaContext, saveAdaContext } from "@/lib/ada-message-context"
+import { AdaMark, AdaWelcome } from "./ada-identity"
+import { createContext, useContext } from "react"
+import { ArtifactCard } from "./artifact-card"
+import { ArtifactMarkdown } from "./artifact-markdown"
+import { useEducationData } from "@/lib/use-education-data"
+import { readConsultation, clearConsultation, stageConsultation } from "@/lib/private-consultation"
+import { ComposerAgentActivity } from "./agent-activity"
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { resolveTextMentions } from "@ada/protocol"
+import type { Editor } from "@tiptap/react"
+import { MentionEditor } from "./mention-editor"
 import type { ChatStatus } from "ai"
 import {
+  FilesIcon,
+  LockIcon,
+  ExpandIcon,
   ArrowDownIcon,
   ArchiveIcon,
   AtSignIcon,
@@ -25,9 +39,7 @@ import {
   PromptInputBody,
   PromptInputButton,
   PromptInputFooter,
-  type PromptInputMessage,
   PromptInputSubmit,
-  PromptInputTextarea,
   PromptInputTools,
 } from "@/components/ai-elements/prompt-input"
 import { Badge } from "@/components/ui/badge"
@@ -64,12 +76,16 @@ import { WorkspaceAvatar as MemberAvatar } from "./workspace-avatar"
 import { cn } from "@/lib/utils"
 import { dayLabel, formatTime, useCommunity } from "@/lib/community"
 import { useAuxiliaryPreferences, useConversationSpacingPreferences } from "@/lib/preferences"
-import type { Channel, Member, Message, MessageBlock } from "@/lib/types"
+import type { Channel, Message, MessageBlock } from "@/lib/types"
 import { ChannelDetailsPanel, type ChannelAuxiliaryKind } from "./channel-details"
 import { MemberProfilePopover } from "./member-profile-popover"
 import { useHostedWorkspace } from "./hosted-context"
-import { useAppNavigation } from "@/lib/routes"
+import { useAppNavigation, useAppRoute } from "@/lib/routes"
 import { toast } from "@/components/ui/toast"
+
+const ArtifactsPanel = lazy(() => import("./artifacts").then((module) => ({ default: module.ArtifactsPanel })))
+
+const AskAdaContext = createContext<((message: Message) => void) | undefined>(undefined)
 
 interface ChannelWorkspaceProps {
   auxiliary?: ChannelAuxiliaryKind | null
@@ -77,13 +93,53 @@ interface ChannelWorkspaceProps {
   onSearchChannel: () => void
 }
 
-export function ChannelWorkspace({ auxiliary: channelAuxiliary, onAuxiliaryChange, onSearchChannel }: ChannelWorkspaceProps) {
+export function ChannelWorkspace(props: ChannelWorkspaceProps) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [narrow, setNarrow] = useState(true)
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+    const observer = new ResizeObserver(([entry]) => setNarrow(entry.contentRect.width < 840))
+    observer.observe(container)
+    return () => observer.disconnect()
+  }, [])
+  return <div ref={containerRef} className="size-full min-w-0"><ChannelWorkspaceContent {...props} narrowAuxiliary={narrow} /></div>
+}
+
+function ChannelWorkspaceContent({ auxiliary: channelAuxiliary, onAuxiliaryChange, onSearchChannel, narrowAuxiliary }: ChannelWorkspaceProps & { narrowAuxiliary: boolean }) {
   const community = useCommunity()
   const channel = community.community.channels.find((item) => item.id === community.activeChannelId)
   const threadPanel = community.panels[0]?.kind === "thread" ? community.panels[0] : undefined
-  const narrowAuxiliary = useNarrowAuxiliary()
   const auxiliary = useAuxiliaryPreferences()
   const { comfortable } = useConversationSpacingPreferences()
+  const hosted = useHostedWorkspace()
+  const route = useAppRoute()
+  const navigateTo = useAppNavigation(community.community.id)
+  const canReadArtifacts = Boolean(channel?.memberIds.includes(community.me.id) || channel?.kind === "dm")
+  const artifactChannelId = channel?.id
+  const loadArtifacts = useCallback(() => canReadArtifacts && artifactChannelId ? hosted.education.list(artifactChannelId) : Promise.resolve([]), [hosted.education, artifactChannelId, canReadArtifacts])
+  const artifacts = useEducationData(loadArtifacts)
+  const selectedArtifact = route.kind === "channel" ? route.artifactId : undefined
+  const selectArtifact = (id?: string) => { onAuxiliaryChange(null); void navigateTo({ kind: "channel", channelId: channel!.id, artifactId: id }) }
+  const [adaPanel, setAdaPanel] = useState<{ channelId: string; source: Message } | null>(null)
+  const [adaOpening, setAdaOpening] = useState(false)
+  const primaryAda = community.community.members.find((item) => item.kind === "agent" && item.systemRole === "ada")
+  const isAda = channel?.kind === "dm" && channel.agentId === primaryAda?.id
+  const askAda = async (source: Message) => {
+    if (!primaryAda || adaOpening) return
+    setAdaOpening(true)
+    try {
+      const channelId = await hosted.createAgentDm(primaryAda.id)
+      onAuxiliaryChange(null)
+      if (route.kind === "channel" && (route.threadId || route.artifactId)) await navigateTo({ kind: "channel", channelId: route.channelId })
+      community.closePanel()
+      saveAdaContext(community.me.id, community.community.id, channelId, source)
+      setAdaPanel({ channelId, source })
+    } catch (error) { toast.add({ title: "Could not open Ada", description: error instanceof Error ? error.message : "Try again." }) }
+    finally { setAdaOpening(false) }
+  }
+  const adaChannel = community.community.channels.find((item) => item.id === adaPanel?.channelId)
+  const guide = artifacts.data?.find((a) => a.content.kind === "guide")
 
   if (!channel) {
     return (
@@ -98,16 +154,24 @@ export function ChannelWorkspace({ auxiliary: channelAuxiliary, onAuxiliaryChang
     )
   }
 
+  if (adaPanel && adaChannel?.id === channel.id) return <AdaConversationPanel key={adaChannel.id} channel={adaChannel} source={adaPanel.source} onClose={() => setAdaPanel(null)} />
+
   const conversation = (
-      <section className="flex size-full min-w-0 flex-1 flex-col" aria-label={channel.kind === "dm" ? `${channel.name} conversation` : `${channel.name} channel`}>
-        <ChannelHeader channel={channel} onOpenMembers={() => onAuxiliaryChange("members")} onOpenSettings={() => onAuxiliaryChange("settings")} onSearchChannel={onSearchChannel} />
-        <ChannelTimeline key={channel.id} channel={channel} comfortable={comfortable} />
+      <section className={cn("flex size-full min-w-0 flex-1 flex-col", isAda && "ada-conversation")} inert={narrowAuxiliary && Boolean(adaPanel || selectedArtifact || threadPanel || channelAuxiliary)} aria-label={channel.kind === "dm" ? `${channel.name} conversation` : `${channel.name} channel`}>
+        <ChannelHeader artifactCount={artifacts.data?.length ?? 0} onOpenArtifacts={() => { setAdaPanel(null); selectArtifact("list") }} channel={channel} onOpenMembers={() => { setAdaPanel(null); if (selectedArtifact) selectArtifact(); onAuxiliaryChange("members") }} onOpenSettings={() => { setAdaPanel(null); if (selectedArtifact) selectArtifact(); onAuxiliaryChange("settings") }} onSearchChannel={onSearchChannel} />
+        {guide ? <div className="shrink-0 border-b px-3 py-2 sm:px-5"><ArtifactCard artifact={guide} onOpen={() => selectArtifact(guide.id)} /></div> : null}
+        <AskAdaContext.Provider value={primaryAda ? (message) => { void askAda(message) } : undefined}><ChannelTimeline key={channel.id} channel={channel} comfortable={comfortable} /></AskAdaContext.Provider>
+        {adaOpening ? <p role="status" className="px-5 py-1 text-xs text-muted-foreground">Opening Ada…</p> : null}
         <ConversationFooter channel={channel} />
       </section>
   )
 
-  const contextual = threadPanel
-    ? <ThreadPanel threadId={threadPanel.threadId} embedded />
+  const contextual = adaPanel
+    ? adaChannel ? <AdaConversationPanel key={adaChannel.id} channel={adaChannel} source={adaPanel.source} onClose={() => setAdaPanel(null)} /> : <div role="status" className="p-4">Opening Ada…</div>
+    : selectedArtifact
+    ? <Suspense fallback={<div className="p-4 text-sm" role="status">Loading artifacts…</div>}><ArtifactsPanel key={channel.id} channel={channel} selection={selectedArtifact} onSelect={selectArtifact} onClose={() => selectArtifact()} onChanged={() => { void artifacts.refresh() }} /></Suspense>
+    : threadPanel
+    ? <AskAdaContext.Provider value={primaryAda ? (message) => { void askAda(message) } : undefined}><ThreadPanel threadId={threadPanel.threadId} embedded /></AskAdaContext.Provider>
     : channelAuxiliary
       ? <ChannelDetailsPanel key={`${channel.id}:${channelAuxiliary}`} channel={channel} initialView={channelAuxiliary} onClose={() => onAuxiliaryChange(null)} />
       : null
@@ -127,24 +191,16 @@ export function ChannelWorkspace({ auxiliary: channelAuxiliary, onAuxiliaryChang
   return <div className="relative flex size-full min-h-0">{conversation}{contextual ? <div className="absolute inset-y-0 right-0 z-20 w-full max-w-md border-l bg-background">{contextual}</div> : null}</div>
 }
 
-function useNarrowAuxiliary(): boolean {
-  const [narrow, setNarrow] = useState(() => window.matchMedia("(max-width: 1023px)").matches)
-  useEffect(() => {
-    const media = window.matchMedia("(max-width: 1023px)")
-    const update = () => setNarrow(media.matches)
-    media.addEventListener("change", update)
-    return () => media.removeEventListener("change", update)
-  }, [])
-  return narrow
-}
-
 function ChannelHeader({
+  artifactCount, onOpenArtifacts,
   channel,
   onOpenMembers,
   onOpenSettings,
   onSearchChannel,
 }: {
   channel: Channel
+  artifactCount: number
+  onOpenArtifacts: () => void
   onOpenMembers: () => void
   onOpenSettings: () => void
   onSearchChannel: () => void
@@ -182,38 +238,41 @@ function ChannelHeader({
     }
   }
 
+  const isAda = channel.kind === "dm" && channel.agentId && community.members.some((item) => item.id === channel.agentId && item.kind === "agent" && item.systemRole === "ada")
   const dmPrivacy = channel.kind === "dm"
     ? channel.ownerId === me.id
       ? "Teachers can read this conversation"
       : me.kind === "person" && me.role === "teacher"
-        ? "Viewing a student's private conversation · read-only"
+        ? "Viewing a student's direct message · read-only"
         : undefined
     : undefined
 
   return (
     <>
     <header className="flex min-h-14 shrink-0 items-center gap-3 border-b border-border px-4 sm:px-5">
+      {isAda ? <AdaMark /> : channel.kind === "dm" && channel.agentId ? <MemberAvatar member={member(channel.agentId)} size={32} presence /> : null}
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <h1 className="truncate text-[15px] font-semibold tracking-[-0.012em]">{channel.kind === "dm" ? channel.name : `# ${channel.name}`}</h1>
+          <h1 className="truncate text-[15px] font-semibold tracking-[-0.012em]">{isAda ? "Ada" : channel.kind === "dm" ? channel.name : `# ${channel.name}`}</h1>
           {channel.status === "archived" ? <Badge variant="secondary">Archived</Badge> : null}
-          {channel.visibility === "private" || channel.group === "private" ? <Badge variant="outline">Private</Badge> : null}
+          {channel.kind !== "dm" && (channel.visibility === "private" || channel.group === "private") ? <Badge variant="outline">Private</Badge> : null}
         </div>
-        {dmPrivacy ? <p className="truncate text-xs font-medium text-muted-foreground">{dmPrivacy}</p> : channel.description ? <p className="truncate text-xs text-muted-foreground">{channel.description}</p> : null}
+        {isAda ? <p className="truncate text-xs text-muted-foreground">Your course assistant</p> : dmPrivacy ? <p className="truncate text-xs font-medium text-muted-foreground">{dmPrivacy}</p> : channel.description ? <p className="truncate text-xs text-muted-foreground">{channel.description}</p> : null}
       </div>
+      {artifactCount > 0 ? <Button variant="ghost" size="sm" className="shrink-0" onClick={onOpenArtifacts} aria-label={`Artifacts, ${artifactCount}`} title="View artifacts"><FilesIcon /><span className="text-xs tabular-nums text-muted-foreground">{artifactCount}</span></Button> : null}
       <div
         className="hidden cursor-pointer items-center -space-x-1.5 rounded-md px-1 py-1 outline-none focus-visible:ring-2 focus-visible:ring-ring sm:flex"
         onClick={onOpenMembers}
         onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onOpenMembers() } }}
         role="button"
         tabIndex={0}
-        aria-label={`${channel.memberIds.length} channel members, open member list`}
+        aria-label={`${channel.memberIds.length} ${channel.kind === "dm" ? "participants" : "channel members"}, open member list`}
       >
         {visibleMembers.map((id) => (
           <MemberAvatar key={id} member={member(id)} size={24} className="ring-2 ring-background" />
         ))}
         {channel.memberIds.length > visibleMembers.length ? (
-          <span className="inline-flex size-6 items-center justify-center rounded-full bg-muted text-[10px] font-medium ring-2 ring-background">
+          <span className="inline-flex size-6 items-center justify-center rounded-full bg-muted text-xs font-medium ring-2 ring-background">
             +{channel.memberIds.length - visibleMembers.length}
           </span>
         ) : null}
@@ -222,20 +281,20 @@ function ChannelHeader({
         type="button"
         className="shrink-0 rounded-md px-1.5 py-1 text-xs text-muted-foreground outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring sm:hidden"
         onClick={onOpenMembers}
-        aria-label={`${channel.memberIds.length} channel members, open member list`}
+        aria-label={`${channel.memberIds.length} ${channel.kind === "dm" ? "participants" : "channel members"}, open member list`}
       >
         {channel.memberIds.length} {channel.memberIds.length === 1 ? "member" : "members"}
       </button>
-      <Button type="button" variant="ghost" size="icon-sm" onClick={onSearchChannel} aria-label="Find in channel">
+      <Button type="button" variant="ghost" size="icon-sm" onClick={onSearchChannel} aria-label={channel.kind === "dm" ? "Find in conversation" : "Find in channel"}>
         <SearchIcon />
       </Button>
       {!joined && channel.visibility === "open" && channel.status !== "archived" ? <Button type="button" variant="outline" size="sm" disabled={joining} onClick={() => void join()} aria-describedby={joinError ? `join-error-${channel.id}` : undefined}>{joining ? "Joining…" : "Join"}</Button> : null}
       <DropdownMenu>
-        <DropdownMenuTrigger render={<Button type="button" variant="ghost" size="icon-sm" aria-label="Channel actions" />}><MoreHorizontalIcon /></DropdownMenuTrigger>
+        <DropdownMenuTrigger render={<Button type="button" variant="ghost" size="icon-sm" aria-label={channel.kind === "dm" ? "Conversation actions" : "Channel actions"} />}><MoreHorizontalIcon /></DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuGroup>
-            <DropdownMenuItem onClick={onOpenMembers}><PanelRightIcon />View members</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => { void navigator.clipboard.writeText(`#${channel.name}`); toast.add({ title: "Channel name copied" }) }}><CopyIcon />Copy name</DropdownMenuItem>
+            <DropdownMenuItem onClick={onOpenMembers}><PanelRightIcon />{channel.kind === "dm" ? "View participants" : "View members"}</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => { void navigator.clipboard.writeText(channel.kind === "dm" ? channel.name : `#${channel.name}`); toast.add({ title: channel.kind === "dm" ? "Name copied" : "Channel name copied" }) }}><CopyIcon />Copy name</DropdownMenuItem>
             {canManage && channel.kind !== "dm" ? <DropdownMenuItem onClick={onOpenSettings}><PencilIcon />Channel settings</DropdownMenuItem> : null}
             {canManage && channel.kind !== "dm" && channel.status !== "archived" ? <DropdownMenuItem variant="destructive" onClick={() => setArchiveOpen(true)}><ArchiveIcon />Archive channel</DropdownMenuItem> : null}
             {joined && channel.kind !== "dm" && !canManage ? <DropdownMenuItem variant="destructive" onClick={() => setLeaveOpen(true)}><XIcon />Leave channel</DropdownMenuItem> : null}
@@ -244,6 +303,7 @@ function ChannelHeader({
       </DropdownMenu>
       {joinError ? <p id={`join-error-${channel.id}`} className="max-w-48 text-xs text-destructive" role="alert">{joinError}</p> : null}
     </header>
+    {isAda && dmPrivacy ? <p className="flex shrink-0 items-center gap-2 border-b px-4 py-2 text-xs text-muted-foreground"><LockIcon className="size-3 shrink-0" />{dmPrivacy}</p> : null}
     <DestructiveConfirmation open={leaveOpen} onOpenChange={setLeaveOpen} title={`Leave #${channel.name}?`} description="You can rejoin later if this channel remains public." confirmLabel="Leave channel" pending={joining} onConfirm={leave} />
     <DestructiveConfirmation open={archiveOpen} onOpenChange={setArchiveOpen} title={`Archive #${channel.name}?`} description="History will stay readable, but nobody can send new messages." confirmLabel="Archive channel" pending={archivePending} onConfirm={async () => {
       setArchivePending(true)
@@ -284,6 +344,7 @@ function ChannelTimeline({ channel, comfortable }: { channel: Channel; comfortab
   const visibleMessages = messages.slice(-visibleCount)
 
   if (messages.length === 0) {
+    if (channel.kind === "dm" && community.members.some((item) => item.id === channel.agentId && item.kind === "agent" && item.systemRole === "ada")) return <AdaWelcome />
     const assignedAgent = channel.memberIds.map((id) => community.members.find((member) => member.id === id)).find((member) => member?.kind === "agent")
     return (
       <div className="flex min-h-0 flex-1 items-center justify-center px-6 text-center">
@@ -292,7 +353,7 @@ function ChannelTimeline({ channel, comfortable }: { channel: Channel; comfortab
             <MessageSquareTextIcon aria-hidden />
           </span>
           <h2 className="mt-4 text-lg font-semibold">{channel.kind === "dm" ? `Start a conversation with ${channel.name}` : `Start #${channel.name}`}</h2>
-          <p className="mt-1 text-sm leading-5 text-muted-foreground">{channel.kind === "dm" ? "Send a message to begin this private conversation." : assignedAgent && me.kind === "person" && me.role === "teacher" ? `Mention @${assignedAgent.name} to ask it to work in this channel.` : "Ask a course question or share an example to begin the conversation."}</p>
+          <p className="mt-1 text-sm leading-5 text-muted-foreground">{channel.kind === "dm" ? "Send a direct message to begin. You do not need to mention the agent." : assignedAgent && me.kind === "person" && me.role === "teacher" ? `Mention @${assignedAgent.name} to ask it to work in this channel.` : "Ask a course question or share an example to begin the conversation."}</p>
         </div>
       </div>
     )
@@ -339,7 +400,7 @@ function ChannelIntro({ channel }: { channel: Channel }) {
       </span>
       <h2 className="mt-3 text-xl font-semibold tracking-[-0.02em]">{channel.kind === "dm" ? `Conversation with ${channel.name}` : `Welcome to #${channel.name}`}</h2>
       <p className="mt-1 max-w-[68ch] text-sm leading-5 text-muted-foreground">
-        {channel.description || (channel.kind === "dm" ? "This is the beginning of this private conversation." : "This is the beginning of this course conversation.")}
+        {channel.description || (channel.kind === "dm" ? "This is the beginning of your direct messages." : "This is the beginning of this course conversation.")}
       </p>
     </div>
   )
@@ -349,6 +410,7 @@ function WorkspaceMessage({ message, compact = false }: { message: Message; comp
   const { community, member, me, openThread, replyInThread, retryMessage, thread, workspace } = useCommunity()
   const hosted = useHostedWorkspace()
   const navigateTo = useAppNavigation(community.id)
+  const askAda = useContext(AskAdaContext)
   const author = member(message.authorId)
   const linkedThread = message.threadId ? thread(message.threadId) : undefined
   const isRoot = linkedThread?.rootMessageId === message.id
@@ -380,7 +442,7 @@ function WorkspaceMessage({ message, compact = false }: { message: Message; comp
 
   const saveEdit = async () => {
     if (!editText.trim()) return
-    await mutate(() => workspace.editMessage(message.id, { paragraphs: textToParagraphs(editText.trim()) }))
+    await mutate(() => workspace.editMessage(message.id, { paragraphs: textToParagraphs(editText.trim(), [...message.paragraphs.flat().filter((block) => block.kind === "mention").map((block) => ({ id: block.memberId, name: block.text.replace(/^@/, "") }))]) }))
     setEditing(false)
   }
 
@@ -453,7 +515,7 @@ function WorkspaceMessage({ message, compact = false }: { message: Message; comp
           {message.editedAt ? <span className="font-normal text-muted-foreground">edited</span> : null}
           {pendingState === "sending" ? <span className="font-normal text-muted-foreground" role="status">sending…</span> : null}
           {pendingState === "failed" ? <span className="font-normal text-destructive" role="alert">not sent</span> : null}
-          <MessageActions onReply={openReply} onCopyText={() => { void navigator.clipboard.writeText(plainText); toast.add({ title: "Message copied" }) }} onCopyLink={() => void copyLink()} onEdit={canEdit && !message.deletedAt ? () => setEditing(true) : undefined} onDelete={canDelete && !message.deletedAt ? () => setDeleteOpen(true) : undefined} disabled={mutationPending} />
+          <MessageActions onAskAda={!message.deletedAt && !pendingState && askAda ? () => askAda(message) : undefined} onReply={openReply} onCopyText={() => { void navigator.clipboard.writeText(plainText); toast.add({ title: "Message copied" }) }} onCopyLink={() => void copyLink()} onEdit={canEdit && !message.deletedAt ? () => setEditing(true) : undefined} onDelete={canDelete && !message.deletedAt ? () => setDeleteOpen(true) : undefined} disabled={mutationPending} />
         </MessageHeader>
         <Bubble variant="ghost" align="start" className="overflow-visible">
           <BubbleContent className="conversation-copy max-w-[72ch] text-foreground">
@@ -464,7 +526,7 @@ function WorkspaceMessage({ message, compact = false }: { message: Message; comp
                 <Textarea value={editText} onChange={(event) => setEditText(event.target.value)} rows={3} autoFocus disabled={mutationPending} aria-label="Edit message" onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); setEditing(false) } else if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); void saveEdit() } }} />
                 <div className="flex gap-2"><Button type="button" size="sm" onClick={() => void saveEdit()} disabled={mutationPending || !editText.trim()}>Save</Button><Button type="button" size="sm" variant="ghost" onClick={() => setEditing(false)} disabled={mutationPending}>Cancel</Button></div>
               </div>
-            ) : (
+            ) : author.kind === "agent" ? <ArtifactMarkdown body={plainText} /> : (
               <>
                 {message.paragraphs.map((paragraph, index) => <MessageParagraph key={index} blocks={paragraph} spaced={index > 0} />)}
               </>
@@ -489,9 +551,10 @@ function WorkspaceMessage({ message, compact = false }: { message: Message; comp
   )
 }
 
-function MessageActions({ onReply, onCopyText, onCopyLink, onEdit, onDelete, disabled }: { onReply: () => void; onCopyText: () => void; onCopyLink: () => void; onEdit?: () => void; onDelete?: () => void; disabled?: boolean }) {
+function MessageActions({ onAskAda, onReply, onCopyText, onCopyLink, onEdit, onDelete, disabled }: { onAskAda?: () => void; onReply: () => void; onCopyText: () => void; onCopyLink: () => void; onEdit?: () => void; onDelete?: () => void; disabled?: boolean }) {
   return (
-    <div className="ml-auto flex opacity-0 transition-opacity group-hover/row:opacity-100 group-focus-within/row:opacity-100">
+    <div className="message-actions ml-auto flex opacity-100 sm:opacity-0 transition-opacity group-hover/row:opacity-100 group-focus-within/row:opacity-100">
+      {onAskAda ? <Button type="button" variant="ghost" size="icon-xs" onClick={onAskAda} disabled={disabled} aria-label="Ask Ada" title="Ask Ada"><AdaMark className="size-5 rounded-md" /></Button> : null}
       <Button type="button" variant="ghost" size="icon-xs" onClick={onReply} aria-label="Reply in thread" disabled={disabled}>
         <MessageSquareTextIcon />
       </Button>
@@ -501,6 +564,7 @@ function MessageActions({ onReply, onCopyText, onCopyLink, onEdit, onDelete, dis
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuGroup>
+            {onAskAda ? <DropdownMenuItem onClick={onAskAda}><AdaMark className="size-5 rounded-md" />Ask Ada</DropdownMenuItem> : null}
             <DropdownMenuItem onClick={onReply}><MessageSquareTextIcon />Reply in thread</DropdownMenuItem>
             <DropdownMenuItem onClick={onCopyText}><ClipboardCopyIcon />Copy text</DropdownMenuItem>
             <DropdownMenuItem onClick={onCopyLink}><CopyIcon />Copy link</DropdownMenuItem>
@@ -514,28 +578,50 @@ function MessageActions({ onReply, onCopyText, onCopyLink, onEdit, onDelete, dis
 }
 
 function MessageParagraph({ blocks, spaced }: { blocks: MessageBlock[]; spaced: boolean }) {
-  return <div className={cn(spaced && "mt-2")}>{blocks.map((block, index) => block.kind === "code" ? <pre key={index} className="my-2 overflow-x-auto rounded-lg bg-muted p-3 font-mono text-xs"><code>{block.text}</code></pre> : <span key={index}>{block.kind === "cite" ? block.text || block.cite.section || block.cite.cardId : block.text}</span>)}</div>
+  const { community } = useCommunity()
+  const resolved = blocks.flatMap((block) => block.kind === "text" ? resolveTextMentions(block.text, community.members) : [block])
+  return <div className={cn("break-words", spaced && "mt-2")}>{resolved.map((block, index) => {
+    if (block.kind === "code") return <pre key={index} className="my-2 overflow-x-auto rounded-lg bg-muted p-3 font-mono text-xs"><code>{block.text}</code></pre>
+    if (block.kind === "mention") {
+      const target = community.members.find((item) => item.id === block.memberId)
+      return target ? <MemberProfilePopover key={index} member={target} className="mention-chip rounded-sm">{block.text}</MemberProfilePopover> : <span key={index} className="mention-chip rounded-sm">{block.text}</span>
+    }
+    return <span key={index}>{block.kind === "cite" ? block.text || block.cite.section || block.cite.cardId : block.text}</span>
+  })}</div>
 }
 
-function ChannelComposer({ channel, threadId }: { channel: Channel; threadId?: string }) {
-  const { connected, mode, sendMessage, workspace, typingMemberIds, member, me } = useCommunity()
-  const draftKey = `ada:draft:v1:${channel.id}:${threadId ?? "channel"}`
-  const [text, setText] = useState(() => readDraft(draftKey))
+function ChannelComposer({ channel, threadId, source: suppliedSource, onClearSource }: { channel: Channel; threadId?: string; source?: Message; onClearSource?: () => void }) {
+  const { connected, mode, sendMessage, workspace, typingMemberIds, member, me, community } = useCommunity()
+  const navigateTo = useAppNavigation(community.id)
+  const [savedSource, setSavedSource] = useState(() => channel.kind === "dm" && !threadId ? readAdaContext(me.id, community.id, channel.id) : undefined)
+  const source = suppliedSource ?? savedSource
+  const clearSource = () => { saveAdaContext(me.id, community.id, channel.id); setSavedSource(undefined); onClearSource?.() }
+  const [consultation, setConsultation] = useState(() => !threadId ? readConsultation(me.id, community.id, channel.id) : undefined)
+  const draftKey = `ada:draft:v2:${me.id}:${community.id}:${channel.id}:${threadId ?? "channel"}`
+  const [text, setText] = useState(() => readDraft(draftKey) || consultation?.text || "")
+  useEffect(() => {
+    const read = () => setConsultation(!threadId ? readConsultation(me.id, community.id, channel.id) : undefined)
+    window.addEventListener("ada:consultation", read)
+    return () => window.removeEventListener("ada:consultation", read)
+  }, [me.id, community.id, channel.id, threadId])
   const [status, setStatus] = useState<ChatStatus>("ready")
   const [error, setError] = useState<string | null>(null)
-  const [mentionsOpen, setMentionsOpen] = useState(false)
-  const [mentionIndex, setMentionIndex] = useState(0)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const editorRef = useRef<Editor | null>(null)
+  const [paragraphs, setParagraphs] = useState<MessageBlock[][]>(() => draftBlocks.get(draftKey) ?? textToParagraphs(text, community.members))
   const joined = channel.memberIds.includes(me.id)
   const readOnly = mode === "demo" || channel.status === "archived" || !joined
   const dmAgent = channel.kind === "dm" && channel.agentId ? member(channel.agentId) : undefined
   const agentUnavailable = mode === "connected" && dmAgent?.kind === "agent" && dmAgent.presence === "away"
+  const conversationAgents = community.members.filter((item): item is import("@ada/protocol").Agent => item.kind === "agent" && item.status !== "inactive" && channel.memberIds.includes(item.id))
   const typing = typingMemberIds(channel.id).filter((id) => id !== me.id).map((id) => member(id).name)
-  const mentionable = channel.memberIds.filter((id) => id !== me.id).map(member)
+  const mentionable = community.members.filter((item) => item.id !== me.id && (channel.memberIds.includes(item.id) || channel.kind !== "dm" && me.kind === "person" && me.role === "teacher" && item.kind === "agent"))
+    .map((item) => ({ ...item, joinsOnSend: !channel.memberIds.includes(item.id) }))
+  const addedAgents = mentionable.filter((item) => item.joinsOnSend && paragraphs.flat().flatMap((block) => block.kind === "text" ? resolveTextMentions(block.text, mentionable) : [block]).some((block) => block.kind === "mention" && block.memberId === item.id))
 
   useEffect(() => {
     writeDraft(draftKey, text)
-  }, [draftKey, text])
+    draftBlocks.set(draftKey, paragraphs)
+  }, [draftKey, text, paragraphs])
 
   useEffect(() => {
     if (readOnly || !text.trim()) {
@@ -547,21 +633,25 @@ function ChannelComposer({ channel, threadId }: { channel: Channel; threadId?: s
     return () => clearTimeout(timer)
   }, [channel.id, readOnly, text, workspace])
 
-  const submit = async (input: PromptInputMessage) => {
-    const value = input.text.trim()
-    if (!value || readOnly || agentUnavailable) return
+  const submit = async () => {
+    if (!text.trim() || readOnly || agentUnavailable || status === "submitted" || !connected) return
     setStatus("submitted")
     setError(null)
     try {
       await sendMessage({
         channelId: channel.id,
         threadId,
-        paragraphs: textToParagraphs(value),
+        paragraphs: [...(source ? [[{ kind: "text" as const, text: `About a message from ${member(source.authorId).name}:\n${source.paragraphs.map((p) => p.map((b) => b.text).join("")).join("\n\n").slice(0, 12000)}\n\nMy question:` }]] : []), ...paragraphs.filter((blocks) => blocks.length)],
         clientId: crypto.randomUUID(),
       })
       workspace.setTyping(channel.id, false)
+      clearSource()
       setText("")
+      setParagraphs([])
+      editorRef.current?.commands.clearContent()
+      draftBlocks.delete(draftKey)
       writeDraft(draftKey, "")
+      if (consultation) stageConsultation(me.id, community.id, channel.id, { ...consultation, text: "" })
       setStatus("ready")
     } catch (cause) {
       setStatus("error")
@@ -571,104 +661,47 @@ function ChannelComposer({ channel, threadId }: { channel: Channel; threadId?: s
   }
 
   const wrapSelection = (left: string, right = left) => {
-    const textarea = textareaRef.current
-    if (!textarea) return
-    const start = textarea.selectionStart
-    const end = textarea.selectionEnd
-    const next = `${text.slice(0, start)}${left}${text.slice(start, end)}${right}${text.slice(end)}`
-    setText(next)
-    requestAnimationFrame(() => {
-      textarea.focus()
-      textarea.setSelectionRange(start + left.length, end + left.length)
-    })
+    const editor = editorRef.current
+    if (!editor) return
+    const { from, to } = editor.state.selection
+    editor.chain().focus().insertContentAt(to, right).insertContentAt(from, left)
+      .setTextSelection({ from: from + left.length, to: to + left.length }).run()
   }
-
-  const insertText = (value: string) => {
-    const textarea = textareaRef.current
-    const start = textarea?.selectionStart ?? text.length
-    const end = textarea?.selectionEnd ?? start
-    const next = `${text.slice(0, start)}${value}${text.slice(end)}`
-    setText(next)
-    requestAnimationFrame(() => {
-      textarea?.focus()
-      textarea?.setSelectionRange(start + value.length, start + value.length)
-    })
-  }
-
-  const insertMention = (candidate: Member) => {
-    const textarea = textareaRef.current
-    const cursor = textarea?.selectionStart ?? text.length
-    const before = text.slice(0, cursor)
-    const match = before.match(/@[^\s@]*$/)
-    const start = match ? cursor - match[0].length : cursor
-    const value = `@${candidate.name} `
-    const next = `${text.slice(0, start)}${value}${text.slice(cursor)}`
-    setText(next)
-    setMentionsOpen(false)
-    requestAnimationFrame(() => {
-      textarea?.focus()
-      textarea?.setSelectionRange(start + value.length, start + value.length)
-    })
-  }
+  const insertText = (value: string) => editorRef.current?.chain().focus().insertContent({ type: "text", text: value }).run()
 
   return (
     <div className="shrink-0 px-3 pb-3 pt-1 sm:px-5 sm:pb-4">
+      <AgentResponseFailures channelId={channel.id} threadId={threadId} />
+      {source ? <div className="mx-auto mb-2 flex max-w-4xl items-start gap-2 rounded-lg border bg-background/80 px-3 py-2"><div className="min-w-0 flex-1 text-xs"><p className="font-medium">About {member(source.authorId).name}’s message</p><p className="mt-1 line-clamp-3 whitespace-pre-wrap break-words text-muted-foreground">{source.paragraphs.map((p) => p.map((b) => b.text).join("")).join("\n\n")}</p><p className="mt-1 text-muted-foreground">Included when you send your question{source.paragraphs.flat().reduce((length, block) => length + block.text.length, 0) > 12000 ? " (first 12,000 characters)" : ""}.</p></div><Button size="icon-xs" variant="ghost" aria-label="Remove message context" onClick={clearSource}><XIcon /></Button></div> : null}
+      {consultation ? <div className="mx-auto mb-2 flex max-w-4xl flex-wrap items-center gap-2 rounded-md border px-3 py-2 text-xs"><span className="min-w-0 flex-1 truncate">About {consultation.title}</span>{!text.includes(consultation.text) ? <Button size="xs" variant="ghost" onClick={() => insertText(`\n\n${consultation.text}`)}>Insert context</Button> : null}<Button size="xs" variant="ghost" onClick={() => void navigateTo({ kind: "channel", channelId: channel.id, artifactId: consultation.artifactId })}>Open material</Button><Button size="xs" variant="ghost" onClick={() => void navigateTo({ kind: "channel", channelId: consultation.channelId, artifactId: consultation.artifactId })}>Return to module</Button><Button size="icon-xs" variant="ghost" aria-label="Dismiss material context" onClick={() => { clearConsultation(me.id, community.id, channel.id); setConsultation(undefined) }}><XIcon /></Button></div> : null}
       {agentUnavailable ? <p className="mx-auto mb-1.5 max-w-4xl text-xs text-muted-foreground" role="status">Waiting for the agent to connect. Your draft is saved; sending will be available when it is online.</p> : null}
       {threadId ? <p className="mx-auto mb-1.5 max-w-4xl text-xs font-medium text-muted-foreground">Replying in thread</p> : null}
       {error ? <p className="mx-auto mb-1.5 max-w-4xl text-xs text-destructive" role="alert">{error} Try again when the connection is ready.</p> : null}
       {typing.length ? <p className="mx-auto mb-1.5 max-w-4xl text-xs text-muted-foreground" role="status">{typing.length === 1 ? `${typing[0]} is typing…` : `${typing.slice(0, 2).join(" and ")} are typing…`}</p> : null}
       {!connected && mode === "connected" ? <p className="mx-auto mb-1.5 max-w-4xl text-xs text-muted-foreground" role="status">Reconnecting… messages will send when the course is back online.</p> : null}
+      {addedAgents.length ? <p className="mx-auto mb-2 max-w-4xl text-xs text-muted-foreground" role="status">{addedAgents.map((agent) => agent.name).join(", ")} will join this channel when you send. They can read its conversation history.</p> : null}
       <div className="relative mx-auto max-w-4xl">
-        {mentionsOpen ? (
-          <div className="absolute bottom-[calc(100%+0.4rem)] left-2 z-20 w-64 overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md" role="listbox" aria-label="Mention a course member">
-            {mentionable.length ? mentionable.map((candidate, index) => (
-              <button key={candidate.id} type="button" role="option" aria-selected={index === mentionIndex} className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm outline-none hover:bg-accent aria-selected:bg-accent focus-visible:bg-accent" onMouseEnter={() => setMentionIndex(index)} onClick={() => insertMention(candidate)}>
-                <MemberAvatar member={candidate} size={24} /><span className="min-w-0 flex-1 truncate">{candidate.name}</span><span className="text-xs text-muted-foreground">{candidate.kind}</span>
-              </button>
-            )) : <p className="px-2 py-2 text-xs text-muted-foreground">No other members in this channel.</p>}
-          </div>
-        ) : null}
         <PromptInput
           onSubmit={submit}
           onError={(issue) => setError(issue.message)}
           className="rounded-md bg-background shadow-none"
         >
+          <ComposerAgentActivity agents={connected ? conversationAgents : []} />
           <PromptInputBody>
-          <PromptInputTextarea
-            ref={textareaRef}
-            value={text}
-            onChange={(event) => {
-              const value = event.currentTarget.value
-              setText(value)
-              const before = value.slice(0, event.currentTarget.selectionStart)
-              const shouldOpen = /@[^\s@]*$/.test(before)
-              setMentionsOpen(shouldOpen)
-              if (shouldOpen) setMentionIndex(0)
-            }}
+          <MentionEditor
+            initialValue={paragraphs}
+            candidates={mentionable}
+            editorRef={editorRef}
+            onChange={(value) => { setParagraphs(value); setText(value.map((blocks) => blocks.map((block) => block.text).join("")).join("\n\n")) }}
+            onSubmit={() => { void submit() }}
             placeholder={readOnly ? (channel.status === "archived" ? "This channel is archived" : !joined ? "Join this channel to send messages" : "Demo mode is read-only") : threadId ? "Reply in thread" : `Message ${channel.kind === "dm" ? channel.name : `#${channel.name}`}`}
             disabled={readOnly || status === "submitted"}
-            aria-label={threadId ? "Reply in thread" : `Message ${channel.name}`}
-            className="min-h-14 max-h-48"
-            onKeyDown={(event) => {
-              if (mentionsOpen && ["ArrowDown", "ArrowUp", "Enter", "Escape"].includes(event.key)) {
-                event.preventDefault()
-                if (event.key === "Escape") setMentionsOpen(false)
-                else if (event.key === "ArrowDown") setMentionIndex((index) => (index + 1) % Math.max(mentionable.length, 1))
-                else if (event.key === "ArrowUp") setMentionIndex((index) => (index - 1 + Math.max(mentionable.length, 1)) % Math.max(mentionable.length, 1))
-                else if (mentionable[mentionIndex]) insertMention(mentionable[mentionIndex])
-                return
-              }
-              if (!(event.metaKey || event.ctrlKey)) return
-              const key = event.key.toLowerCase()
-              if (key === "b") { event.preventDefault(); wrapSelection("**") }
-              else if (key === "i") { event.preventDefault(); wrapSelection("*") }
-              else if (key === "k") { event.preventDefault(); wrapSelection("[", "](url)") }
-            }}
+            label={threadId ? "Reply in thread" : `Message ${channel.name}`}
           />
           </PromptInputBody>
-          <PromptInputFooter>
-          <PromptInputTools>
-            <PromptInputButton tooltip="Mention a person or agent" onClick={() => setMentionsOpen((open) => !open)} disabled={readOnly || status === "submitted"} aria-expanded={mentionsOpen}>
+          <PromptInputFooter className="composer-footer">
+          <PromptInputTools className="min-w-0 flex-wrap">
+            <PromptInputButton tooltip="Mention a person or agent" onClick={() => insertText("@")} disabled={readOnly || status === "submitted"}>
               <AtSignIcon />
             </PromptInputButton>
             <PromptInputButton tooltip={{ content: "Bold", shortcut: "⌘B" }} onClick={() => wrapSelection("**")} disabled={readOnly || status === "submitted"}>
@@ -687,7 +720,7 @@ function ChannelComposer({ channel, threadId }: { channel: Channel; threadId?: s
               <SmilePlusIcon />
             </PromptInputButton>
           </PromptInputTools>
-          <PromptInputSubmit status={status} disabled={readOnly || agentUnavailable || !text.trim() || status === "submitted"} />
+          <PromptInputSubmit status={status} disabled={readOnly || !connected || agentUnavailable || !text.trim() || status === "submitted"} />
           </PromptInputFooter>
         </PromptInput>
       </div>
@@ -740,11 +773,23 @@ function ThreadPanel({ threadId, embedded = false }: { threadId: string; embedde
   )
 }
 
-function textToParagraphs(text: string): MessageBlock[][] {
-  return text.split(/\n\s*\n/).map((paragraph) => [{ kind: "text", text: paragraph.trim() }])
+function AgentResponseFailures({ channelId, threadId }: { channelId: string; threadId?: string }) {
+  const { memory } = useHostedWorkspace()
+  const load = useCallback(() => memory.jobs(), [memory])
+  const jobs = useEducationData(load)
+  const [pending, setPending] = useState<string>()
+  const [error, setError] = useState<string>()
+  const failed = jobs.data?.filter((job) => job.purpose === "respond" && job.status === "failed" && job.channelId === channelId && job.threadId === (threadId ?? null) && job.canRetry) ?? []
+  if (!failed.length) return null
+  return <div className="mx-auto mb-2 max-w-4xl space-y-2">{failed.map((job) => <div key={job.id} role="status" className="flex flex-wrap items-center gap-3 rounded-md border bg-background px-3 py-2 text-xs"><p className="min-w-0 flex-1">Ada could not finish a response. Your message is saved.</p><Button size="xs" variant="outline" disabled={Boolean(pending)} onClick={() => { setPending(job.id); setError(undefined); void memory.retry(job.id).then(() => jobs.refresh()).catch(() => setError("Could not retry. Please try again.")).finally(() => setPending(undefined)) }}><RefreshCwIcon />{pending === job.id ? "Retrying…" : "Retry response"}</Button></div>)}{error ? <p role="alert" className="text-xs text-destructive">{error}</p> : null}</div>
+}
+
+function textToParagraphs(text: string, members: readonly { id: string; name: string }[] = []): MessageBlock[][] {
+  return text.split(/\n\s*\n/).map((paragraph) => resolveTextMentions(paragraph.trim(), members))
 }
 
 const channelDrafts = new Map<string, string>()
+const draftBlocks = new Map<string, MessageBlock[][]>()
 
 function readDraft(key: string): string {
   return channelDrafts.get(key) ?? ""
@@ -753,4 +798,21 @@ function readDraft(key: string): string {
 function writeDraft(key: string, value: string): void {
   if (value) channelDrafts.set(key, value)
   else channelDrafts.delete(key)
+}
+
+function AdaConversationPanel({ channel, source, onClose }: { channel: Channel; source: Message; onClose: () => void }) {
+  const { community } = useCommunity()
+  const navigateTo = useAppNavigation(community.id)
+  const [dismissedSource, setDismissedSource] = useState<string | null>(null)
+  useEffect(() => {
+    const close = (event: KeyboardEvent) => { if (event.key === "Escape") { event.stopPropagation(); onClose() } }
+    window.addEventListener("keydown", close)
+    return () => window.removeEventListener("keydown", close)
+  }, [onClose])
+  return <section className="ada-conversation flex size-full min-h-0 flex-col" aria-label="Ask Ada">
+    <header className="flex min-h-16 shrink-0 items-center gap-3 border-b px-4"><AdaMark /><div className="min-w-0 flex-1"><h2 className="text-sm font-semibold">Ada</h2><p className="flex items-center gap-1 text-xs text-muted-foreground"><LockIcon className="size-3" />Outside the channel</p></div><Button variant="ghost" size="icon-sm" aria-label="Open Ada conversation" onClick={() => void navigateTo({ kind: "channel", channelId: channel.id })}><ExpandIcon /></Button><Button variant="ghost" size="icon-sm" aria-label="Close Ada" autoFocus onClick={onClose}><XIcon /></Button></header>
+    <p className="border-b px-4 py-2 text-xs text-muted-foreground">Only you and Ada participate. Teachers can read this conversation.</p>
+    <ChannelTimeline channel={channel} comfortable />
+    <ChannelComposer channel={channel} source={dismissedSource === source.id ? undefined : source} onClearSource={() => setDismissedSource(source.id)} />
+  </section>
 }

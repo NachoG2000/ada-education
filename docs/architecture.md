@@ -11,7 +11,7 @@ flowchart LR
   Web[Web client] <-->|REST and authenticated WebSocket| Server[Community server]
   Server <--> DB[(SQLite)]
   Runner[External runner] <-->|Authenticated outbound WebSocket| Server
-  Runner --> CLI[Claude or Codex CLI]
+  Runner --> CLI[Claude, Codex, or Pi CLI]
   CLI <--> Wiki[Agent workspace and wiki]
 ```
 
@@ -105,7 +105,8 @@ access, seed, and runner checks passing when changing shared code.
 
 The runner's scripted runtime exists only for compatibility checks through
 `legacy-fixture-cli.ts`. Normal startup does not launch it. Real runs use
-Claude or Codex. The published card pipeline remains available, but the
+Claude, Codex, or Pi. Pi uses its own ChatGPT subscription login and scoped
+file tools; see `agent-host.md`. The published card pipeline remains available, but the
 mounted web client ignores card publication events and supplies no cards
 collection to its workspace.
 
@@ -134,3 +135,38 @@ Community UI creation requests the shared tutor/curator templates atomically.
 Agent UI creation opens details directly; current rules accompany new work.
 DM messages target their agent without a mention; channel messages still use
 mentions. See [agent-host.md](agent-host.md) for setup and authentication.
+
+## Shared interface and mention flow (§26)
+
+`components/workspace/page-layout.tsx` owns the shared management page frame, header, navigation row, and action section. Settings and Agents use the same components and state variants. `screens/DesignSystem.tsx` is a lazy developer reference at `/#design-system`; it uses fictional data only.
+
+`mention-editor.tsx` composes the official Tiptap Mention extension with minimal text nodes and its suggestion renderer. The composer sends typed member IDs; plain legacy text can resolve through the protocol helper. The server validates identity and channel permissions, adds eligible teacher-mentioned agents in the same SQLite transaction as message creation, then publishes channel/agent projections before dispatching work. Drafting and editing do not alter membership. Context panels use their actual available width to choose split or overlay.
+
+Settings participates in the persistent workspace shell. Its role-aware section list comes from `settings-navigation.ts` and replaces the entire sidebar content, including in the mobile sheet. `HostedSettingsPage` owns only section content. The top bar is the single global search entry; section navigation still replaces history. The editor's full-width wrapper prevents InputGroup's cross-axis alignment from centering the typing area.
+
+## Educational extension (§27, 2026-09-07)
+
+The mounted shell now also contains a distinct `/c/:communityId/inbox` route
+and channel `?artifact=list|artifact-id` context. `workspace/artifacts.tsx`
+provides collection/detail/templates and personal work; `workspace/inbox.tsx`
+uses the pure `lib/inbox-activity.ts` selector on the authorized snapshot.
+`lib/private-consultation.ts` stages user/community/DM-scoped source drafts.
+
+The hosted API registers `src/education.ts`; migration 7 stores artifacts,
+version history, personal work, submission snapshots and Inbox read state.
+`packages/protocol/src/education.ts` defines the validated contract used by
+`lib/education-api.ts`. Queries use authenticated REST with local refresh,
+focus refresh and a 15-second visible-page poll. Legacy runner memory cards
+are separate and unchanged. See [the education guide](educational-artifacts.md)
+for permissions, workflows and limitations.
+
+## Governed memory extension (2026-09-08)
+
+The memory implementation supersedes older shared runner-wiki descriptions in
+this guide for hosted work. The server owns original files and OKF revisions
+alongside SQLite; SQLite stores jobs and the existing application domain. Agents
+receive an invocation-specific authorized view and propose changes through
+correlated memory frames. Pi/Luna is now the default and the only adapter with
+governed file tools. The new routed Course memory surface supports sources,
+knowledge, activity, private learner history and teacher review. Read
+[Course memory](course-memory.md) for current permissions and operational details.

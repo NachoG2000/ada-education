@@ -119,3 +119,40 @@ Ada connects it automatically. UI-created communities get two editable
 starter agents. Runtime/authentication are installation concerns. Read
 `docs/agent-host.md`; the retained manual enrollment endpoints are not the
 mounted product flow. `npm run dev` starts web, server, and agent host.
+
+## Current interface system (§26, 2026-09-06)
+
+The user authorized a coherent educational interface system beyond the previous default-only styling. DESIGN.md and semantic tokens now govern mounted screens; the former Card File design remains in docs/history/design-system-2026-09-05.md. Use shared page-layout.tsx frames, headers, navigation, and action sections in Settings, Agents, and future pages. Variants express state without changing component geometry. Developer examples live at /#design-system. Mentions use stable IDs and Tiptap; teacher-only recruitment happens atomically on message creation. See the scoped workspace guides.
+
+## Educational extension (2026-09-07, §27)
+
+The user's later scope approval supersedes the foundation-only exclusion of
+mounted artifacts and Inbox above. Shared channel artifacts now have typed
+manual templates and versions; personal work is owner-only and explicit
+submissions expose snapshots to teachers for human feedback. The channel
+header collection and detail reuse the single auxiliary panel. Ask privately
+stages a contextual DM draft without sending. Inbox has its own route and
+persisted personal read state. Existing DM teacher visibility remains.
+See `docs/educational-artifacts.md`. Agent memory cards, automatic generation,
+mastery inference, grading and proactive notifications remain deferred.
+`npm run check:education -w @ada/server` is included in `npm run check`.
+
+## Pi subscription runtime (2026-09-07, §28)
+
+`npm run dev:pi` selects the optional Pi runtime for the installation. `npm run
+pi` opens Pi for its own ChatGPT subscription login (`/login`). Existing agent
+workspaces and database data are retained; migration 8 adds the runtime value.
+Only scoped official file tools are exposed. See `docs/agent-host.md` for setup,
+limitations, and validation. Course-memory expansion remains separate.
+
+## Governed course memory (§34, 2026-09-08)
+
+The user authorized filesystem/OKF memory, learner inferences with evidence,
+teacher/self access, source ingestion/review, and exploration seeds. This
+supersedes earlier memory deferrals above. `docs/course-memory.md` describes
+canonical files, the Pi-only scoped runtime boundary, persisted processing,
+revocation and the new memory route. New communities always get primary Ada;
+Pi/Luna is the default. Old wikis and legacy runners remain isolated history.
+`npm run seed:exploration` preloads two synthetic courses; explicit `--reset`
+requires stopping the app first and discards the chosen DB/memory. Never run
+checks against those live courses. See `docs/memory-exploration.md` for cases.

@@ -6,7 +6,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { DatabaseSync } from "node:sqlite"
 import { WebSocket } from "ws"
-import { browserServerFrameSchema, communityWorkspaceSnapshotSchema, runnerServerFrameSchema, scopedServerEventSchema } from "@ada/protocol"
+import { browserServerFrameSchema, communityWorkspaceSnapshotSchema, runnerServerFrameSchema } from "@ada/protocol"
 
 const scratch = mkdtempSync(join(tmpdir(), "ada-issue1-flow-"))
 process.env.ADA_DB = join(scratch, "issue1.db")
@@ -139,7 +139,7 @@ try {
   const demoted = await expectStatus(`/api/communities/${alpha}/members/${bob.user.id}`, alice.token, 200, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ role: "student" }) }) as Json
   check(demoted.role === "student", "teachers can demote another teacher while one remains")
   await expectStatus(`/api/communities/${alpha}/members/${alice.user.id}`, alice.token, 409, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ role: "student" }) })
-  const agentResult = await post(`/api/communities/${alpha}/agents`, alice.token, { name: "Ada Alpha", instructions: "Help", runtime: "claude", model: "test", channelIds: [channelId] })
+  const agentResult = await post(`/api/communities/${alpha}/agents`, alice.token, { name: "Tutor Alpha", instructions: "Help", runtime: "pi", model: "test", channelIds: [channelId] })
   const agent = agentResult.agent as Json
   const runnerToken = agentResult.enrollment.runnerToken as string
   check(!("runnerToken" in agent) && runnerToken.length >= 40, "agent projection omits its one-time runner token")
@@ -187,6 +187,10 @@ try {
     unauthenticated.once("error", () => resolve())
   })
   const runner = await wsFrame(`${base.replace("http", "ws")}/ws/runner`, { type: "auth", token: runnerToken })
+  runner.socket.on("message", (raw) => {
+    const frame = JSON.parse(raw.toString()) as Json
+    if (frame.type === "memory.work" && frame.payload.view.scope.kind !== "channel") runner.socket.send(JSON.stringify({ type: "memory.result", ref: `context-${frame.payload.view.runId}`, payload: { runId: frame.payload.view.runId, proposals: [], answer: "Private fixture reply" } }))
+  })
   check(runner.frames[0]?.payload?.agent?.communityId === alpha, "runner ready is bound to agent community")
   const runnerReadyCheck = runnerServerFrameSchema.safeParse(runner.frames[0])
   check(runnerReadyCheck.success, `runner ready frame satisfies the shared protocol: ${runnerReadyCheck.success ? "" : JSON.stringify(runnerReadyCheck.error.flatten())}`)
@@ -198,17 +202,17 @@ try {
   const outsiderAgentEvent = outsider.frames.find((frame) => frame.type === "event" && frame.payload?.event?.type === "agent.updated")
   check(outsiderAgentEvent?.payload?.event?.payload?.agent?.channelIds?.length === 0, "agent events hide unjoined channel assignments per viewer")
   const beforeFalseMention = runner.frames.length
-  await post(`/api/communities/${alpha}/channels/${channelId}/messages`, bob.token, { paragraphs: [[{ kind: "text", text: "@Ada Alphabeta is not this agent" }]] })
+  await post(`/api/communities/${alpha}/channels/${channelId}/messages`, bob.token, { paragraphs: [[{ kind: "text", text: "@Tutor Alphabeta is not this agent" }]] })
   await new Promise((resolve) => setTimeout(resolve, 50))
-  check(!runner.frames.slice(beforeFalseMention).some((frame) => frame.type === "work"), "mention matching requires a complete agent name")
-  await post(`/api/communities/${alpha}/channels/${channelId}/messages`, bob.token, { paragraphs: [[{ kind: "text", text: "@Ada Alpha please help" }]] })
-  const work = await waitFor(runner.frames, (frame) => frame.type === "work")
-  check(runnerServerFrameSchema.safeParse(work).success && scopedServerEventSchema.safeParse({ communityId: alpha, eventId: "event-check", occurredAt: new Date().toISOString(), type: "message.created", payload: { message: work.payload.message } }).success, "mention work carries validated tenant-scoped message context")
-  check(work.payload.from.id === bob.user.id && work.payload.context.every((item: Json) => item.communityId === alpha && item.channelId === channelId), "runner work identifies the author and contains only channel-scoped context")
+  check(!runner.frames.slice(beforeFalseMention).some((frame) => frame.type === "memory.work" && frame.payload.view.scope.kind === "channel"), "mention matching requires a complete agent name")
+  await post(`/api/communities/${alpha}/channels/${channelId}/messages`, bob.token, { paragraphs: [[{ kind: "text", text: "@Tutor Alpha please help" }]] })
+  const work = await waitFor(runner.frames, (frame) => frame.type === "memory.work" && frame.payload.view.scope.kind === "channel")
+  check(runnerServerFrameSchema.safeParse(work).success, "governed work satisfies the shared contract")
+  check(work.payload.requester.id === bob.user.id && work.payload.view.sources.every((item: Json) => item.communityId === alpha && item.channelId === channelId), "runner work identifies the author and contains only channel-scoped sources")
   runner.socket.send(JSON.stringify({ type: "message.create", ref: "wrong-scope", payload: { communityId: beta, agentId: agent.id, channelId, paragraphs: [[{ kind: "text", text: "must fail" }]] } }))
   const wrongScopeAck = await waitFor(runner.frames, (frame) => frame.type === "ack" && frame.ref === "wrong-scope")
   check(wrongScopeAck.ok === false, "runner writes outside its bound community receive a correlated rejection")
-  runner.socket.send(JSON.stringify({ type: "message.create", ref: "runner-message", payload: { communityId: alpha, agentId: agent.id, channelId, paragraphs: [[{ kind: "text", text: "agent reply" }]] } }))
+  runner.socket.send(JSON.stringify({ type: "memory.result", ref: "runner-message", payload: { runId: work.payload.view.runId, answer: "agent reply", proposals: [] } }))
   const messageAck = await waitFor(runner.frames, (frame) => frame.type === "ack" && frame.ref === "runner-message")
   check(messageAck.ok === true && typeof messageAck.messageId === "string", "agent replies are persisted with a correlated ack")
   await post(`/api/communities/${alpha}/threads`, alice.token, { channelId, rootMessageId: messageAck.messageId })
@@ -217,7 +221,7 @@ try {
   check(crossSourceAck.ok === false, "card sources cannot cross community boundaries")
   runner.socket.send(JSON.stringify({ type: "card.publish", ref: "runner-card", payload: { communityId: alpha, agentId: agent.id, channelId, path: "cards/answer.md", title: "Answer", type: "answer", body: "retained card", sourceMessageIds: [messageAck.messageId] } }))
   const cardAck = await waitFor(runner.frames, (frame) => frame.type === "ack" && frame.ref === "runner-card")
-  check(cardAck.ok === true && typeof cardAck.cardId === "string", "agent card publication is retained with a correlated ack")
+  check(cardAck.ok === false, "legacy card publication cannot bypass governed execution and admission")
   check(browser.frames.some((frame) => frame.type === "event" && frame.payload?.event?.type === "message.created"), "agent reply is scoped to browser events")
   const renamed = await expectStatus(`/api/communities/${alpha}/channels/${channelId}`, alice.token, 200, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: "Questions renamed" }) }) as Json
   check(renamed.name === "Questions renamed", "teachers can rename channels")

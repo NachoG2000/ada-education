@@ -1,14 +1,20 @@
+import { AdaMark } from "./ada-identity"
+import { settingsSections } from "./settings-navigation"
+import { NavigationItem as SidebarNavButton } from "./page-layout"
 import { useState } from "react"
 import {
+  InboxIcon,
+  BookOpenIcon,
   BotIcon,
   CheckIcon,
   ChevronDownIcon,
   HashIcon,
   LockIcon,
   MoreHorizontalIcon,
+  MessageSquareIcon,
   LogOutIcon,
   PlusIcon,
-  SearchIcon,
+  ArrowLeftIcon,
   SettingsIcon,
   SquarePenIcon,
   UserPlusIcon,
@@ -44,7 +50,7 @@ interface WorkspaceSidebarProps {
   compact?: boolean
   onBrowseChannels: () => void
   onCreateChannel: (group: Channel["group"]) => void
-  onOpenSearch: () => void
+  onCloseSettings: () => void
   onOpenChannelAuxiliary: (channelId: string, kind: ChannelAuxiliaryKind) => void
   onNavigate?: () => void
 }
@@ -54,7 +60,7 @@ export function WorkspaceSidebar({
   compact = false,
   onBrowseChannels,
   onCreateChannel,
-  onOpenSearch,
+  onCloseSettings,
   onOpenChannelAuxiliary,
   onNavigate,
 }: WorkspaceSidebarProps) {
@@ -62,7 +68,17 @@ export function WorkspaceSidebar({
   const hosted = useHostedWorkspace()
   const navigateTo = useAppNavigation(community.id)
   const courseChannels = community.channels.filter((channel) => channel.kind !== "dm" && channel.status !== "archived")
-  const directMessages = community.channels.filter((channel) => channel.kind === "dm" && channel.ownerId === me.id)
+  const ada = community.members.find((member) => member.kind === "agent" && member.systemRole === "ada")
+  const adaDm = community.channels.find((channel) => channel.kind === "dm" && channel.ownerId === me.id && channel.agentId === ada?.id)
+  const [adaPending, setAdaPending] = useState(false)
+  const openAda = async () => {
+    if (!ada || adaPending) return
+    setAdaPending(true)
+    try { const channelId = adaDm?.id ?? await hosted.createAgentDm(ada.id); selectRoute({ kind: "channel", channelId }) }
+    catch (error) { toast.add({ title: "Could not open Ada", description: error instanceof Error ? error.message : "Try again." }) }
+    finally { setAdaPending(false) }
+  }
+  const directMessages = community.channels.filter((channel) => channel.kind === "dm" && channel.ownerId === me.id && channel.agentId !== ada?.id)
   const studentConversations = me.kind === "person" && me.role === "teacher"
     ? community.channels.filter((channel) => channel.kind === "dm" && channel.ownerId !== me.id)
     : []
@@ -71,8 +87,27 @@ export function WorkspaceSidebar({
 
   const selectRoute = (next: AppRoute) => {
     if (next.kind === "channel") setActiveChannelId(next.channelId)
-    void navigateTo(next)
+    void navigateTo(next, { replace: route.kind === "settings" && next.kind === "settings" })
     onNavigate?.()
+  }
+
+  if (route.kind === "settings") {
+    const sections = settingsSections(me.kind === "person" && me.role === "teacher")
+    const active = sections.some((item) => item.section === route.section) ? route.section : "profile"
+    const back = () => { onCloseSettings(); onNavigate?.() }
+    return <aside className="flex h-full min-h-0 w-full flex-col text-sidebar-foreground" aria-label="Settings sidebar">
+      <div className={cn("shrink-0 p-2", compact && "flex justify-center")}>
+        {compact ? <CompactNavButton label="Back to workspace" onClick={back}><ArrowLeftIcon /></CompactNavButton> : <>
+          <SidebarNavButton label="Back to workspace" icon={<ArrowLeftIcon />} onClick={back} />
+          <h2 className="px-2 pb-2 pt-4 text-section font-semibold">Settings</h2>
+        </>}
+      </div>
+      <nav aria-label="Settings sections" className={cn("min-h-0 flex-1 space-y-1 overflow-y-auto px-2 pb-3", compact && "flex flex-col items-center")}>
+        {sections.map((item) => compact
+          ? <CompactNavButton key={item.section} label={item.label} active={active === item.section} onClick={() => selectRoute({ kind: "settings", section: item.section })}><item.icon /></CompactNavButton>
+          : <SidebarNavButton key={item.section} label={item.label} icon={<item.icon />} active={active === item.section} onClick={() => selectRoute({ kind: "settings", section: item.section })} />)}
+      </nav>
+    </aside>
   }
 
   if (compact) {
@@ -82,12 +117,14 @@ export function WorkspaceSidebar({
           {community.initial || community.name.slice(0, 1).toUpperCase()}
         </div>
         <Separator className="my-2 w-7" />
-        <CompactNavButton label="Search" onClick={onOpenSearch}><SearchIcon /></CompactNavButton>
+        {ada ? <CompactNavButton label={adaPending ? "Opening Ada…" : "Ada"} active={route.kind === "channel" && route.channelId === adaDm?.id} onClick={() => void openAda()}><AdaMark className="size-6 rounded-md" /></CompactNavButton> : null}
+        <CompactNavButton label="Inbox" active={route.kind === "inbox"} onClick={() => selectRoute({ kind: "inbox" })}><InboxIcon /></CompactNavButton>
+        <CompactNavButton label="Course memory" active={route.kind === "memory"} onClick={() => selectRoute({ kind: "memory" })}><BookOpenIcon /></CompactNavButton>
         <CompactNavButton label="Agents" active={route.kind === "agents"} onClick={() => selectRoute({ kind: "agents" })}>
           <BotIcon />
         </CompactNavButton>
         <div className="mt-auto flex flex-col items-center gap-1">
-          <CompactNavButton label="Settings" active={route.kind === "settings"} onClick={() => selectRoute({ kind: "settings" })}>
+          <CompactNavButton label="Settings" onClick={() => selectRoute({ kind: "settings" })}>
             <SettingsIcon />
           </CompactNavButton>
           <button type="button" onClick={hosted.requestSignOut} className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label={`Signed in as ${me.name}. Sign out.`}>
@@ -100,17 +137,17 @@ export function WorkspaceSidebar({
 
   return (
     <aside className="flex h-full min-h-0 w-full flex-col text-sidebar-foreground" aria-label="Course sidebar">
-      <div className="px-3 pb-2 pt-2">
+      <div className="p-2">
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
-              <Button type="button" variant="ghost" className="w-full justify-start px-2 text-left" aria-label="Course menu" />
+              <Button type="button" variant="ghost" className="h-auto min-h-14 w-full justify-start gap-2 px-2 py-2 text-left" aria-label="Course menu" />
             }
           >
-            <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-primary text-xs font-semibold text-primary-foreground">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary text-xs font-semibold text-primary-foreground">
               {community.initial || community.name.slice(0, 1).toUpperCase()}
             </span>
-            <span className="min-w-0 flex-1"><span className="block truncate font-semibold">{community.name}</span><span className="block truncate text-[10px] font-normal text-sidebar-foreground/55">{hosted.activeCommunity.term}</span></span>
+            <span className="min-w-0 flex-1"><span className="block truncate font-semibold">{community.name}</span><span className="block truncate text-xs font-normal text-muted-foreground">{hosted.activeCommunity.term}</span></span>
             <ChevronDownIcon data-icon="inline-end" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="min-w-56">
@@ -130,42 +167,31 @@ export function WorkspaceSidebar({
         </DropdownMenu>
       </div>
 
-      <nav className="px-2" aria-label="Primary">
+      <nav className="space-y-1 px-2 pb-2" aria-label="Primary">
+        {ada ? <SidebarNavButton active={route.kind === "channel" && route.channelId === adaDm?.id} onClick={() => void openAda()} icon={<AdaMark className="size-5 rounded-md" />} label={adaPending ? "Opening Ada…" : "Ada"} /> : null}
+        <SidebarNavButton active={route.kind === "inbox"} onClick={() => selectRoute({ kind: "inbox" })} icon={<InboxIcon />} label="Inbox" />
+        <SidebarNavButton active={route.kind === "memory"} onClick={() => selectRoute({ kind: "memory" })} icon={<BookOpenIcon />} label="Course memory" />
         <SidebarNavButton active={route.kind === "agents"} onClick={() => selectRoute({ kind: "agents" })} icon={<BotIcon />} label="Agents" />
       </nav>
-
-      <div className="px-3 py-2">
-        <button
-          type="button"
-          onClick={onOpenSearch}
-          className="flex h-8 w-full items-center gap-2 rounded-md bg-background/35 px-2.5 text-left text-xs text-sidebar-foreground/65 outline-none hover:bg-background/55 focus-visible:ring-2 focus-visible:ring-sidebar-ring"
-        >
-          <SearchIcon aria-hidden className="size-3.5" />
-          <span className="flex-1">Search</span>
-          <kbd className="font-sans text-[10px]">⌘K</kbd>
-        </button>
-      </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 pb-3">
         <ChannelGroup label="Channels" channels={courseChannels} activeId={route.kind === "channel" ? route.channelId : undefined} onSelect={(channelId) => selectRoute({ kind: "channel", channelId })} onCreate={() => onCreateChannel("course")} canCreate={me.kind === "person" && me.role === "teacher"} teacher={me.kind === "person" && me.role === "teacher"} onDetails={onOpenChannelAuxiliary} onConfirm={setConfirmation} />
         <ChannelGroup label="Direct messages" channels={directMessages} activeId={route.kind === "channel" ? route.channelId : undefined} onSelect={(channelId) => selectRoute({ kind: "channel", channelId })} onCreate={() => selectRoute({ kind: "new-message" })} canCreate teacher={false} onDetails={onOpenChannelAuxiliary} onConfirm={setConfirmation} />
         {studentConversations.length ? <ChannelGroup label="Student conversations" channels={studentConversations} activeId={route.kind === "channel" ? route.channelId : undefined} onSelect={(channelId) => selectRoute({ kind: "channel", channelId })} onCreate={() => undefined} canCreate={false} defaultOpen={false} teacher onDetails={onOpenChannelAuxiliary} onConfirm={setConfirmation} /> : null}
-        <div className="mt-2 px-1">
-          <Button type="button" variant="ghost" size="sm" className="w-full justify-start text-muted-foreground" onClick={onBrowseChannels}>
-            <PlusIcon data-icon="inline-start" />Browse channels
-          </Button>
+        <div className="mt-2">
+          <SidebarNavButton label="Browse channels" icon={<PlusIcon />} onClick={onBrowseChannels} />
         </div>
       </div>
 
       <div className="shrink-0 px-2 pb-2">
         <Separator className="mb-2 opacity-50" />
-        <div className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-sidebar-accent">
+        <div className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-muted hover:text-foreground dark:hover:bg-muted/50">
           <button type="button" onClick={() => selectRoute({ kind: "settings", section: "profile" })} className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label="Open profile settings">
             <MemberAvatar member={me} size={30} presence />
           </button>
           <button type="button" onClick={() => selectRoute({ kind: "settings", section: "profile" })} className="min-w-0 flex-1 text-left outline-none focus-visible:underline">
             <span className="block truncate text-sm font-medium">{me.name}</span>
-            <span className="block truncate text-[11px] text-sidebar-foreground/60">{me.kind === "person" ? me.role ?? "member" : "agent"}</span>
+            <span className="block truncate text-xs text-muted-foreground">{me.kind === "person" ? me.role ?? "member" : "agent"}</span>
           </button>
           <DropdownMenu>
             <DropdownMenuTrigger render={<Button type="button" variant="ghost" size="icon-xs" aria-label="Profile actions" />}>
@@ -226,18 +252,19 @@ function ChannelGroup({
   onDetails: (channelId: string, kind: ChannelAuxiliaryKind) => void
   onConfirm: (value: { channel: Channel; action: "leave" | "archive" }) => void
 }) {
+  const { member } = useCommunity()
   const [open, setOpen] = useState(defaultOpen)
   return (
     <Collapsible open={open} onOpenChange={setOpen} className="mt-1">
-      <div className="group/section flex h-7 items-center gap-1 px-1">
+      <div className="group/section flex min-h-9 items-center gap-1">
         <CollapsibleTrigger
-          render={<button type="button" className="flex min-w-0 flex-1 items-center gap-1 rounded px-1 text-left text-[11px] font-medium text-sidebar-foreground/55 outline-none hover:text-sidebar-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring" />}
+          render={<button type="button" className="flex min-h-9 min-w-0 flex-1 items-center gap-2 rounded-md px-2 text-left text-sm font-medium text-muted-foreground outline-none hover:bg-muted hover:text-foreground dark:hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring" />}
         >
-          <ChevronDownIcon className={cn("size-3 transition-transform", !open && "-rotate-90")} />
+          <ChevronDownIcon className={cn("size-4 transition-transform", !open && "-rotate-90")} />
           <span className="truncate">{label}</span>
         </CollapsibleTrigger>
         {canCreate ? (
-          <Button type="button" variant="ghost" size="icon-xs" className="opacity-70 sm:opacity-0 sm:group-hover/section:opacity-100 focus-visible:opacity-100" onClick={onCreate} aria-label={label === "Direct messages" ? "New message" : "Create channel"}>
+          <Button type="button" variant="ghost" size="icon-xs" className="text-muted-foreground" onClick={onCreate} aria-label={label === "Direct messages" ? "New message" : "Create channel"}>
             {label === "Direct messages" ? <SquarePenIcon /> : <PlusIcon />}
           </Button>
         ) : null}
@@ -250,22 +277,24 @@ function ChannelGroup({
               key={channel.id}
               type="button"
               onClick={() => onSelect(channel.id)}
+              aria-label={channel.name}
+              data-slot="navigation-item"
               aria-current={channel.id === activeId ? "page" : undefined}
               className={cn(
-                "group/channel flex h-7 w-full items-center gap-2 rounded-md px-2 text-left text-[13px] outline-none hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-sidebar-ring",
-                channel.id === activeId && "bg-background/80 font-medium text-sidebar-accent-foreground",
+                "group/channel transition-colors aria-[current=page]:hover:bg-sidebar-accent dark:aria-[current=page]:hover:bg-sidebar-accent flex min-h-9 w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm outline-none hover:bg-muted hover:text-foreground dark:hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring",
+                channel.id === activeId && "bg-sidebar-accent font-medium text-sidebar-accent-foreground",
                 channel.status === "archived" && "text-sidebar-foreground/50",
               )}
             />}>
-              {channel.visibility === "private" || channel.group === "private" ? <LockIcon className="size-3.5 shrink-0 opacity-60" /> : <HashIcon className="size-3.5 shrink-0 opacity-60" />}
+              {channel.kind === "dm" ? (channel.agentId ? <MemberAvatar member={member(channel.agentId)} size={20} /> : <MessageSquareIcon className="size-4 shrink-0 text-muted-foreground" />) : channel.visibility === "private" || channel.group === "private" ? <LockIcon className="size-4 shrink-0 text-muted-foreground" /> : <HashIcon className="size-4 shrink-0 text-muted-foreground" />}
               <span className="min-w-0 flex-1 truncate">{channel.name}</span>
-              {channel.status === "archived" ? <Badge variant="secondary" className="px-1 py-0 text-[9px] leading-4">Archived</Badge> : null}
+              {channel.status === "archived" ? <Badge variant="secondary" className="px-1 py-0 text-xs leading-4">Archived</Badge> : null}
               {channel.unread ? <span className="size-1.5 shrink-0 rounded-full bg-primary" aria-label="Unread" /> : null}
             </ContextMenuTrigger>
             <ContextMenuContent>
               <ContextMenuGroup>
-                <ContextMenuItem onClick={() => onSelect(channel.id)}><HashIcon />Open</ContextMenuItem>
-                <ContextMenuItem onClick={() => { void navigator.clipboard.writeText(`#${channel.name}`); toast.add({ title: "Channel name copied" }) }}><CheckIcon />Copy name</ContextMenuItem>
+                <ContextMenuItem onClick={() => onSelect(channel.id)}>{channel.kind === "dm" ? <MessageSquareIcon /> : <HashIcon />}Open</ContextMenuItem>
+                <ContextMenuItem onClick={() => { void navigator.clipboard.writeText(channel.kind === "dm" ? channel.name : `#${channel.name}`); toast.add({ title: channel.kind === "dm" ? "Name copied" : "Channel name copied" }) }}><CheckIcon />Copy name</ContextMenuItem>
                 <ContextMenuItem onClick={() => onDetails(channel.id, "members")}><UsersIcon />View members</ContextMenuItem>
                 {teacher && channel.kind !== "dm" ? <ContextMenuItem onClick={() => onDetails(channel.id, "settings")}><SettingsIcon />Channel settings</ContextMenuItem> : null}
               </ContextMenuGroup>
@@ -277,23 +306,6 @@ function ChannelGroup({
         </div>
       </CollapsibleContent>
     </Collapsible>
-  )
-}
-
-function SidebarNavButton({ active, icon, label, onClick }: { active: boolean; icon: React.ReactNode; label: string; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-current={active ? "page" : undefined}
-      className={cn(
-        "flex h-8 w-full items-center gap-2 rounded-md px-2 text-left text-[13px] outline-none hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-sidebar-ring",
-        active && "bg-background/80 font-medium",
-      )}
-    >
-      <span className="opacity-70">{icon}</span>
-      <span className="flex-1 truncate">{label}</span>
-    </button>
   )
 }
 

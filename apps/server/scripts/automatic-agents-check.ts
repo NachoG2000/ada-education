@@ -7,21 +7,25 @@ import { join, resolve } from "node:path"
 import { randomBytes } from "node:crypto"
 import { once } from "node:events"
 
+const runtime = "pi"
 const scratch = mkdtempSync(join(tmpdir(), "ada-automatic-agents-"))
 const binary = join(scratch, "bin")
 const state = join(scratch, "host")
 const trace = join(scratch, "provider.jsonl")
 mkdirSync(binary)
-writeFileSync(join(binary, "claude"), `#!/usr/bin/env node
+writeFileSync(join(binary, runtime), `#!/usr/bin/env node
 const fs = require('node:fs');
 const input = fs.readFileSync(0, 'utf8');
 const entry = { pid: process.pid, cwd: process.cwd(), input, secret: Object.keys(process.env).some(k => /^ADA_.*(?:TOKEN|SECRET|CODE|KEY)$/.test(k)), key: !!process.env.ANTHROPIC_API_KEY };
 fs.appendFileSync(process.env.ADA_TEST_TRACE, JSON.stringify({ ...entry, event: 'start' }) + '\\n');
 const marker = input.includes('RULE_SECOND') ? 'RULE_SECOND' : 'RULE_FIRST';
-fs.writeFileSync('memory-check.txt', marker);
+const index = JSON.parse(fs.readFileSync('memory/index.json', 'utf8'));
+const source = JSON.parse(fs.readFileSync(index.sources[0].file, 'utf8'));
+const proposals = source.scope.kind === 'channel' ? [{ title: 'Pi knowledge', kind: 'concept', body: marker, scope: source.scope, evidence: [{ sourceId: source.id, version: source.version, quote: source.text }], relations: [] }] : [];
+fs.writeFileSync('result.json', JSON.stringify({ answer: marker, proposals }));
 const timer = setTimeout(() => {
   fs.appendFileSync(process.env.ADA_TEST_TRACE, JSON.stringify({ pid: process.pid, event: 'end' }) + '\\n');
-  console.log(JSON.stringify({ result: marker }));
+  console.log(marker);
 }, input.includes('SLOW_WORK') ? 30000 : 250);
 process.on('SIGTERM', () => { clearTimeout(timer); process.exit(0); });
 `, { mode: 0o755 })
@@ -29,7 +33,7 @@ process.env.ADA_DB = join(scratch, "test.db")
 process.env.PORT = "0"
 process.env.ADA_RUNNER_HOST_TOKEN = randomBytes(32).toString("base64url")
 delete process.env.ADA_MODEL
-delete process.env.ADA_RUNTIME
+process.env.ADA_RUNTIME = runtime
 const { startServer } = await import("../src/index.js")
 const running = startServer()
 const address = running.server.address()
@@ -77,8 +81,13 @@ try {
   const base = `/api/communities/${created.community.id}`
   let agents = await request(`${base}/agents`, teacher.token)
   assert.equal(agents.length, 2)
-  const first = agents[0]
-  const second = agents[1]
+  assert(agents.every((agent: any) => agent.runtime === runtime), "installation runtime reaches starter agents")
+  const second = agents.find((agent: any) => agent.systemRole === "ada")
+  assert(second && second.name === "Ada", "community has one identified primary Ada")
+  assert.equal(agents.filter((agent: any) => agent.systemRole === "ada").length, 1)
+  const first = agents.find((agent: any) => agent.id !== second.id)
+  await request(`${base}/agents/${second.id}`, teacher.token, { name: "Renamed" }, "PATCH", 409)
+  await request(`${base}/agents/${second.id}`, teacher.token, undefined, "DELETE", 409)
   await request(`${base}/agents/${first.id}`, teacher.token, { instructions: "RULE_FIRST" }, "PATCH", 200)
   startHost()
   await until(async () => (await request(base, teacher.token)).agents.every((agent: any) => agent.presence === "online"), "starter connections")
@@ -88,17 +97,29 @@ try {
   const messages = (channelId: string) => request(`${base}/channels/${channelId}/messages`, teacher.token)
   await Promise.all([send(dm.channel.id, "Hello"), send(dm2.channel.id, "Hello")])
   await until(async () => (await messages(dm.channel.id)).some((m: any) => m.authorId === first.id) && (await messages(dm2.channel.id)).some((m: any) => m.authorId === second.id), "implicit DM replies")
+  // Exercise real WS -> runner -> provider -> reply, not only REST dispatch selection.
+  const freshChannel = await request(`${base}/channels`, teacher.token, { name: "First mention", kind: "channel", visibility: "public", agentIds: [] })
+  const firstMention = await request(`${base}/channels/${freshChannel.id}/messages`, teacher.token, {
+    paragraphs: [[{ kind: "mention", memberId: second.id, text: `@${second.name}` }, { kind: "text", text: " Respond on this first message" }]],
+  })
+  await until(async () => (await messages(freshChannel.id)).some((message: any) => message.authorId === second.id), "newly added agent answers the first structured mention")
+  const firstTurn = await messages(freshChannel.id)
+  assert.equal(firstTurn.filter((message: any) => message.authorId === teacher.user.id).length, 1, "no second prompt required")
+  assert(firstTurn.some((message: any) => message.id === firstMention.id))
+  assert(!output.includes("invalid hosted runner frame"), "structured mentions reach the runner without a protocol rejection")
   let inFlight = 0
   for (const entry of entries()) { inFlight += entry.event === "start" ? 1 : -1; assert(inFlight >= 0 && inFlight <= 1, "host serializes provider invocations") }
   assert(entries().filter((entry) => entry.event === "start").every((entry) => !entry.secret && !entry.key), "provider environment excludes transport secrets and API keys")
   const credentials = readFileSync(join(state, "enrollments.json"), "utf8")
-  const workspace = entries().find((entry) => entry.event === "start" && entry.cwd.endsWith(first.id)).cwd
-  assert(existsSync(join(workspace, "memory-check.txt")))
+  const workspace = entries().find((entry) => entry.event === "start").cwd
+  assert(!existsSync(workspace), "invocation-specific memory is removed after the run")
+  const memory = await request(`${base}/memory`, teacher.token)
+  assert(memory.records.some((record: any) => record.title === "Pi knowledge" && record.admission === "accepted"), "Pi proposals receive server admission and persist in canonical memory")
   await stopHost()
   startHost()
   await until(async () => (await request(base, teacher.token)).agents.every((agent: any) => agent.presence === "online"), "restart connections")
   assert.equal(readFileSync(join(state, "enrollments.json"), "utf8"), credentials, "restart preserves credentials")
-  assert(existsSync(join(workspace, "memory-check.txt")), "restart preserves agent files")
+  assert((await request(`${base}/memory`, teacher.token)).records.some((record: any) => record.title === "Pi knowledge"), "restart preserves canonical memory")
   await request(`${base}/agents/${first.id}`, teacher.token, { instructions: "RULE_SECOND", channelIds: [] }, "PATCH", 200)
   await send(dm.channel.id, "Use your new rules")
   await until(async () => (await messages(dm.channel.id)).some((m: any) => m.authorId === first.id && JSON.stringify(m.paragraphs).includes("RULE_SECOND")), "edited rules reach next work")
@@ -117,7 +138,7 @@ try {
   assert((await messages(dm.channel.id)).some((m: any) => m.authorId === first.id), "deleted agent history remains readable")
   agents = await request(`${base}/agents`, teacher.token)
   assert(!JSON.stringify(agents).includes("runnerToken"))
-  console.log("Automatic agents OK: templates, enrollment authorization, DMs, rules, concurrency, restart, isolation, custom creation, deletion, and history.")
+  console.log("Automatic agents OK: templates, enrollment authorization, DMs, first-mention recruitment, rules, concurrency, restart, isolation, custom creation, deletion, and history.")
 } finally {
   await stopHost()
   await running.close()

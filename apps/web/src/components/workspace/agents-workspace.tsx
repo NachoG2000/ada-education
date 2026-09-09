@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import type { Agent } from "@ada/protocol"
 import { MessageSquareIcon, PencilIcon, PlusIcon, Trash2Icon, XIcon } from "lucide-react"
 import { WorkspaceAvatar as MemberAvatar } from "./workspace-avatar"
@@ -14,6 +14,7 @@ import { useCommunity } from "@/lib/community"
 import { toast } from "@/components/ui/toast"
 import { useHostedWorkspace } from "./hosted-context"
 import { AgentsPage } from "./pages"
+import { ActionSection } from "./page-layout"
 import { useClock } from "./use-clock"
 
 export function AgentsWorkspace({
@@ -30,7 +31,8 @@ export function AgentsWorkspace({
   const { community } = useCommunity()
   const navigateTo = useAppNavigation(community.id)
   const auxiliary = useAuxiliaryPreferences()
-  const narrow = useNarrowAuxiliary()
+  const container = useRef<HTMLDivElement>(null)
+  const narrow = useNarrowAuxiliary(container)
   const selected = route.agentId ? community.members.find((member): member is Agent => member.kind === "agent" && member.id === route.agentId) : undefined
   useEffect(() => {
     if (route.agentId && !selected) void navigateTo({ kind: "agents" }, { replace: true })
@@ -38,14 +40,14 @@ export function AgentsWorkspace({
   const list = <AgentsPage onCreateAgent={onCreateAgent} onSelectAgent={(agentId) => void navigateTo({ kind: "agents", agentId })} />
   const panel = selected ? <AgentDetailsPanel agent={selected} onClose={() => void navigateTo({ kind: "agents" })} onEdit={() => onEditAgent(selected.id)} onDelete={() => onDeleteAgent(selected.id)} /> : null
 
-  if (!panel) return list
-  if (narrow) return <div className="relative size-full">{list}<div className="absolute inset-y-0 right-0 z-20 w-full max-w-md border-l bg-background">{panel}</div></div>
+  if (!panel) return <div ref={container} className="size-full min-w-0">{list}</div>
+  if (narrow) return <div ref={container} className="relative size-full">{list}<div className="absolute inset-y-0 right-0 z-20 w-full max-w-md border-l bg-background">{panel}</div></div>
   return (
-    <ResizablePanelGroup orientation="horizontal" className="size-full min-h-0">
+    <div ref={container} className="size-full min-w-0"><ResizablePanelGroup orientation="horizontal" className="size-full min-h-0">
       <ResizablePanel id="agents-list" minSize={480}>{list}</ResizablePanel>
       <ResizableHandle />
       <ResizablePanel id="agent-detail" defaultSize={auxiliary.width} minSize={320} maxSize={720} groupResizeBehavior="preserve-pixel-size" onResize={(size) => { if (size.inPixels >= 320) auxiliary.setWidth(size.inPixels) }}>{panel}</ResizablePanel>
-    </ResizablePanelGroup>
+    </ResizablePanelGroup></div>
   )
 }
 
@@ -67,14 +69,14 @@ function AgentDetailsPanel({ agent, onClose, onEdit, onDelete }: { agent: Agent;
 
   return (
     <aside className="flex size-full flex-col bg-background" aria-label={`${agent.name} details`}>
-      <header className="flex min-h-14 items-center gap-3 border-b px-4"><MemberAvatar member={agent} size={36} presence /><div className="min-w-0 flex-1"><h2 className="truncate font-semibold">{agent.name}</h2><p className="truncate text-xs text-muted-foreground">Classroom agent</p></div><Button type="button" variant="ghost" size="icon-sm" onClick={onClose} aria-label="Close agent details"><XIcon /></Button></header>
+      <header className="flex min-h-14 items-center gap-3 border-b px-4"><MemberAvatar member={agent} size={36} presence /><div className="min-w-0 flex-1"><h2 className="truncate font-semibold">{agent.name}</h2><p className="truncate text-xs text-muted-foreground">{agent.systemRole === "ada" ? "Primary course agent" : "Classroom agent"}</p></div><Button type="button" variant="ghost" size="icon-sm" onClick={onClose} aria-label="Close agent details"><XIcon /></Button></header>
       <div className="flex h-10 items-end gap-4 border-b px-4" role="tablist" aria-label="Agent sections">
         <PanelTab active={tab === "about"} onClick={() => setTab("about")}>About</PanelTab>
-        {teacher ? <PanelTab active={tab === "danger"} onClick={() => setTab("danger")}>Danger</PanelTab> : null}
+        {teacher && agent.systemRole !== "ada" ? <PanelTab active={tab === "danger"} onClick={() => setTab("danger")}>Danger</PanelTab> : null}
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto p-4">
         {tab === "about" ? <div className="space-y-5"><div className="flex items-center justify-between"><span className="text-sm font-medium">Status</span><Badge variant="outline">{status}</Badge></div>{status === "Offline" ? <p className="text-sm text-muted-foreground">Temporarily disconnected. Your administrator can check the shared agent connection.</p> : null}<div><h3 className="text-sm font-medium">Rules</h3><p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{agent.instructions || "No instructions."}</p></div><div><h3 className="text-sm font-medium">Channels</h3><div className="mt-2 flex flex-wrap gap-2">{channels.filter((channel) => agent.channelIds.includes(channel.id)).map((channel) => <Badge key={channel.id} variant="secondary">#{channel.name}</Badge>)}{!agent.channelIds.length ? <span className="text-sm text-muted-foreground">No assigned channels.</span> : null}</div></div><Separator /><div className="flex flex-wrap gap-2"><Button type="button" size="sm" onClick={() => void message()} disabled={agent.status === "inactive"}><MessageSquareIcon />Message</Button>{teacher ? <><Button type="button" size="sm" variant="outline" onClick={onEdit}><PencilIcon />Edit</Button><Button type="button" size="sm" variant="outline" onClick={() => setAddOpen(true)}><PlusIcon />Add to channel</Button></> : null}</div></div> : null}
-        {tab === "danger" ? <div className="rounded-md border border-destructive/40 p-4"><h3 className="font-medium">Delete agent</h3><p className="mt-1 text-sm leading-5 text-muted-foreground">The agent stops working. Existing direct-message history remains available as read-only.</p><Button type="button" variant="destructive" className="mt-4" onClick={onDelete} disabled={agent.status === "inactive"}><Trash2Icon />Delete agent</Button></div> : null}
+        {tab === "danger" ? <ActionSection destructive title="Delete agent" description="The agent stops working. Existing direct-message history remains available as read-only." action={<Button type="button" size="sm" variant="destructive" onClick={onDelete} disabled={agent.status === "inactive"}><Trash2Icon />Delete agent</Button>} /> : null}
       </div>
       <AddAgentToChannelDialog open={addOpen} onOpenChange={setAddOpen} agent={agent} channels={channels} onAdd={async (channelId) => { await workspace.updateAgent(agent.id, { channelIds: [...agent.channelIds, channelId] }); toast.add({ title: `Added ${agent.name} to channel` }) }} />
     </aside>
@@ -91,8 +93,13 @@ function AddAgentToChannelDialog({ open, onOpenChange, agent, channels, onAdd }:
 
 function PanelTab({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) { return <button type="button" role="tab" aria-selected={active} onClick={onClick} className="h-10 border-b-2 border-transparent px-1 text-sm aria-selected:border-foreground aria-selected:font-medium">{children}</button> }
 
-function useNarrowAuxiliary(): boolean {
-  const [narrow, setNarrow] = useState(() => window.matchMedia("(max-width: 1023px)").matches)
-  useEffect(() => { const media = window.matchMedia("(max-width: 1023px)"); const update = () => setNarrow(media.matches); media.addEventListener("change", update); return () => media.removeEventListener("change", update) }, [])
+function useNarrowAuxiliary(container: React.RefObject<HTMLDivElement | null>): boolean {
+  const [narrow, setNarrow] = useState(true)
+  useEffect(() => {
+    if (!container.current) return
+    const observer = new ResizeObserver(([entry]) => setNarrow(entry.contentRect.width < 840))
+    observer.observe(container.current)
+    return () => observer.disconnect()
+  }, [container])
   return narrow
 }

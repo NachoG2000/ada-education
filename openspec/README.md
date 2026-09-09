@@ -56,3 +56,12 @@ The agent-creation flow is updated by `specs/automatic-agent-host/spec.md`
 and the Agents requirement in `specs/web-client/spec.md`. Its completed
 change is `changes/archive/2026-09-06-automatic-agents/`; see `DECISIONS.md`
 §25 and `docs/agent-host.md` for the current startup experience.
+
+## Educational artifacts (2026-09-07)
+
+`changes/educational-artifacts/` is implemented with all nine tasks complete and
+strict change validation passing. It adds typed channel artifacts, personal
+work/submissions, contextual tutor drafts and a persistent personal Inbox (§27).
+See `docs/educational-artifacts.md`. The delta contracts remain in the change;
+sync to main specs and archival await explicit approval after automatic review
+blocked that lifecycle action. Agentic memory is still deferred.

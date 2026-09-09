@@ -6,6 +6,7 @@ Convention: one file per session or document, `YYYY-MM-DD-<topic>.md`. Every cla
 
 | File | What it is |
 |---|---|
+| `2026-09-09-demo-video-exploration.md` | Candidate video stories grounded in the seeded courses; teacher-led recommendation and unresolved audience/perspective choices. |
 | `2026-08-22-problem-impact.md` | 2025–2026 evidence across six fronts (students, teachers, knowledge loss, agent memory and AI tutors, Argentina, tools) + what the research does not prove. |
 | `2026-08-22-subscriptions-runners-buzz-pi.md` | Anthropic/OpenAI rules on subscriptions in third-party servers and harnesses, Buzz's agent topology, and what pi.dev is. Basis for `DECISIONS.md` §14. |
 | `2026-08-22-why-now.md` | Verified technological timing (MCP, ACP, Buzz, costs, memory-as-files, AI policy) and an audit of the "the problem is attention/pace" claim: which framing survives the evidence. Basis for `PROBLEM.md` §4/§8/§9. |

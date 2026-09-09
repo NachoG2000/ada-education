@@ -55,6 +55,7 @@ export interface Person {
 }
 
 export interface Agent {
+  systemRole?: "ada"
   kind: "agent"
   id: string
   name: string
@@ -128,6 +129,7 @@ export interface MessageReaction {
 
 export type MessageBlock =
   | { kind: "text"; text: string }
+  | { kind: "mention"; text: string; memberId: string }
   | { kind: "cite"; text: string; cite: Citation }
   | { kind: "code"; text: string }
 

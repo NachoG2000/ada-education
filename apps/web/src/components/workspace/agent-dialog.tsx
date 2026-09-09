@@ -46,7 +46,7 @@ export interface AgentDialogProps {
   value: AgentDialogValue
   onValueChange: (value: AgentDialogValue) => void
   onSubmit: (input: CreateAgentInput | UpdateAgentInput) => void | Promise<void>
-  agent?: Pick<Agent, "id" | "name" | "status">
+  agent?: Pick<Agent, "id" | "name" | "status" | "systemRole">
   channelOptions?: AgentChannelOption[]
   pending?: boolean
   error?: string
@@ -118,7 +118,7 @@ export function AgentDialog({
             </Field> : null}
             <Field>
               <FieldLabel htmlFor={nameId}>Name</FieldLabel>
-              <Input id={nameId} value={value.name} onChange={(event) => onValueChange({ ...value, name: event.target.value })} placeholder="e.g. Course tutor" autoFocus disabled={pending} />
+              <Input id={nameId} value={value.name} onChange={(event) => onValueChange({ ...value, name: event.target.value })} placeholder="e.g. Practice coach" autoFocus disabled={pending || agent?.systemRole === "ada"} />
             </Field>
             <Field>
               <FieldLabel htmlFor={instructionsId}>Rules</FieldLabel>

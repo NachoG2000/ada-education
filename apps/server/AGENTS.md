@@ -50,3 +50,44 @@ The separate host executes models; provider API keys never reach this server.
 UI community creation requests two starter agents atomically. Work carries
 current rules; DMs implicitly address the agent. `check:agents` verifies
 the complete automatic lifecycle with fake providers and temporary data.
+
+## Mention recruitment (§26)
+
+`tenant.ts` validates structured mention IDs and canonicalizes labels. `createTenantMessage` atomically adds eligible outside-channel agents for teachers and inserts the message; invalid mentions roll back both. Students cannot recruit, DMs cannot add another agent, and edits never recruit. `api.ts` publishes validated membership projections before message/work dispatch. `scripts/mentions-check.ts` exercises the real REST app with throwaway SQLite data, including permissions, rollback, rename, retries, threads, and event schemas.
+
+The automatic-agent integration check also creates an agent-free channel, sends one structured mention that recruits an online agent, and waits for its real runner/fake-provider reply. It asserts no second human prompt and no runner protocol rejection. REST-only mention checks cannot catch stale child-process schemas.
+
+`education.ts` registers hosted educational artifact/work/submission/Inbox-read
+routes. Migration 7 is additive. Authorize every object through its community
+and readable channel; shared editing requires teacher role and DM editing its
+owner. Work is owner-only; submissions expose explicit snapshots to teachers.
+Read request bodies before checking current versions and mutating synchronously.
+Run `check:education`; it uses disposable data and includes Inbox eligibility.
+This extension is separate from legacy runner memory cards (§27).
+
+**Pi runtime (§28):** migration 8 rebuilds `tenant_agents` to admit `pi` while
+preserving existing rows/digests. Installation runtime validation accepts
+Claude, Codex, or Pi; unknown values fail startup. `check:agents:pi` runs the
+automatic lifecycle and wiki publication through a fake Pi provider. Models
+still execute only in the external runner.
+
+**Primary Ada (§30):** migration 9 identifies and renames existing Course tutor
+records in place, with one `system_role='ada'` per community. Starter creation
+sets that role. The primary name and deletion are protected by tenant lifecycle
+rules; other edits remain available. DM access policy is unchanged.
+
+## Governed memory (§34)
+
+`memory-files.ts` owns canonical originals, OKF revisions and atomic catalogs
+beside the configured SQLite path. `memory-policy.ts` checks requester, assignment
+and destination before retrieval. `memory.ts` handles evidence, admission,
+trajectory relations, review and revocation. `memory-jobs.ts` owns migration-10
+processing state and correlated results; memory bodies do not belong in SQLite.
+`memory-api.ts` exposes authorized user routes; WS rejects old direct runner
+publications when the governed store is mounted. Always revalidate on completion.
+
+All new communities initialize memory and primary Ada. Pi/Luna is the default;
+unsupported governed adapters fail closed. `seed-exploration.ts` builds synthetic
+courses through real services; `check:memory` uses disposable data. Source formats
+are explicitly limited to selectable-text PDF, Markdown and UTF-8 text. Update
+`docs/course-memory.md` with policy or storage changes.

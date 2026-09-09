@@ -261,7 +261,7 @@ The client SHALL expose a top-chrome command palette on Command-or-Control K wit
 - **THEN** the corresponding capability-aware interaction runs
 
 ### Requirement: Routed settings
-Settings SHALL be a full-bleed route with Profile, Keyboard shortcuts, and Account sections for every member plus Community, Members, and Invites for teachers. Switching sections MUST replace the settings history entry rather than push a new one.
+Settings SHALL retain the shared workspace shell, top search, and sidebar, with its contextual navigation offering Profile, Keyboard shortcuts, and Account sections for every member plus Community, Members, and Invites for teachers. Switching sections MUST replace the settings history entry rather than push a new one.
 
 #### Scenario: Update profile
 - **WHEN** a member saves a valid display name in Profile
@@ -312,3 +312,51 @@ The client MUST NOT render card publication events, a cards route, or a card-pub
 #### Scenario: Receive a card publication event
 - **WHEN** an agent publishes a card
 - **THEN** the hosted conversation interface does not add a visible card or system-line element
+
+### Requirement: Shared interface components and responsive mention editing
+
+The client SHALL use shared page frames, headers, navigation rows, and action sections across Settings and Agents, with semantic design tokens and state variants. The interface SHALL keep navigation and composer actions usable at narrow widths.
+
+#### Scenario: Complete a mention without sending
+- **WHEN** a matching mention suggestion is active and the user presses Tab or Enter
+- **THEN** the editor inserts an identity-aware mention chip and trailing space without submitting
+- **AND** Escape dismisses suggestions and Shift+Enter inserts a line break outside completion
+
+#### Scenario: Teacher mentions an agent outside the channel
+- **WHEN** a teacher selects an active community agent outside the current channel
+- **THEN** the composer explains that sending will add it with conversation history access
+- **AND** no membership changes until message creation succeeds
+
+#### Scenario: Student suggestions
+- **WHEN** a student searches mention suggestions
+- **THEN** only channel members are available; outside agents cannot be recruited
+
+#### Scenario: Narrow workspace
+- **WHEN** available workspace width is below 840px
+- **THEN** context uses an overlay instead of compressing a split below its minimum widths
+- **AND** suggestions and composer actions remain within the viewport
+
+#### Scenario: Consistent shell and single search entry
+- **WHEN** a member opens Settings from a workspace page
+- **THEN** the top controls and course sidebar remain mounted with the same geometry
+- **AND** role-aware Settings sections replace the entire sidebar content, including its community header, primary links, and profile footer, including the mobile sheet
+- **AND** global search appears in the top bar without a duplicate sidebar control
+
+#### Scenario: Writable composer with empty draft
+- **WHEN** the draft is empty and Submit is disabled
+- **THEN** the editor remains visually enabled and stretches across the input group's width
+- **AND** placeholder and entered text are aligned to the left
+
+### Requirement: Live agent feedback and distinct direct messages
+
+The client SHALL display live thinking/publishing presence above the composer for active agents assigned to the conversation, with one agent named and multiple agents counted. This is agent-wide availability, not per-request progress. The indicator SHALL clear for idle/offline agents and disconnected clients, announce changes politely, and respect reduced motion.
+
+#### Scenario: Several agents are busy
+- **WHEN** two assigned active agents report thinking or publishing presence
+- **THEN** the composer displays “2 agents working…” with agent avatars
+
+#### Scenario: Direct-message presentation
+- **WHEN** the member opens a DM
+- **THEN** navigation and header identify its agent with an avatar, without a Private badge or channel hash prefix
+- **AND** teacher-visibility information remains visible
+- **AND** participant details do not expose channel-management mutations

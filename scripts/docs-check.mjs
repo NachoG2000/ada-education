@@ -4,6 +4,9 @@
 import { readFileSync, existsSync } from "node:fs"
 
 const checks = [
+  ["docs/course-memory.md", [/canonical/, /Pi/, /Shared-channel/, /result.json/, /route-backed/]],
+  ["docs/memory-exploration.md", [/Thinking in Code/, /Data for Decisions/, /seed:exploration/, /synthetic/]],
+  ["docs/educational-artifacts.md", [/Migration 7/, /Save privately/, /Submit to teacher/, /12,000/, /15 seconds/]],
   ["DECISIONS.md", [/## 18\. Modules, study material, feedback and agent reports .*08\/23/, /scripted/, /transparent to the student/i, /intro · core · advanced/]],
   ["PRODUCT.md", [/Modules and study data/, /Report rule/, /reconcile/, /"My study" \(student view\)/]],
   ["AGENTS.md", [/npm run check:issue1/, /npm run smoke/, /#modules/]],
@@ -33,7 +36,8 @@ const checks = [
   ["DECISIONS.md", [/## 21\. Buzz desktop as the SPA interaction reference/, /Inbox, channels, Agents and scoped Settings/, /No Rust\/Tauri/]],
   ["AGENTS.md", [/components\/hosted/, /check:workspace/, /TanStack Router/, { not: /There is no product router/ }]],
   ["PRODUCT.md", [/Current product contract \(2026-09-05\)/, /Historical visible product, 2026-08-24/, /chat\/configuration-first workspace/]],
-  ["DESIGN.md", [/Historical visible workspace — Buzz frame/, /300px sidebar/, /below 600px/]],
+  ["docs/history/design-system-2026-09-05.md", [/Historical visible workspace — Buzz frame/, /300px sidebar/, /below 600px/]],
+  ["DESIGN.md", [/Mention chips/, /840px/, /44px/, /#design-system/]],
   ["research/2026-08-24-buzz-parity-implementation.md", [/Base UI/, /Hono/, /AI Elements/]],
   // Current hosted-service foundation (GitHub issue #1 / DECISIONS §22).
   ["DECISIONS.md", [/## 22\./, /User identity is independent of membership/i, /Claude or Codex subscription/i]],

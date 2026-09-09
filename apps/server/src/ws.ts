@@ -31,6 +31,9 @@ import {
   runnerMessageCreateSchema,
   runnerPresenceSchema,
   runnerWorkSchema,
+  runnerMemoryWorkSchema,
+  runnerMemoryResultSchema,
+  type MemoryWork,
   scopedServerEventSchema,
   type CommunityAgent,
   type CommunityMember,
@@ -87,6 +90,12 @@ export type WsStore = {
     publishCard(input: { communityId: string; agentId: string; channelId: string; path: string; title: string; type: string; body: string; sourceMessageIds: string[]; replacesCardId?: string }): { cardId: string; channelId: string; messageId?: string }
     messageCreated?(message: TenantMessage): void
     workAgentsForMessage?(message: TenantMessage): TenantAgent[]
+    memory?: {
+      enqueue(message: TenantMessage): void
+      claim(communityId: string, agentId: string): MemoryWork | undefined
+      complete(communityId: string, agentId: string, frame: unknown): { message?: TenantMessage; messageId?: string }
+      release(agentId: string): void
+    }
   }
 }
 
@@ -128,7 +137,7 @@ export function createWebSocketHub(server: HttpServer, store: WsStore, onPresenc
   const hostedViewers = new Map<WebSocket, { userId: string; communityId: string }>()
   const hostedRunners = new Map<string, WebSocket>()
   const hostedRunnerCounts = new Map<string, number>()
-  const hostedPresence = new Map<string, { presence: "online" | "offline" | "thinking" | "publishing"; runtime: "claude" | "codex"; model?: string; communityId: string }>()
+  const hostedPresence = new Map<string, { presence: "online" | "offline" | "thinking" | "publishing"; runtime: "claude" | "codex" | "pi"; model?: string; communityId: string }>()
   const wss = new WebSocketServer({ noServer: true })
 
   const canRead = (channelId: string, viewer: Member): boolean => {
@@ -443,7 +452,7 @@ export function createWebSocketHub(server: HttpServer, store: WsStore, onPresenc
     }
   }
 
-  const setHostedPresence = (agent: TenantAgent, state: { presence: "online" | "offline" | "thinking" | "publishing"; runtime?: "claude" | "codex"; model?: string }): void => {
+  const setHostedPresence = (agent: TenantAgent, state: { presence: "online" | "offline" | "thinking" | "publishing"; runtime?: "claude" | "codex" | "pi"; model?: string }): void => {
     const runtime = state.runtime ?? agent.runtime
     const next = { communityId: agent.communityId, presence: state.presence, runtime, ...(state.model ?? agent.model ? { model: state.model ?? agent.model } : {}) }
     hostedPresence.set(agent.id, next)
@@ -452,6 +461,11 @@ export function createWebSocketHub(server: HttpServer, store: WsStore, onPresenc
   }
 
   const hostedRunnerWork = (message: TenantMessage): void => {
+    if (store.hosted?.memory) {
+      store.hosted.memory.enqueue(message)
+      dispatchMemory()
+      return
+    }
     const agents = store.hosted?.workAgentsForMessage?.(message) ?? []
     for (const agent of agents) {
       const socket = hostedRunners.get(agent.id)
@@ -495,6 +509,22 @@ export function createWebSocketHub(server: HttpServer, store: WsStore, onPresenc
       const payload = parsed.data.payload
       if (payload.runtime !== agent.runtime || (payload.model && payload.model !== agent.model)) return
       setHostedPresence(agent, payload)
+      return
+    }
+    if (candidate.type === "memory.result") {
+      const parsed = runnerMemoryResultSchema.safeParse(candidate)
+      if (!parsed.success) { reject("invalid memory.result frame"); return }
+      try {
+        const result = store.hosted?.memory?.complete(agent.communityId, agent.id, parsed.data)
+        if (!result) { reject("governed memory is unavailable"); return }
+        send(socket, { type: "ack", ref: parsed.data.ref, ok: true, ...(result.messageId ? { messageId: result.messageId } : {}) })
+        if (result.message) broadcastHosted(hostedEvent(agent.communityId, "message.created", { message: messageToHosted(result.message) }))
+      } catch (error) { reject(error instanceof Error ? error.message : "Memory result rejected") }
+      setHostedPresence(agent, { presence: "online" })
+      return
+    }
+    if (store.hosted?.memory && (candidate.type === "message.create" || candidate.type === "card.publish")) {
+      reject("Governed executions must return a correlated memory.result; direct publication is disabled")
       return
     }
     if (candidate.type === "message.create") {
@@ -581,6 +611,7 @@ export function createWebSocketHub(server: HttpServer, store: WsStore, onPresenc
         id: agent.id,
         communityId: agent.communityId,
         name: agent.name,
+        ...(agent.systemRole ? { systemRole: agent.systemRole } : {}),
         ...(agent.avatarUrl ? { avatarUrl: agent.avatarUrl } : {}),
         instructions: agent.instructions,
         runtime: agent.runtime,
@@ -592,6 +623,7 @@ export function createWebSocketHub(server: HttpServer, store: WsStore, onPresenc
         status: "active",
       }
       send(socket, { type: "ready", payload: { agent: readyAgent } })
+      store.hosted?.memory?.release(agent.id)
       setHostedPresence(agent, { presence: "online" })
       socket.on("message", (frame) => handleHostedRunnerMessage(socket, agent as TenantAgent, frame.toString()))
     }
@@ -600,6 +632,7 @@ export function createWebSocketHub(server: HttpServer, store: WsStore, onPresenc
       clearTimeout(timer)
       if (!agent || hostedRunners.get(agent.id) !== socket) return
       hostedRunners.delete(agent.id)
+      store.hosted?.memory?.release(agent.id)
       const count = Math.max(0, (hostedRunnerCounts.get(agent.id) ?? 1) - 1)
       if (count === 0) {
         hostedRunnerCounts.delete(agent.id)
@@ -695,6 +728,23 @@ export function createWebSocketHub(server: HttpServer, store: WsStore, onPresenc
   }
   server.on("upgrade", handleUpgrade)
 
+  const dispatchMemory = (): void => {
+    if (!store.hosted?.memory) return
+    for (const [agentId, socket] of hostedRunners) {
+      const state = hostedPresence.get(agentId)
+      if (!state || socket.readyState !== WebSocket.OPEN) continue
+      const work = store.hosted.memory.claim(state.communityId, agentId)
+      if (!work) continue
+      const parsed = runnerMemoryWorkSchema.safeParse(work)
+      if (!parsed.success) { console.error("Invalid governed memory work"); store.hosted.memory.release(agentId); continue }
+      send(socket, parsed.data)
+      const agent = store.hosted.agent(agentId, state.communityId)
+      if (agent && work.payload.view.purpose === "respond") setHostedPresence(agent, { presence: "thinking" })
+    }
+  }
+  const memoryTimer = store.hosted?.memory ? setInterval(dispatchMemory, 1000) : undefined
+  memoryTimer?.unref()
+
   const hub: WebSocketHub = {
     web,
     runners,
@@ -728,6 +778,7 @@ export function createWebSocketHub(server: HttpServer, store: WsStore, onPresenc
     },
     handleUpgrade,
     close() {
+      if (memoryTimer) clearInterval(memoryTimer)
       server.off("upgrade", handleUpgrade)
       const sockets = [...web, ...runners.values(), ...hostedViewers.keys(), ...hostedRunners.values()]
       for (const socket of sockets) socket.close(1000, "server shutting down")

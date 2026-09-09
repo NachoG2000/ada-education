@@ -1,15 +1,16 @@
 # Automatic agents
 
-Run commands from the repository root on Node 24. Install Claude Code and
-sign in once with `claude auth login`, then run:
+Run commands from the repository root on Node 24. Install the pinned Pi runtime
+with `npm ci`, then sign in once through `npm run pi` → `/login` →
+ChatGPT Plus/Pro (Codex). Exit Pi with `/quit` and start Ada:
 
 ```bash
 npm ci
 npm run dev
 ```
 
-Open http://localhost:5173. Create a community; it receives a Course tutor
-and Knowledge curator. In Agents, choose Message to talk directly, or add
+Open http://localhost:5173. Create a community; it receives primary Ada
+and an optional Knowledge curator. In Agents, choose Message to talk directly, or add
 an agent to a channel and mention it. Create another agent by naming it,
 writing rules, and choosing channels. Connection is automatic. Saving rules
 changes subsequent dispatched work. Deleting an agent stops it and retains
@@ -28,9 +29,10 @@ the browser or community server.
 The host reconciles every second, reconnects after server restarts, preserves
 valid credentials across host restarts, and runs one model invocation at a
 time across its workers. An idle connected agent does not continuously call
-Claude. DMs address their agent implicitly; channels require mentions.
+a model. DMs address their agent implicitly; channel replies require mentions.
+Assigned Ada also consolidates human channel messages silently.
 A disconnected DM keeps its draft and waits to enable sending until its agent
-is online. There is no durable queue for mentions sent while the host is offline.
+is online. Governed memory jobs persist while the host is offline and resume when it reconnects.
 
 Ctrl+C stops the development processes and worker/provider groups. The
 supported local/test environment is macOS or Linux; descendant process-group
@@ -38,21 +40,71 @@ cleanup is not provided on Windows in this version.
 
 ## Administrator configuration
 
+### Try Pi with a ChatGPT subscription
+
+Pi is installed at a pinned version by `npm ci`. From the repository root:
+
+```bash
+npm run pi
+```
+
+In Pi, enter `/login` and select **ChatGPT Plus/Pro (Codex)**. Complete its
+browser sign-in, then exit Pi with `/quit`. Pi has its own login; an existing
+Codex CLI login does not automatically sign Pi in. Start Ada with:
+
+```bash
+npm run dev:pi
+```
+
+Stop an existing development instance before starting this command. It selects
+`ADA_RUNTIME=pi` and `ADA_MODEL=gpt-5.6-luna` for both server and host. Existing agents keep their identities,
+credentials, conversations, and wiki directories; enrollment applies the
+installation runtime. `npm run dev` also defaults to Pi/Luna. Explicit
+Claude/Codex selection remains for retained adapters; governed memory requires
+Pi and fails closed with those adapters. Invalid runtimes fail startup.
+
+The Pi adapter fixes the provider to `openai-codex` and supports subscription
+mode only. `ADA_MODEL` can select a model ID from that provider; omit it for
+Pi's provider default when launching manually. `npm run dev:pi` explicitly
+selects GPT-5.6 Luna. Provider-prefixed model names are refused. No Pi login
+data is copied into Ada. Pi manages OAuth refresh and stores login state in
+`~/.pi/agent/auth.json` (or the directory selected by `PI_CODING_AGENT_DIR`).
+
+### Retained wiki adapter (compatibility history)
+
+Before governed memory (§34), each mention used an ephemeral print-mode session.
+The following tools describe that retained adapter, not current hosted memory: the same `wiki/` files and publication acknowledgements remain
+durable. The explicit Ada extension exposes only `ada_read`, `ada_write`, and
+`ada_edit`, wrapping Pi's official file tools. They read/write visible markdown
+files under `wiki/` and `log.md`; `AGENTS.md` and `CLAUDE.md` are read-only.
+Links, hidden paths, non-markdown wiki files, and paths outside that scope are
+refused. Built-in tools (including shell), discovered extensions, skills,
+prompt templates, and parent/global instruction files are disabled.
+
+This is an application-level file boundary, not an OS sandbox. External local
+processes must not modify the workspace concurrently. Hosted isolation remains
+separate work. Current hosted execution instead uses the scoped memory tools
+described in [Course memory](course-memory.md).
+
+### Environment variables
+
 | Variable | Default / purpose |
 | --- | --- |
-| `ADA_RUNTIME` | `claude`; installation runtime (`claude` or `codex`) |
-| `ADA_MODEL` | `default`; provider default, no model selection in the UI |
+| `ADA_RUNTIME` | `pi` under `npm run dev`; installation runtime (`claude`, `codex`, or `pi`) |
+| `ADA_MODEL` | `gpt-5.6-luna` under `npm run dev`; no model selection in the UI |
 | `ADA_PROVIDER_AUTH` | `subscription`; explicit alternative `api-key` |
 | `ANTHROPIC_API_KEY` | Required on the host for Claude API-key mode |
 | `ADA_SERVER` | `http://localhost:8787`; server origin |
 | `ADA_HOST_STATE` | `.ada` at repository root; private persistent host state |
+| `PI_CODING_AGENT_DIR` | Pi's own auth/config directory; normally `~/.pi/agent` |
 | `ADA_RUNNER_HOST_TOKEN` | Generated by `npm run dev`; configure the same high-entropy value on server and host when launching separately |
 
 For an API-key-backed host, configure `ADA_PROVIDER_AUTH=api-key` and the
 provider key through the host environment/secret manager. Subscription mode
 strips API keys; API-key mode rejects a missing key instead of falling back
 to a subscription token. The existing adapter still calls the official CLI. API-key mode currently
-supports Claude; Codex retains its subscription-login adapter.
+supports the retained Claude adapter; governed memory does not support it.
+Pi also requires subscription mode and never falls back to API-key billing.
 This configuration is not a hosted deployment recipe: deployment, sandboxing,
 volume provisioning, and multi-host scheduling remain separate work.
 
@@ -67,7 +119,8 @@ on that server. Do not distribute it to community members or put it in a URL.
 - If a reply fails, check the host terminal for provider login, limit, or
   network errors. Complete provider login once on the host machine.
 - Restarting preserves each managed workspace and its knowledge files.
-  Back up `.ada` securely together with the database. Never commit it.
+  Back up `.ada` securely together with the database and its sibling
+  `<database>.memory` directory. Never commit runtime data or credentials.
 - Only one host may use a state directory. A PID lock rejects duplicates;
   a stale lock from an exited host is recovered on startup.
 - Lost or invalid agent credentials are re-enrolled; existing agent identities
@@ -75,15 +128,24 @@ on that server. Do not distribute it to community members or put it in a URL.
   discarded. Restore it from backup before restarting.
 - Existing manually configured agent folders are not automatically imported.
   Their original files remain intact. Stop the old runner before enabling the
-  host, and migrate desired wiki content into its managed workspace explicitly.
+  host. Import desired wiki files through Course memory with the legacy-import
+  option and an explicit audience; their derived knowledge requires review.
 - The old per-agent CLI and enrollment API remain for compatibility. Their
   one-time setup command is no longer part of the mounted UI. Do not run a
   manual runner and the automatic host for the same agent simultaneously.
 
 ## Verification
 
+`npm run check:providers -w @ada/runner` includes fake Pi command checks and
+`check:pi`, which loads the real extension, exercises its actual file tools,
+and checks the installed CLI with an empty temporary auth directory.
+`npm run check:agents:pi -w @ada/server` runs the complete automatic host flow
+with a fake Pi binary, including correlated governed memory results. Both are
+part of `npm run check`; neither spends subscription usage. Live answer quality
+requires an administrator to sign in and try an actual conversation.
+
 `npm run check:agents -w @ada/server` uses disposable SQLite, a real host and
-workers, and a fake Claude binary. It verifies enrollment authorization,
+workers, and a fake Pi binary. It verifies enrollment authorization,
 starter/custom creation, implicit DMs, updated rules, serialized execution,
 restart persistence, tenant boundaries, deletion cancellation, and readable
 history. `npm run check` includes this plus provider and legacy checks.
@@ -91,3 +153,31 @@ history. `npm run check` includes this plus provider and legacy checks.
 Design rationale and official sources are in
 `research/2026-09-06-agent-management-exploration.md`; the product decision is
 `DECISIONS.md` §25.
+
+## Development source reload
+
+`npm run dev` starts `runner:host:dev`: tsx watch includes `packages/runner/src/**/*.ts` and `packages/protocol/src/**/*.ts`, so changes restart the host and child workers together. This prevents a first structured mention from reaching workers with an older protocol loaded in memory. The standalone `runner:host` command remains unwatched. Development reload can interrupt in-flight work; governed jobs are requeued with fresh run IDs, and stale results are rejected.
+
+## Shared agent voice and runtime identity
+
+`packages/runner/src/agent-prompt.ts` supplies common instructions on every
+invocation, alongside each agent's editable course rules. Claude receives an
+appended system prompt, Codex receives `developer_instructions`, and Pi receives
+a system prompt combining the common instructions with its scoped tool rules.
+The authenticated agent name and installation's configured model are supplied
+explicitly. Agents should speak naturally from their course role, identify the
+configured model when asked, and remain honest about being AI. An unspecified
+model is described as unknown rather than guessed.
+
+Role introductions and model questions should not create wiki cards or cite
+unrelated records. These common role instructions complement the separate
+governed memory admission policy; existing wiki files remain preserved.
+
+## Governed memory runtime (2026-09-08)
+
+Pi with the configured `gpt-5.6-luna` model is now the default for `npm run dev`.
+The existing Pi subscription login remains reusable. Hosted memory work uses
+fresh authorized views and the dedicated memory read/result tools; the historical
+wiki adapter above remains compatibility history. Governed Claude/Codex work
+fails closed until equivalent scoped reads exist. See
+[Course memory](course-memory.md) for execution, recovery and supported formats.

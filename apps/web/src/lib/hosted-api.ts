@@ -59,7 +59,7 @@ const jsonHeaders = (token?: string) => ({
   ...(token ? { authorization: `Bearer ${token}` } : {}),
 });
 
-async function request<T>(
+export async function request<T>(
   server: string,
   path: string,
   token: string | undefined,
@@ -70,7 +70,7 @@ async function request<T>(
     response = await fetch(`${server}${path}`, {
       ...init,
       signal: init.signal ?? AbortSignal.timeout(15_000),
-      headers: { ...jsonHeaders(token), ...(init.headers ?? {}) },
+      headers: { ...(init.body instanceof FormData ? (token ? { authorization: `Bearer ${token}` } : {}) : jsonHeaders(token)), ...(init.headers ?? {}) },
     });
   } catch (cause) {
     if (cause instanceof DOMException && cause.name === "TimeoutError") {

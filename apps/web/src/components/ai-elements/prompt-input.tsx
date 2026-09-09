@@ -927,7 +927,7 @@ export const PromptInput = ({
         ref={formRef}
         {...props}
       >
-        <InputGroup className="overflow-hidden">{children}</InputGroup>
+        <InputGroup className="overflow-hidden has-disabled:bg-transparent has-disabled:opacity-100 dark:has-disabled:bg-input/30">{children}</InputGroup>
       </form>
     </>
   );
@@ -1142,6 +1142,7 @@ export const PromptInputButton = ({
 
   const button = (
     <InputGroupButton
+      aria-label={props["aria-label"] ?? (typeof tooltip === "string" ? tooltip : typeof tooltip?.content === "string" ? tooltip.content : undefined)}
       className={cn(className)}
       size={newSize}
       type="button"

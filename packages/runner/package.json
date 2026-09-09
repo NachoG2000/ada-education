@@ -10,10 +10,13 @@
     "dev": "tsx src/cli.ts",
     "check": "tsc --noEmit",
     "check:scripted": "tsx scripts/scripted-check.ts",
-    "check:providers": "tsx scripts/provider-check.ts"
+    "check:providers": "tsx scripts/provider-check.ts && npm run check:pi",
+    "check:pi": "tsx scripts/pi-check.ts",
+    "check:memory": "tsx scripts/memory-check.ts"
   },
   "dependencies": {
     "@ada/protocol": "*",
+    "@earendil-works/pi-coding-agent": "0.85.1",
     "ws": "^8.18.0"
   },
   "engines": {

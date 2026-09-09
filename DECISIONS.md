@@ -546,3 +546,234 @@ Supersedes the per-agent provider/model selection and manual enrollment UX in §
 6. This ships the local workflow and an authentication configuration boundary, not a managed hosting service, durable job queue, multi-host scheduler, or OS sandbox. New managed folders do not automatically import wiki files from older manually configured locations.
 
 Rationale and verified official sources: `research/2026-09-06-agent-management-exploration.md`. Implementation and verification: `openspec/changes/archive/2026-09-06-automatic-agents/` and `docs/agent-host.md`.
+
+## 26. One interface system and identity-aware mentions (2026-09-06)
+
+Supersedes the default-shadcn-only visual restriction in §§23–24, while preserving the familiar interaction structure and paused Card File history. The user's educational constraints take precedence over random visual exploration. Inter, quiet green-gray surfaces, a four-point spacing rhythm, and semantic sizes are specified in DESIGN.md; the old design is preserved in docs/history/design-system-2026-09-05.md.
+
+Settings, Agents, and future management screens share page-layout.tsx components for frames, headers, navigation, and action sections. Selected and destructive states are variants, not alternate layouts. Navigation icons are explicitly 16px; page titles are 20px. Narrow screens adapt the same components.
+
+Mentions carry member IDs and render as inline chips. Tiptap Mention provides atomic editing, suggestions, and undo; Tab/Enter completes the active suggestion, Escape closes it, and Shift+Enter inserts a line. Only teachers may mention active community agents outside a channel. Sending atomically adds those agents and persists the message before dispatch; students may only mention agents already present. DMs do not recruit other agents. UI copy explains both the pending addition and history access. Merely selecting, drafting, or editing never adds an agent.
+
+Research, user-provided screenshot, random-seed interpretation, and official documentation: research/2026-09-06-interface-system-and-mentions.md. This does not add hosted runners, new permissions, or memory UI.
+
+### §26 follow-up: one persistent workspace shell
+
+The user's follow-up audit found that shared headers alone did not satisfy layout consistency: Settings still replaced the workspace shell. Settings now retains the community rail, top controls/search, resizable course sidebar, and mobile navigation sheet. Its sections occupy the sidebar's contextual area; Back to channels restores the previous workspace route. This supersedes the earlier full-bleed Settings requirement in §23. Section changes still replace history entries. Search appears once in the top bar, with the existing keyboard shortcut, and is removed from expanded and compact sidebars.
+
+Sidebar rows use a common 36px minimum height (44px narrow/touch), 14px labels and 16px icons; 12px is reserved for metadata. Hover uses the same sidebar-accent surface, and selected rows persist that surface with medium weight. The community switcher uses the same horizontal inset and a 56px minimum height for its two lines. Page content keeps a common left edge even where forms have a narrower maximum width.
+
+**User clarification:** Settings replaces the entire sidebar content, not only the contextual channel list. Retain the shell geometry and top bar, but replace the community header, Agents/Settings primary links, channels, and profile footer with Back to workspace, Settings, and the role-aware sections. This applies to expanded, compact, and mobile navigation.
+
+## 27. Public learning channels, contextual private support (2026-09-07)
+
+The user approved implementation after the exploration in
+`research/2026-09-07-education-surfaces-exploration.md`. This supersedes the
+foundation-only exclusion of mounted educational artifacts and a personal Inbox
+in §§22–24. It does not restore the historical memory-card UI or change §14's
+server/external-runner architecture.
+
+The human teacher's roadmap and content start in shared course channels. A
+header Artifacts entry immediately before member avatars opens a collection in
+the existing auxiliary panel, with individual artifacts replacing its contents.
+The first module guide has a persistent preview above the conversation. Shared
+objects use guide/explanation/practice/assignment templates; Markdown and
+question blocks provide content flexibility without generated executable code.
+
+Ask privately carries the chosen material/question into an editable agent-DM
+draft, preserves existing drafts, and offers return navigation. No automatic
+send or public posting of personal work occurs. Existing teacher-readable DMs
+remain explicitly labeled. Personal work is owner-only; explicit assignment
+submissions share immutable answer copies with teachers for human feedback.
+
+Inbox is a real primary route for own incoming DMs, mentions, and replies to
+participated threads, with separate persisted read state. Dedicated My learning,
+Teaching and course-wide overview dashboards remain deferred. These templates
+are manually authored; agentic memory, automatic artifact creation and inferred
+learning progress require a later design. See `docs/educational-artifacts.md`
+for the mounted workflow, refresh behavior and current limitations.
+
+## 28. Evaluate Pi through the existing runner boundary (2026-09-07)
+
+The user authorized implementing Pi before expanding course memory, following
+`research/2026-09-07-pi-runtime-evaluation.md`. This adds an optional runtime to
+§25; it does not replace §§6/14 or make Pi the default for every installation.
+
+1. Pi runs externally through its documented noninteractive CLI, using its own
+   ChatGPT OAuth login and the `openai-codex` subscription provider. The pinned
+   package is installed with the runner workspace. `npm run dev:pi` selects it.
+2. Agent identity, enrollment, scheduling, workspace paths, wiki publication,
+   and conversation permissions remain Ada responsibilities. Sessions are
+   ephemeral; durable knowledge remains in the existing files.
+3. Pi exposes only explicit wrappers around its official read/write/edit tools.
+   Wiki markdown and log.md are writable; local agent instructions are read-only.
+   Shell tools, discovered resources, links and access outside that scope are
+   disabled/refused. This is not an OS sandbox or a hosted isolation system.
+4. Existing Claude and Codex options remain. Pi currently requires subscription
+   authentication; API-key mode fails explicitly. Credentials stay in Pi.
+5. Automated checks exercise real Pi tools/loader, signed-out CLI, fake-provider
+   host lifecycle, wiki publication and database migration preservation. They
+   do not establish relative speed, token efficiency, or live answer quality.
+
+Current setup and limitations: `docs/agent-host.md`, “Try Pi with a ChatGPT
+subscription.” Shared course memory and its admission/correction/visibility
+contracts remain a subsequent design step.
+
+## §29 · Shared course-agent voice and composer activity (2026-09-07)
+
+The user requested shared prompting after the tutor repeatedly introduced itself
+as a generic OpenAI assistant and could not identify its configured model.
+All runtimes now receive common system/developer instructions: speak directly
+from the assigned course role, match the conversation language, remain honest
+about being AI, and use supplied installation facts when asked about the model.
+Role/model conversations should not produce course cards or unrelated citations.
+This is guidance, not implementation of the deferred memory admission policy.
+
+Thinking and publishing status belong within the shared composer card. Its
+normal layout grows around an activity header and contracts when idle, preserving
+the draft. See `research/2026-09-07-agent-role-and-composer.md` for evidence.
+
+## §30 · Ada as the primary course agent (2026-09-07)
+
+The user explicitly approved renaming Course tutor to Ada and making it a
+primary system presence, inspired by Slackbot. This supersedes the former
+product/agent naming ambiguity. A persisted `system_role = 'ada'`, unique per
+community, distinguishes this agent independently of its display name. Existing
+active Course tutor records are migrated in place (the earliest per community
+when names collide); custom names are not guessed or overwritten. New UI-created
+communities identify their tutor starter as Ada. Its name and deletion are
+protected, while course rules and channel assignments remain editable.
+
+Ada appears in primary navigation. Its direct conversation and contextual
+right panel share a tinted ground and book mark. Every persisted, non-deleted
+message in a community with primary Ada has an Ask Ada action, including thread
+replies. It opens the user's Ada DM with a removable source message, without
+sending. The user's question explicitly sends that context with the request.
+The existing single auxiliary panel and responsive overlay remain.
+
+Teacher access to agent DMs remains unchanged pending the user's preference;
+the UI explicitly discloses it. “Outside the channel” means the discussion is
+not posted in the source channel, not that teachers are excluded. No new
+cross-channel retrieval or memory access is implied.
+
+## §31 · Memory framing confirmed during exploration (2026-09-08)
+
+The user confirmed these principles after reviewing the memory alternatives:
+
+- Preserve original study materials as sources; use derived, composable knowledge
+  rather than entire originals as the default active memory. Retention is not an
+  exemption from later authorized deletion or access revocation.
+- Derived knowledge should support multiple linked examples and pedagogical
+  variants, including examples refined after observed learning difficulties.
+- Distinguish reusable knowledge from operational state (events, unresolved
+  questions, commitments). Temporal information still needs reliable current
+  state and optional history. A student's question is not a permanent trait;
+  a claim about a whole class needs evidence.
+- Capture the contributor's course role when processing information. Teacher
+  contributions carry greater authority in the course; the exact resolution
+  policy remains to be designed.
+
+Internal/external is not selected as the organizing division for the course.
+The audience-first structure remains a favored direction, not an approved ACL
+matrix. OKF is a requested candidate for representation/interchange; neither
+its adoption nor Markdown as canonical storage is decided. The permission
+article informs further design, not an authorization to change current DM access.
+See `research/2026-09-08-okf-authority-and-permissions.md`.
+
+## §32 · Filesystem memory, OKF 0.2 and learner visibility (2026-09-08)
+
+Supersedes §31's pending OKF adoption: the user selected OKF 0.2 for derived
+knowledge. The user's expected direction remains filesystem-backed memory;
+the preceding discussion of SQLite as a possible canonical memory store was an
+alternative, not an approved architecture change. Preserve that distinction:
+original source files and derived knowledge files remain on the filesystem;
+SQLite owns application records and can hold published projections/indices
+without becoming a second independently editable knowledge authority.
+
+Current code already publishes wiki card bodies into tenant_cards in SQLite.
+This is separate from the runner's working wiki files; OKF 0.2 conversion and
+scope-aware memory delivery are not implemented by this decision.
+
+The user confirmed type-specific contributor authority rather than a universal
+teacher trust score. Identity and role must come from authenticated application
+state, not claims in message text.
+
+For learner evolution records, teachers within the course can view their
+students; students can view only their own records. This does not authorize
+public-channel disclosure, cross-course access, automatic mastery inference,
+grading, or unrestricted publication of raw conversations.
+
+The user confirmed that unauthorized memory should not reach the agent at all.
+Proposed channel rule: effective read scope is constrained by requester rights,
+agent assignment/purpose, and the response audience. A teacher asking in a
+student-visible channel must not cause personal learner records to enter that
+run. A teacher-only view can use authorized learner records; a student DM can
+use that student's authorized records. Exact enforcement and the remaining
+memory-type matrix are still design work, not current guarantees.
+
+## §33 · Dynamic learner trajectory and memory admission (2026-09-08)
+
+The user selected automatic admission for knowledge supported by a trustworthy
+source; otherwise request teacher review. Trust is type-specific authority and
+supported interpretation, not a universal role score or an agent's self-declared
+confidence. Conflicts and uncertain derivations require review. Ada-generated
+learner inferences are included in scope, explicitly distinguished from observed
+facts and learner/teacher statements, with evidence and correction support.
+This supersedes the two pending choices in
+`research/2026-09-08-memory-v1-implementation-plan.md`.
+
+The user clarified that consolidation must preserve learner evolution, not
+replace earlier doubts or successes with a single current label. A doubt in
+module 1, later evidence of understanding in module 2, and a new open question
+are connected dated records. Earlier observations remain historically valid;
+new evidence changes the current interpretation rather than erasing the path.
+An actual error in an observation or inference is corrected explicitly, distinct
+from a genuine change in the learner's understanding. Retention remains subject
+to authorized deletion, not an unconditional never-delete promise.
+
+Maintain a dated evidence trajectory and a composable current view derived from
+it. Link records by learner, concept, module and evidence; module progression
+alone does not establish understanding. Inferences carry their supporting
+observations and time context; newer evidence can qualify or retire an inference
+without turning it into a permanent learner trait. A currently resolved question
+remains discoverable in historical queries. Views for current help and teacher
+progress review may select different authorized subsets of the same trajectory.
+These are agreed requirements; implementation and evaluation remain outstanding.
+
+## §34 · Governed course memory and exploration courses (2026-09-08)
+
+The user authorized the complete first memory version for every newly created
+course, resetting the existing SQLite data before the demo, and creating realistic
+preloaded courses. The end state is a usable set of cases to explore together;
+presentation scripts and canned model responses are not requested.
+
+Canonical originals and OKF revisions live on the server's filesystem beside the
+configured database, with an atomic catalog of committed revision pointers.
+SQLite owns processing jobs and the existing application domain. This central
+filesystem authority replaces the shared per-agent wiki for hosted memory;
+old workspaces remain retained outside new execution views. Teachers can explicitly
+import a legacy file with its audience and required review.
+
+Each invocation gets a bounded, authorized temporary file view. The server stamps
+authority and admission, checks supplied evidence and rechecks access/current
+versions before publishing. Shared-channel runs exclude personal learner data;
+private runs respect self/teacher and assigned-agent restrictions. Old direct
+runner publications cannot bypass this boundary.
+
+Pi with scoped official file tools is the supported governed-memory runtime.
+Pi and the user's selected `gpt-5.6-luna` become installation defaults. Existing
+Claude/Codex adapters remain for compatibility but fail closed for governed work
+until an equivalent read boundary exists. This limitation is explicit rather
+than relying on cwd or prompt instructions for confidentiality.
+
+New communities always initialize memory and primary Ada; the optional starter
+flag controls the extra curator. Assigned-channel participation is consolidated
+silently, while mentions/DM requests also receive replies. Source uploads compile
+through persisted jobs. No proactive notifications or grading are introduced.
+
+The minimal memory surface follows the current interface system: knowledge,
+course activity, learner/self history, sources and teacher review. Evidence-backed
+inferences remain separate from observations and teacher verification. See
+`docs/course-memory.md` for boundaries and `docs/memory-exploration.md` for seeded
+cases. Validation results must accompany completion, not be inferred from this
+decision entry.

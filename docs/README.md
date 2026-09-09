@@ -34,3 +34,17 @@ setup instructions or API references. Open them directly in a browser:
 
 - [Automatic agent host](agent-host.md): local startup, shared authentication,
   lifecycle, and recovery.
+
+## Interface system
+
+[Current design system](../DESIGN.md) specifies tokens, sizing, shared page components, responsive behavior, and identity-aware mentions. Open `/#design-system` on the local web app for live examples. [Earlier Card File design](history/design-system-2026-09-05.md) is preserved as history.
+
+- [Educational artifacts](educational-artifacts.md): current channel templates,
+  personal work/submissions, contextual tutoring, Inbox, and implementation limits.
+
+## Course memory and exploration
+
+- [Course memory](course-memory.md): canonical files, admission, permissions,
+  Pi execution, supported source formats and validation.
+- [Exploration courses](memory-exploration.md): local seed/reset setup and the
+  cases available for jointly designing the demo.

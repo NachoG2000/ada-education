@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from 'react'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
+import { parseMemorySearch, type MemorySection } from './memory-route'
 
 export const SETTINGS_SECTIONS = [
   'profile',
@@ -17,10 +18,11 @@ type CommunityRoute = { communityId?: string }
 export type AppRoute =
   | { kind: 'root' }
   | { kind: 'join'; code?: string }
-  | ({ kind: 'inbox' } & CommunityRoute)
-  | ({ kind: 'channel'; channelId: string; threadId?: string } & CommunityRoute)
+  | ({ kind: 'inbox'; restoreChannel?: boolean } & CommunityRoute)
+  | ({ kind: 'channel'; channelId: string; threadId?: string; artifactId?: string } & CommunityRoute)
   | ({ kind: 'new-message' } & CommunityRoute)
   | ({ kind: 'agents'; agentId?: string } & CommunityRoute)
+  | ({ kind: 'memory'; recordId?: string; sourceId?: string; sourceVersion?: number; section?: MemorySection } & CommunityRoute)
   | ({ kind: 'settings'; section?: SettingsSection } & CommunityRoute)
 
 export interface RouteNavigationOptions {
@@ -60,7 +62,11 @@ export function parseAppLocation(pathname: string, search: Record<string, unknow
   }
 
   const communityId = segments[1]
-  if (segments.length === 2) return { kind: 'inbox', communityId }
+  if (segments[2] === 'memory' && segments.length === 3) {
+    const parsed = parseMemorySearch(search)
+    return { kind: 'memory', communityId, recordId: parsed.record, sourceId: parsed.source, sourceVersion: parsed.version, section: parsed.section }
+  }
+  if (segments.length === 2) return { kind: 'inbox', communityId, restoreChannel: true }
   if (segments[2] === 'messages' && segments[3] === 'new' && segments.length === 4) {
     return { kind: 'new-message', communityId }
   }
@@ -80,7 +86,7 @@ export function parseAppLocation(pathname: string, search: Record<string, unknow
     if (segments[4] === 'threads' && segments[5]) {
       return { kind: 'channel', communityId, channelId: segments[3], threadId: segments[5] }
     }
-    if (segments.length === 4) return { kind: 'channel', communityId, channelId: segments[3] }
+    if (segments.length === 4) return { kind: 'channel', communityId, channelId: segments[3], ...(typeof search.artifact === 'string' ? { artifactId: search.artifact } : {}) }
   }
   return { kind: 'inbox', communityId }
 }
@@ -104,13 +110,15 @@ export function useAppNavigation(activeCommunityId?: string) {
     const shared = { replace: options.replace, hash: options.hash }
 
     switch (route.kind) {
+      case 'memory':
+        return communityId ? navigate({ to: '/c/$communityId/memory', params: { communityId }, search: { record: route.recordId, source: route.sourceId, version: route.sourceVersion, section: route.section }, ...shared }) : navigate({ to: '/', ...shared })
       case 'root':
         return navigate({ to: '/', ...shared })
       case 'join':
         return navigate({ to: '/join', search: { code: route.code }, ...shared })
       case 'inbox':
         return communityId
-          ? navigate({ to: '/c/$communityId', params: { communityId }, ...shared })
+          ? navigate({ to: '/c/$communityId/inbox', params: { communityId }, ...shared })
           : navigate({ to: '/', ...shared })
       case 'channel':
         if (!communityId) return navigate({ to: '/', ...shared })
@@ -123,6 +131,7 @@ export function useAppNavigation(activeCommunityId?: string) {
           : navigate({
               to: '/c/$communityId/channels/$channelId',
               params: { communityId, channelId: route.channelId },
+              search: { artifact: route.artifactId },
               ...shared,
             })
       case 'new-message':

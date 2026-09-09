@@ -21,7 +21,7 @@ export function mentionedAgentIds(message: Message, channel: Channel, members: M
   }
   for (const paragraph of message.paragraphs) {
     for (const block of paragraph) {
-      if (block.kind !== "text") continue
+      if (block.kind !== "text" && block.kind !== "mention") continue
       for (const match of block.text.matchAll(/@([A-Za-z0-9][A-Za-z0-9_-]*)/g)) {
         const id = match[1]
         if (id && agents.has(id)) result.add(id)
@@ -62,6 +62,6 @@ export function mentionContext(
 /** Recursively extracts text without letting other blocks trigger mentions. */
 export function textBlocks(paragraphs: Message["paragraphs"]): string[] {
   return paragraphs.flatMap((paragraph) =>
-    paragraph.flatMap((block: MessageBlock) => (block.kind === "text" ? [block.text] : [])),
+    paragraph.flatMap((block: MessageBlock) => ((block.kind === "text" || block.kind === "mention") ? [block.text] : [])),
   )
 }

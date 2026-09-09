@@ -12,7 +12,7 @@
    Usage:
      ada-runner --server http://localhost:8787 --community <id> --agent <id>
                 --token <token> --cwd <agent-folder> --materials <raw-folder>
-                [--runtime claude|codex] [--model <id>] [--timeout 180]
+                [--runtime claude|codex|pi] [--model <id>] [--timeout 180]
    The deterministic scripted runtime is a direct test harness only
    (`npm run check:scripted -w @ada/runner`).
    Env fallbacks: ADA_SERVER, ADA_COMMUNITY_ID, ADA_AGENT_ID, ADA_AGENT_TOKEN,
@@ -27,6 +27,8 @@ import { runnerClientFrameSchema, runnerServerFrameSchema } from "@ada/protocol"
 import type { CardType, CommunityMember, Member, Message, MessageBlock, Presence, RunnerWork } from "@ada/protocol"
 import { parseRunnerConfig, type RunnerConfig } from "./config.js"
 import { runProvider } from "./runtimes/providers.js"
+import { runMemoryWork } from "./memory-run.js"
+import type { MemoryWork } from "@ada/protocol"
 import type { Mention } from "./runtimes/scripted.js"
 import { createBootstrapFile, ensureWorkspaceDirectory, safeWorkspacePath } from "./workspace.js"
 
@@ -41,7 +43,7 @@ try {
 }
 
 const { server, communityId, agentId, token, cwd, materialsDir: rawDir, runtime, model, timeoutMs } = config
-const agentName = agentId
+let agentName = agentId
 const wikiDir = join(cwd, "wiki")
 const stateDir = join(cwd, ".ada")
 const cardMapFile = join(stateDir, "cards.json")
@@ -314,8 +316,8 @@ function buildPrompt(payload: { channelId: string; threadId?: string; message: M
 
 /* ---- Runtime adapters ------------------------------------------------------- */
 
-async function runModel(prompt: string): Promise<string> {
-  if (runtime !== "claude" && runtime !== "codex") throw new Error(`unsupported model runtime: ${runtime}`)
+async function runModel(prompt: string, workspace = cwd, governedMemory = false): Promise<string> {
+  if (runtime !== "claude" && runtime !== "codex" && runtime !== "pi") throw new Error(`unsupported model runtime: ${runtime}`)
   // Treat all server/user/material text as untrusted: even if somebody has
   // pasted the bearer into a message or local file, it must not reach a model
   // prompt. The provider also receives the secret for error redaction only.
@@ -333,7 +335,7 @@ async function runModel(prompt: string): Promise<string> {
     })
   }
   try {
-    return await runProvider(runtime, { cwd, prompt: safePrompt, timeoutMs, ...(model ? { model } : {}), secrets: [token] })
+    return await runProvider(runtime, { cwd: workspace, governedMemory, prompt: safePrompt, agentName, timeoutMs, ...(model ? { model } : {}), secrets: [token] })
   } finally { if (process.connected) process.send?.({ type: "run.release" }) }
 
 }
@@ -389,7 +391,7 @@ const queue: Array<() => Promise<void>> = []
 let busy = false
 let agentInstructions = ""
 type RunnerRequest = {
-  type: "message.create" | "card.publish"
+  type: "message.create" | "card.publish" | "memory.result"
   ref: string
   payload: Record<string, unknown>
 }
@@ -528,6 +530,18 @@ async function handleMention(payload: Mention) {
   presence("online")
 }
 
+async function handleMemory(work: MemoryWork["payload"]): Promise<void> {
+  try {
+    if (work.view.purpose === "respond") presence("thinking")
+    const result = await runMemoryWork(work, (options) => runModel(options.prompt, options.cwd, true), [token])
+    await request({ type: "memory.result", ref: randomUUID(), payload: { runId: work.view.runId, ...result } })
+  } catch (error) {
+    const detail = error instanceof Error ? error.message.split(token).join("[redacted]").slice(0, 1000) : "Memory processing failed"
+    log("memory run failed:", detail)
+    await request({ type: "memory.result", ref: randomUUID(), payload: { runId: work.view.runId, proposals: [], error: detail } }).catch(() => undefined)
+  } finally { presence("online") }
+}
+
 function enqueue(job: () => Promise<void>) {
   queue.push(job)
   if (busy) return
@@ -587,6 +601,7 @@ function connect() {
           return
         }
         authenticated = true
+        agentName = ready.agent.name.split(token).join("[redacted]")
         if (authTimer) clearTimeout(authTimer)
         presence("online")
       } else if (msg.type === "error") {
@@ -622,6 +637,12 @@ function connect() {
         pending.delete(ref)
         pendingRequest.reject(new Error(detail.slice(0, 1_200)))
       }
+      return
+    }
+    if (hostedFrame.data.type === "memory.work") {
+      const work = hostedFrame.data.payload
+      if (work.communityId !== communityId || work.agentId !== agentId) { terminal = true; ws?.close(4403, "runner identity mismatch"); return }
+      enqueue(() => handleMemory(work))
       return
     }
     if (msg.type === "work") {

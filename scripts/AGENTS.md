@@ -19,3 +19,9 @@ automated checks or reset the user's running workspace.
 once in private ignored state. It forwards shutdown to concurrently, which
 stops all three processes. It must never print credentials or seed/reset
 the user's database.
+
+Development starts `runner:host:dev` with supported tsx watch includes for runner and shared protocol sources, since worker modules are loaded in child processes and are not host imports. Keep standalone `runner:host` unwatched. A source reload restarts the host and its worker groups through existing shutdown handling.
+
+Pi/Luna is the development default for governed memory. The explicit
+`seed:exploration` command delegates to the server workspace, never runs from
+dev.mjs and never terminates processes itself.

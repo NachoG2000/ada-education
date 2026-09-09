@@ -267,10 +267,11 @@ export const agentDmSchema = z.object({
   archivedAt: timestampSchema.optional(),
 }).strict()
 
-export const agentRuntimeV2Schema = z.enum(["claude", "codex"])
+export const agentRuntimeV2Schema = z.enum(["claude", "codex", "pi"])
 export const agentLifecycleStatusSchema = z.enum(["active", "deleted"])
 
 const agentProjectionBase = {
+  systemRole: z.literal("ada").optional(),
   id: idSchema,
   communityId: idSchema,
   name: nameSchema,
@@ -352,6 +353,7 @@ export const rotateAgentEnrollmentInputSchema = z.object({}).strict()
 export const rotateAgentEnrollmentResultSchema = agentEnrollmentResultSchema
 
 const messageBlockSchemaV2 = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("mention"), text: z.string().min(1).max(250), memberId: z.string().min(1).max(200) }).strict(),
   z.object({ kind: z.literal("text"), text: z.string() }).strict(),
   z.object({ kind: z.literal("cite"), text: z.string(), cite: z.object({ cardId: idSchema, section: z.string().optional() }).strict() }).strict(),
   z.object({ kind: z.literal("code"), text: z.string() }).strict(),
@@ -605,6 +607,7 @@ export const runnerClientFrameSchema = z.discriminatedUnion("type", [
   runnerPresenceSchema,
   runnerMessageCreateSchema,
   runnerCardPublishSchema,
+  runnerMemoryResultSchema,
 ])
 
 /** The browser's first client frame is currently the complete client union. */
@@ -615,6 +618,7 @@ export const scopedEventEnvelopeSchema = scopedServerEventSchema
 export const runnerServerFrameSchema = z.union([
   runnerReadyFrameSchema,
   runnerWorkSchema,
+  runnerMemoryWorkSchema,
   z.object({
     type: z.literal("ack"),
     ref: idSchema,
@@ -714,3 +718,4 @@ export const runnerHostResponseSchema = z.object({
   }).strict()),
 }).strict()
 export type RunnerHostAgent = z.infer<typeof runnerHostResponseSchema>["agents"][number]
+import { runnerMemoryResultSchema, runnerMemoryWorkSchema } from "./memory.js"

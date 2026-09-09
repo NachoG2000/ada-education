@@ -30,8 +30,8 @@ export function ChannelDetailsPanel({
   const { community, me, workspace } = useCommunity()
   const hosted = useHostedWorkspace()
   const navigateTo = useAppNavigation(community.id)
-  const canManage = me.kind === "person" && me.role === "teacher"
-  const [view, setView] = useState<ChannelAuxiliaryKind>(initialView)
+  const canManage = channel.kind !== "dm" && me.kind === "person" && me.role === "teacher"
+  const [view, setView] = useState<ChannelAuxiliaryKind>(channel.kind === "dm" ? "members" : initialView)
   const [name, setName] = useState(channel.name)
   const [description, setDescription] = useState(channel.description ?? "")
   const [visibility, setVisibility] = useState<"open" | "private">(channel.visibility ?? "open")
@@ -77,10 +77,10 @@ export function ChannelDetailsPanel({
   })
 
   return (
-    <aside className="flex size-full min-w-0 flex-col bg-background" aria-label="Channel details">
+    <aside className="flex size-full min-w-0 flex-col bg-background" aria-label={channel.kind === "dm" ? "Conversation details" : "Channel details"}>
       <header className="flex min-h-14 items-center gap-2 border-b px-4">
-        <div className="min-w-0 flex-1"><h2 className="font-semibold">#{channel.name}</h2><p className="text-xs text-muted-foreground">Channel details</p></div>
-        <Button type="button" variant="ghost" size="icon-sm" onClick={onClose} aria-label="Close channel details"><XIcon /></Button>
+        <div className="min-w-0 flex-1"><h2 className="font-semibold">{channel.kind === "dm" ? channel.name : `#${channel.name}`}</h2><p className="text-xs text-muted-foreground">{channel.kind === "dm" ? "Direct message" : "Channel details"}</p></div>
+        <Button type="button" variant="ghost" size="icon-sm" onClick={onClose} aria-label={channel.kind === "dm" ? "Close conversation details" : "Close channel details"}><XIcon /></Button>
       </header>
       <div className="flex h-10 shrink-0 items-end gap-4 border-b px-4" role="tablist" aria-label="Channel detail sections">
         <button type="button" role="tab" aria-selected={view === "members"} onClick={() => setView("members")} className="h-10 border-b-2 border-transparent px-1 text-sm aria-selected:border-foreground aria-selected:font-medium">Members</button>

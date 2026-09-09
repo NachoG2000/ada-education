@@ -9,7 +9,7 @@ export const channelStatusSchema = z.enum(["active", "archived"])
 export const agentStatusSchema = z.enum(["active", "inactive"])
 /* `scripted` remains for the local deterministic demo; hosted runners use
    Claude or Codex subscriptions. */
-export const agentRuntimeSchema = z.enum(["scripted", "claude", "codex"])
+export const agentRuntimeSchema = z.enum(["scripted", "claude", "codex", "pi"])
 export const apiErrorCodeSchema = z.enum([
   "invalid_input",
   "unauthorized",
@@ -33,6 +33,7 @@ export const citationSchema = z.object({
 })
 
 export const messageBlockSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("mention"), text: z.string().min(1).max(250), memberId: z.string().min(1).max(200) }).strict(),
   z.object({ kind: z.literal("text"), text: z.string() }),
   z.object({ kind: z.literal("cite"), text: z.string(), cite: citationSchema }),
   z.object({ kind: z.literal("code"), text: z.string() }),

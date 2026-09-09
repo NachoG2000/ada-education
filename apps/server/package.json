@@ -14,13 +14,20 @@
     "check:gated": "tsx scripts/gated-check.ts",
     "check:workspace": "tsx scripts/workspace-check.ts",
     "check:issue1": "tsx scripts/issue1-flow.ts",
-    "check:agents": "tsx scripts/automatic-agents-check.ts"
+    "check:agents": "tsx scripts/automatic-agents-check.ts",
+    "check:mentions": "tsx scripts/mentions-check.ts",
+    "check:education": "tsx scripts/education-check.ts && tsx scripts/inbox-check.ts",
+    "check:agents:pi": "tsx scripts/automatic-agents-check.ts --pi",
+    "check:memory": "tsx scripts/memory-check.ts && tsx scripts/exploration-check.ts",
+    "seed:exploration": "tsx src/seed-exploration.ts"
   },
   "dependencies": {
     "@ada/protocol": "*",
     "@hono/node-server": "^2.1.1",
     "hono": "^4.13.3",
-    "ws": "^8.21.3"
+    "pdfjs-dist": "^6.3.289",
+    "ws": "^8.21.3",
+    "yaml": "^2.9.0"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

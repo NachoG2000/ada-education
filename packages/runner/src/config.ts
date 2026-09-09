@@ -2,7 +2,7 @@ import { lstatSync, mkdirSync } from "node:fs"
 import { basename, resolve } from "node:path"
 
 /** Hosted choices. The scripted implementation remains a direct test harness. */
-export type RunnerRuntime = "claude" | "codex"
+export type RunnerRuntime = "claude" | "codex" | "pi"
 
 export type RunnerConfig = {
   server: string
@@ -101,8 +101,8 @@ export function parseRunnerConfig(argv: string[] = process.argv.slice(2), env: E
   const materialsDir = resolve(value(argv, "materials", "ADA_MATERIALS", env) ?? defaultMaterials)
   ensureDirectory(materialsDir, "--materials")
   const runtimeRaw = value(argv, "runtime", "ADA_RUNTIME", env) ?? "claude"
-  if (runtimeRaw !== "claude" && runtimeRaw !== "codex") {
-    throw new ConfigError(`ada-runner: runtime "${runtimeRaw}" isn't supported; use claude or codex.`)
+  if (runtimeRaw !== "claude" && runtimeRaw !== "codex" && runtimeRaw !== "pi") {
+    throw new ConfigError(`ada-runner: runtime "${runtimeRaw}" isn't supported; use claude, codex, or pi.`)
   }
   const modelValue = value(argv, "model", "ADA_MODEL", env)
   const model = modelValue && modelValue !== "default" ? modelValue : undefined

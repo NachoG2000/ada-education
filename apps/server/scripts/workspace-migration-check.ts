@@ -1,5 +1,5 @@
 import assert from "node:assert/strict"
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { DatabaseSync } from "node:sqlite"
@@ -13,6 +13,30 @@ const seededPath = join(scratch, "seeded.db")
 const courseDir = join(scratch, "course")
 
 try {
+  const v7Path = join(scratch, "v7.db")
+  const v7 = new DatabaseSync(v7Path)
+  v7.exec(readFileSync(new URL("../src/schema.sql", import.meta.url), "utf8").replace(/  system_role TEXT.*\n/, "").replace(/CREATE UNIQUE INDEX IF NOT EXISTS tenant_agents_primary.*\n/, "").replace("runtime IN ('claude', 'codex', 'pi')", "runtime IN ('claude', 'codex')"))
+  v7.exec(`
+    PRAGMA foreign_keys = ON;
+    PRAGMA user_version = 7;
+    INSERT INTO tenant_users (id, display_name, initials, token_digest, created_at, updated_at) VALUES ('u', 'Teacher', 'T', 'user-digest', 'then', 'then');
+    INSERT INTO tenant_communities VALUES ('c', 'Course', 'Term', 'u', 'then', 'then');
+    INSERT INTO tenant_agents VALUES ('a', 'c', 'Course tutor', 'avatar', 'Rules', 'codex', 'model', 'u', 'active', 'runner-digest', 'then', 'now', NULL, NULL);
+    INSERT INTO tenant_agents VALUES ('deleted', 'c', 'Old tutor', NULL, 'Old rules', 'claude', '', 'u', 'deleted', 'old-digest', 'then', 'now', 'now', 'u');
+  `)
+  const originalAgents = v7.prepare("SELECT * FROM tenant_agents ORDER BY id").all()
+  v7.close()
+  const upgraded = openDatabase(v7Path)
+  assert.deepEqual(upgraded.prepare("SELECT * FROM tenant_agents ORDER BY id").all().map((row) => ({ ...row })), originalAgents.map((row) => ({ ...row, name: row.id === "a" ? "Ada" : row.name, system_role: row.id === "a" ? "ada" : null })), "v8/v9 preserve agent identity, rules and digests while branding the primary tutor")
+  upgraded.prepare("UPDATE tenant_agents SET runtime = 'pi' WHERE id = 'a'").run()
+  assert.throws(() => upgraded.prepare("UPDATE tenant_agents SET runtime = 'unknown' WHERE id = 'a'").run(), /CHECK constraint/)
+  assert.deepEqual(upgraded.prepare("PRAGMA foreign_key_check").all(), [])
+  assert(upgraded.prepare("SELECT name FROM sqlite_master WHERE name = 'tenant_agents_community'").get(), "v8 restores the agent index")
+  upgraded.close()
+  const upgradedAgain = openDatabase(v7Path)
+  assert.equal(upgradedAgain.prepare("SELECT runtime FROM tenant_agents WHERE id = 'a'").get()?.runtime, "pi", "Pi survives reopening the migrated database")
+  upgradedAgain.close()
+
   const legacy = new DatabaseSync(legacyPath)
   legacy.exec(`
     PRAGMA user_version = 1;

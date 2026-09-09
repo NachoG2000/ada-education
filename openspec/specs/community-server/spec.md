@@ -98,3 +98,16 @@ All added operations MUST derive the actor from the user bearer, derive the tena
 #### Scenario: Run an enrolled agent
 - **WHEN** profile, role, or invite operations are added
 - **THEN** agent enrollment and provider execution continue to use the existing outbound runner contract without receiving provider credentials
+
+### Requirement: Atomic teacher recruitment by mention
+
+Message creation SHALL validate mention IDs against the community, canonicalize labels, and atomically add eligible outside-channel agents only for teachers before work dispatch. Students, archived channels, and DMs SHALL NOT recruit agents. Editing SHALL NOT recruit agents.
+
+#### Scenario: Invalid mention rolls back recruitment
+- **WHEN** one of several mentioned identities is invalid or unauthorized
+- **THEN** no message or agent membership from that request is committed
+
+#### Scenario: Successful recruitment and retry
+- **WHEN** a teacher sends a valid mention to an active community agent outside the channel
+- **THEN** the agent becomes a member and receives the message as work after membership is visible
+- **AND** retrying the same client message ID does not duplicate the message or membership

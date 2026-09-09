@@ -302,9 +302,10 @@ CREATE TABLE IF NOT EXISTS tenant_agents (
   id TEXT PRIMARY KEY,
   community_id TEXT NOT NULL REFERENCES tenant_communities(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
+  system_role TEXT CHECK (system_role IS NULL OR system_role = 'ada'),
   avatar_url TEXT,
   instructions TEXT NOT NULL,
-  runtime TEXT NOT NULL CHECK (runtime IN ('claude', 'codex')),
+  runtime TEXT NOT NULL CHECK (runtime IN ('claude', 'codex', 'pi')),
   model TEXT NOT NULL DEFAULT '',
   created_by TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'deleted')),
@@ -314,6 +315,8 @@ CREATE TABLE IF NOT EXISTS tenant_agents (
   deleted_at TEXT,
   deleted_by TEXT
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS tenant_agents_primary ON tenant_agents(community_id) WHERE system_role = 'ada';
 
 CREATE INDEX IF NOT EXISTS tenant_agents_community ON tenant_agents(community_id, status, created_at);
 
@@ -359,3 +362,42 @@ CREATE TABLE IF NOT EXISTS tenant_cards (
 );
 
 CREATE INDEX IF NOT EXISTS tenant_cards_channel ON tenant_cards(community_id, channel_id, created_at);
+
+CREATE TABLE IF NOT EXISTS educational_artifacts (
+  id TEXT PRIMARY KEY, community_id TEXT NOT NULL, channel_id TEXT NOT NULL REFERENCES tenant_channels(id),
+  author_id TEXT NOT NULL, version INTEGER NOT NULL, content TEXT NOT NULL,
+  created_at TEXT NOT NULL, updated_at TEXT NOT NULL, deleted_at TEXT
+);
+CREATE INDEX IF NOT EXISTS educational_artifacts_channel ON educational_artifacts(community_id, channel_id);
+CREATE TABLE IF NOT EXISTS educational_artifact_versions (
+  artifact_id TEXT NOT NULL REFERENCES educational_artifacts(id), version INTEGER NOT NULL,
+  content TEXT NOT NULL, editor_id TEXT NOT NULL, created_at TEXT NOT NULL, PRIMARY KEY(artifact_id, version)
+);
+CREATE TABLE IF NOT EXISTS educational_work (
+  artifact_id TEXT NOT NULL REFERENCES educational_artifacts(id), user_id TEXT NOT NULL,
+  answers TEXT NOT NULL, version INTEGER NOT NULL, artifact_version INTEGER NOT NULL, updated_at TEXT NOT NULL,
+  PRIMARY KEY(artifact_id, user_id)
+);
+CREATE TABLE IF NOT EXISTS educational_submissions (
+  id TEXT PRIMARY KEY, artifact_id TEXT NOT NULL REFERENCES educational_artifacts(id), user_id TEXT NOT NULL,
+  artifact_version INTEGER NOT NULL, work_version INTEGER NOT NULL, answers TEXT NOT NULL, created_at TEXT NOT NULL,
+  feedback TEXT NOT NULL DEFAULT '', reviewed_at TEXT,
+  UNIQUE(artifact_id, user_id, work_version)
+);
+CREATE TABLE IF NOT EXISTS personal_inbox_reads (
+  community_id TEXT NOT NULL, user_id TEXT NOT NULL, message_id TEXT NOT NULL,
+  PRIMARY KEY(community_id, user_id, message_id)
+);
+
+
+CREATE TABLE IF NOT EXISTS memory_jobs (
+  id TEXT PRIMARY KEY, community_id TEXT NOT NULL REFERENCES tenant_communities(id) ON DELETE CASCADE,
+  agent_id TEXT NOT NULL, user_id TEXT NOT NULL, channel_id TEXT, thread_id TEXT,
+  source_id TEXT NOT NULL, source_version INTEGER NOT NULL, purpose TEXT NOT NULL CHECK(purpose IN ('respond', 'consolidate')),
+  status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'running', 'done', 'failed')),
+  run_id TEXT UNIQUE, lease_until TEXT, attempts INTEGER NOT NULL DEFAULT 0,
+  supplied TEXT, fingerprint TEXT, error TEXT, answer_message_id TEXT,
+  created_at TEXT NOT NULL, completed_at TEXT,
+  UNIQUE(agent_id, source_id, source_version, purpose)
+);
+CREATE INDEX IF NOT EXISTS memory_jobs_pending ON memory_jobs(agent_id, status, created_at);

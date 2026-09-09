@@ -13,3 +13,19 @@ Rules: English; preserve historical decisions; keep current and future material 
 
 `agent-host.md` is the current local automatic-agent and installation-auth
 runbook (§25). Preserve the external server/runner boundary when updating it.
+
+DESIGN.md is now the current operating system (§26); docs/history/design-system-2026-09-05.md preserves its predecessor. Keep the live /#design-system reference and shared page-layout.tsx map aligned when adding screens.
+
+`educational-artifacts.md` documents the mounted §27 extension. It distinguishes
+teacher-authored artifacts and explicit submissions from deferred agent memory.
+
+`agent-host.md` includes the optional Pi/ChatGPT setup (§28), file-tool scope,
+login ownership, and the distinction between automated and live model checks.
+
+The shared voice/runtime-identity section in `agent-host.md` documents common
+system instructions independently of editable agent rules and deferred memory.
+
+`course-memory.md` and `memory-exploration.md` now document §34's governed
+memory and synthetic preloads, superseding earlier memory deferrals. Keep the
+runtime limitation and the difference between seed data and demo presentation
+explicit. Report validation separately from architectural intent.

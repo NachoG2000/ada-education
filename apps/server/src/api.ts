@@ -1,3 +1,5 @@
+import { registerEducationRoutes } from "./education.js"
+import { registerMemoryRoutes } from "./memory-api.js"
 import { createHash, randomUUID, timingSafeEqual } from "node:crypto"
 import { existsSync, mkdirSync, unlinkSync, writeFileSync } from "node:fs"
 import { readFileSync } from "node:fs"
@@ -7,6 +9,7 @@ import { bodyLimit } from "hono/body-limit"
 import type { Context } from "hono"
 import type { DatabaseSync } from "node:sqlite"
 import {
+  agentRuntimeV2Schema,
   runnerHostRequestSchema,
   cardPublishInputSchema,
   communityUpdateInputSchema,
@@ -221,7 +224,7 @@ export interface ApiHooks {
 
 export interface ApiOptions extends ApiHooks {
   runnerHostToken?: string
-  agentRuntime?: "claude" | "codex"
+  agentRuntime?: "claude" | "codex" | "pi"
   agentModel?: string
   presence?: ReadonlyMap<string, "online" | "away" | "thinking" | "publishing">
   /** Hosted runner presence is separate from the legacy seeded-course map. */
@@ -340,6 +343,7 @@ function hostedAgent(agent: TenantAgent, viewerId?: string, database?: DatabaseS
     id: agent.id,
     communityId: agent.communityId,
     name: agent.name,
+    ...(agent.systemRole ? { systemRole: agent.systemRole } : {}),
     ...(agent.avatarUrl ? { avatarUrl: agent.avatarUrl } : {}),
     instructions: agent.instructions,
     runtime: agent.runtime,
@@ -553,7 +557,7 @@ export function createApi(database: DatabaseSync, options: ApiOptions = {}): Hon
   })
 
   const hostToken = options.runnerHostToken ?? process.env.ADA_RUNNER_HOST_TOKEN
-  const agentDefaults = { runtime: options.agentRuntime ?? (process.env.ADA_RUNTIME === "codex" ? "codex" : "claude") as "claude" | "codex", model: options.agentModel ?? process.env.ADA_MODEL ?? "default" }
+  const agentDefaults = { runtime: options.agentRuntime ?? agentRuntimeV2Schema.parse(process.env.ADA_RUNTIME ?? "pi"), model: options.agentModel ?? process.env.ADA_MODEL ?? "gpt-5.6-luna" }
   app.post("/api/runner-host/enroll", bodyLimit({ maxSize: 6_000_000 }), async (context) => {
     if (!hostToken || hostToken.length < 32 || !safeEqual(bearerToken(context) ?? "", hostToken)) return context.json({ error: "Not authorized" }, 401)
     context.header("Cache-Control", "no-store")
@@ -570,7 +574,7 @@ export function createApi(database: DatabaseSync, options: ApiOptions = {}): Hon
     try {
       const user = hostedUser(context, database)
       const body = parseInput(createCommunityInputSchema, await context.req.json<unknown>()) as { name: string; term: string; starterAgents?: boolean }
-      const community = createTenantCommunity(database, user.id, body.name, body.term, body.starterAgents ? agentDefaults : undefined)
+      const community = createTenantCommunity(database, user.id, body.name, body.term, agentDefaults, body.starterAgents ?? true)
       const summary = hostedCommunitySummary(database, community.id, user.id)
       const { membership: _membership, ...record } = summary
       tenantEvent(community.id, "community.updated", { community: record })
@@ -591,6 +595,9 @@ export function createApi(database: DatabaseSync, options: ApiOptions = {}): Hon
     const membership = hostedMembership(database, communityId, user.id)
     return { user, communityId, role: membership.role }
   }
+
+  registerEducationRoutes(app, database, hostedMember, errorResponse)
+  registerMemoryRoutes(app, database, hostedMember, errorResponse)
 
   app.get("/api/communities/:communityId", (context) => {
     try {
@@ -839,7 +846,7 @@ export function createApi(database: DatabaseSync, options: ApiOptions = {}): Hon
   app.post("/api/communities/:communityId/agents", async (context) => {
     try {
       const { user, communityId } = hostedMember(context)
-      const body = parseInput(createCommunityAgentInputSchema, await context.req.json<unknown>()) as { name: string; avatarUrl?: string | null; instructions: string; runtime: "claude" | "codex"; model: string; channelIds: string[] }
+      const body = parseInput(createCommunityAgentInputSchema, await context.req.json<unknown>()) as { name: string; avatarUrl?: string | null; instructions: string; runtime: "claude" | "codex" | "pi"; model: string; channelIds: string[] }
       const result = createTenantAgent(database, communityId, user.id, hostToken ? { ...body, ...agentDefaults } : body)
       const agent = hostedAgent(result.agent, user.id, database)
       tenantEvent(communityId, "agent.created", { agent })
@@ -862,7 +869,7 @@ export function createApi(database: DatabaseSync, options: ApiOptions = {}): Hon
   app.patch("/api/communities/:communityId/agents/:agentId", async (context) => {
     try {
       const { user, communityId } = hostedMember(context)
-      const body = parseInput(updateCommunityAgentInputSchema, await context.req.json<unknown>()) as { name?: string; avatarUrl?: string | null; instructions?: string; runtime?: "claude" | "codex"; model?: string; channelIds?: string[] }
+      const body = parseInput(updateCommunityAgentInputSchema, await context.req.json<unknown>()) as { name?: string; avatarUrl?: string | null; instructions?: string; runtime?: "claude" | "codex" | "pi"; model?: string; channelIds?: string[] }
       const agent = updateTenantAgent(database, communityId, user.id, context.req.param("agentId"), hostToken ? { ...body, ...agentDefaults } : body, options.hostedPresence)
       const projected = hostedAgent(agent, user.id, database)
       tenantEvent(communityId, "agent.updated", { agent: projected })
@@ -917,6 +924,17 @@ export function createApi(database: DatabaseSync, options: ApiOptions = {}): Hon
       const body = parseInput(createScopedMessageInputSchema, { ...(isRecord(raw) ? raw : {}), channelId: context.req.param("channelId") }) as { paragraphs: unknown; threadId?: string; clientId?: string }
       const message = createTenantMessage(database, communityId, user.id, context.req.param("channelId"), body)
       const projected = hostedMessage(message)
+      // Publish membership before work so connected clients and runners see the addition.
+      if (message.paragraphs.flat().some((block) => block.kind === "mention")) {
+        const channel = listTenantChannels(database, communityId, user.id, true).find((item) => item.id === message.channelId)
+        if (channel) tenantEvent(communityId, "channel.updated", { channel: hostedChannel(database, channel) })
+        for (const agent of listTenantAgents(database, communityId, user.id, options.hostedPresence)) {
+          if (message.paragraphs.flat().some((block) => block.kind === "mention" && block.memberId === agent.id)) {
+            tenantEvent(communityId, "agent.updated", { agent: hostedAgent(agent, user.id, database) })
+          }
+        }
+        tenantEvent(communityId, "directory.updated", { channels: listTenantChannelDirectory(database, communityId, user.id), agents: hostedDirectoryAgents(database, communityId, user.id, options.hostedPresence) })
+      }
       tenantEvent(communityId, "message.created", { message: projected })
       options.onTenantMessageCreated?.(message)
       options.onTenantWork?.(message)

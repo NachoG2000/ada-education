@@ -23,7 +23,9 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/componen
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { ChannelWorkspace } from "./channel"
 import { WorkspaceSidebar } from "./sidebar"
-import { InboxPage, NewMessagePage } from "./pages"
+import { InboxPage } from "./inbox"
+import { MemoryPage } from "./memory"
+import { NewMessagePage } from "./pages"
 import { HostedSettingsPage } from "./settings-page"
 import {
   AgentDialog,
@@ -248,7 +250,7 @@ export function WorkspaceShell() {
       compact={!sidebar.open && !mobile}
       onBrowseChannels={() => setBrowse(true)}
       onCreateChannel={() => openCreateChannel()}
-      onOpenSearch={() => { setPaletteScope("global"); setPalette(true) }}
+      onCloseSettings={closeSettings}
       onOpenChannelAuxiliary={(channelId, kind) => {
         if (route.kind !== "channel" || route.channelId !== channelId) void navigateTo({ kind: "channel", channelId })
         openChannelAuxiliary(kind)
@@ -258,23 +260,23 @@ export function WorkspaceShell() {
   )
 
   return (
-    <div className="flex h-svh min-h-0 overflow-hidden bg-background text-foreground">
-      {route.kind === "settings" ? null : <CommunityRail />}
+    <div className="flex h-dvh min-h-0 overflow-hidden bg-background text-foreground">
+      <CommunityRail />
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-      {route.kind === "settings" ? null : <header className="flex h-11 shrink-0 items-center gap-1 border-b bg-background px-2 text-foreground" aria-label="Workspace controls">
+      <header className="flex h-11 shrink-0 items-center gap-1 border-b bg-background px-2 text-foreground" aria-label="Workspace controls">
         <Button type="button" variant="ghost" size="icon-xs" className="md:hidden" onClick={() => setMobileSidebar(true)} aria-label="Open sidebar"><MenuIcon /></Button>
         <Button type="button" variant="ghost" size="icon-xs" className="hidden md:inline-flex" onClick={() => sidebar.setOpen((open) => !open)} aria-label={sidebar.open ? "Collapse sidebar" : "Expand sidebar"}>{sidebar.open ? <PanelLeftCloseIcon /> : <PanelLeftOpenIcon />}</Button>
         <Button type="button" variant="ghost" size="icon-xs" onClick={() => history.back()} aria-label="Back"><ArrowLeftIcon /></Button>
         <Button type="button" variant="ghost" size="icon-xs" onClick={() => history.forward()} aria-label="Forward"><ArrowRightIcon /></Button>
         <button type="button" onClick={() => { setPaletteScope("global"); setPalette(true) }} className="mx-auto flex h-8 min-w-0 max-w-md flex-1 items-center gap-2 rounded-md border bg-muted/40 px-3 text-xs text-muted-foreground outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring">
-          <SearchIcon className="size-3.5 shrink-0" aria-hidden /><span className="min-w-0 flex-1 truncate text-left">Search {community.name}</span><kbd className="hidden shrink-0 font-sans text-[10px] sm:inline">⌘K</kbd>
+          <SearchIcon className="size-3.5 shrink-0" aria-hidden /><span className="min-w-0 flex-1 truncate text-left">Search {community.name}</span><kbd className="hidden shrink-0 font-sans text-xs sm:inline">⌘K</kbd>
         </button>
-        <span className="flex items-center gap-1.5 px-2 text-[11px]" role="status"><span className={`size-1.5 rounded-full ${connected ? "bg-green-600" : "bg-muted-foreground/50"}`} />{mode === "demo" ? "Demo" : connected ? "Live" : "Reconnecting"}</span>
-      </header>}
+        <span className="flex items-center gap-1.5 px-2 text-xs" role="status"><span className={`size-1.5 rounded-full ${connected ? "bg-success" : "bg-muted-foreground/50"}`} />{mode === "demo" ? "Demo" : connected ? "Live" : "Reconnecting"}</span>
+      </header>
 
       <div className="min-h-0 flex-1">
-        {mobile || route.kind === "settings" ? (
-          <main className="size-full min-h-0 overflow-hidden">{pageForRoute(route, channelAuxiliary, (value) => value ? openChannelAuxiliary(value) : setChannelAuxiliary(null), () => { setPaletteScope("channel"); setPalette(true) }, openCreateAgent, openEditAgent, (agentId) => setDeleteAgentId(agentId), closeSettings)}</main>
+        {mobile ? (
+          <main className="size-full min-h-0 overflow-hidden">{pageForRoute(route, channelAuxiliary, (value) => value ? openChannelAuxiliary(value) : setChannelAuxiliary(null), () => { setPaletteScope("channel"); setPalette(true) }, openCreateAgent, openEditAgent, (agentId) => setDeleteAgentId(agentId))}</main>
         ) : (
           <ResizablePanelGroup key={sidebar.open ? "open" : "compact"} orientation="horizontal" className="h-full min-h-0">
             <ResizablePanel
@@ -291,7 +293,7 @@ export function WorkspaceShell() {
             </ResizablePanel>
             {sidebar.open ? <ResizableHandle className="bg-transparent after:w-2" /> : null}
             <ResizablePanel id="workspace-content" minSize={420} className="min-w-0">
-              <main className="size-full min-h-0 overflow-hidden bg-background">{pageForRoute(route, channelAuxiliary, (value) => value ? openChannelAuxiliary(value) : setChannelAuxiliary(null), () => { setPaletteScope("channel"); setPalette(true) }, openCreateAgent, openEditAgent, (agentId) => setDeleteAgentId(agentId), closeSettings)}</main>
+              <main className="size-full min-h-0 overflow-hidden bg-background">{pageForRoute(route, channelAuxiliary, (value) => value ? openChannelAuxiliary(value) : setChannelAuxiliary(null), () => { setPaletteScope("channel"); setPalette(true) }, openCreateAgent, openEditAgent, (agentId) => setDeleteAgentId(agentId))}</main>
             </ResizablePanel>
           </ResizablePanelGroup>
         )}
@@ -299,7 +301,7 @@ export function WorkspaceShell() {
 
       <Sheet open={mobileSidebar} onOpenChange={setMobileSidebar}>
         <SheetContent side="left" className="w-72 gap-0 bg-background p-0" showCloseButton={false}>
-          <SheetHeader className="sr-only"><SheetTitle>Course navigation</SheetTitle><SheetDescription>Channels and workspace pages</SheetDescription></SheetHeader>
+          <SheetHeader className="sr-only"><SheetTitle>{route.kind === "settings" ? "Settings navigation" : "Course navigation"}</SheetTitle><SheetDescription>{route.kind === "settings" ? "Settings sections and return to workspace" : "Channels and workspace pages"}</SheetDescription></SheetHeader>
           {sidebarNode}
         </SheetContent>
       </Sheet>
@@ -355,11 +357,11 @@ function pageForRoute(
   openCreateAgent: () => void,
   openEditAgent: (agentId: string) => void,
   deleteAgent: (agentId: string) => void,
-  closeSettings: () => void,
 ) {
-  if (route.kind === "channel") return <ChannelWorkspace auxiliary={channelAuxiliary} onAuxiliaryChange={setChannelAuxiliary} onSearchChannel={openSearch} />
+  if (route.kind === "channel") return <ChannelWorkspace key={route.channelId} auxiliary={channelAuxiliary} onAuxiliaryChange={setChannelAuxiliary} onSearchChannel={openSearch} />
   if (route.kind === "new-message") return <NewMessagePage />
+  if (route.kind === "memory") return <MemoryPage key={route.communityId} route={route} />
   if (route.kind === "agents") return <AgentsWorkspace route={route} onCreateAgent={openCreateAgent} onEditAgent={openEditAgent} onDeleteAgent={deleteAgent} />
-  if (route.kind === "settings") return <HostedSettingsPage section={route.section} onBack={closeSettings} />
+  if (route.kind === "settings") return <HostedSettingsPage section={route.section} />
   return <InboxPage />
 }

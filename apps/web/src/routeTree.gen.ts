@@ -14,6 +14,8 @@ import { Route as JoinRouteImport } from './routes/join'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as CCommunityIdRouteImport } from './routes/c.$communityId'
 import { Route as CCommunityIdIndexRouteImport } from './routes/c.$communityId.index'
+import { Route as CCommunityIdInboxRouteImport } from './routes/c.$communityId.inbox'
+import { Route as CCommunityIdMemoryRouteImport } from './routes/c.$communityId.memory'
 import { Route as CCommunityIdSettingsRouteImport } from './routes/c.$communityId.settings'
 import { Route as CCommunityIdAgentsIndexRouteImport } from './routes/c.$communityId.agents.index'
 import { Route as CCommunityIdAgentsAgentIdRouteImport } from './routes/c.$communityId.agents.$agentId'
@@ -44,6 +46,16 @@ const CCommunityIdRoute = CCommunityIdRouteImport.update({
 const CCommunityIdIndexRoute = CCommunityIdIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => CCommunityIdRoute,
+} as any)
+const CCommunityIdInboxRoute = CCommunityIdInboxRouteImport.update({
+  id: '/inbox',
+  path: '/inbox',
+  getParentRoute: () => CCommunityIdRoute,
+} as any)
+const CCommunityIdMemoryRoute = CCommunityIdMemoryRouteImport.update({
+  id: '/memory',
+  path: '/memory',
   getParentRoute: () => CCommunityIdRoute,
 } as any)
 const CCommunityIdSettingsRoute = CCommunityIdSettingsRouteImport.update({
@@ -85,6 +97,8 @@ export interface FileRoutesByFullPath {
   '/join': typeof JoinRoute
   '/settings': typeof SettingsRoute
   '/c/$communityId': typeof CCommunityIdRouteWithChildren
+  '/c/$communityId/inbox': typeof CCommunityIdInboxRoute
+  '/c/$communityId/memory': typeof CCommunityIdMemoryRoute
   '/c/$communityId/settings': typeof CCommunityIdSettingsRoute
   '/c/$communityId/': typeof CCommunityIdIndexRoute
   '/c/$communityId/agents/$agentId': typeof CCommunityIdAgentsAgentIdRoute
@@ -97,6 +111,8 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/join': typeof JoinRoute
   '/settings': typeof SettingsRoute
+  '/c/$communityId/inbox': typeof CCommunityIdInboxRoute
+  '/c/$communityId/memory': typeof CCommunityIdMemoryRoute
   '/c/$communityId/settings': typeof CCommunityIdSettingsRoute
   '/c/$communityId': typeof CCommunityIdIndexRoute
   '/c/$communityId/agents/$agentId': typeof CCommunityIdAgentsAgentIdRoute
@@ -111,6 +127,8 @@ export interface FileRoutesById {
   '/join': typeof JoinRoute
   '/settings': typeof SettingsRoute
   '/c/$communityId': typeof CCommunityIdRouteWithChildren
+  '/c/$communityId/inbox': typeof CCommunityIdInboxRoute
+  '/c/$communityId/memory': typeof CCommunityIdMemoryRoute
   '/c/$communityId/settings': typeof CCommunityIdSettingsRoute
   '/c/$communityId/': typeof CCommunityIdIndexRoute
   '/c/$communityId/agents/$agentId': typeof CCommunityIdAgentsAgentIdRoute
@@ -126,6 +144,8 @@ export interface FileRouteTypes {
     | '/join'
     | '/settings'
     | '/c/$communityId'
+    | '/c/$communityId/inbox'
+    | '/c/$communityId/memory'
     | '/c/$communityId/settings'
     | '/c/$communityId/'
     | '/c/$communityId/agents/$agentId'
@@ -138,6 +158,8 @@ export interface FileRouteTypes {
     | '/'
     | '/join'
     | '/settings'
+    | '/c/$communityId/inbox'
+    | '/c/$communityId/memory'
     | '/c/$communityId/settings'
     | '/c/$communityId'
     | '/c/$communityId/agents/$agentId'
@@ -151,6 +173,8 @@ export interface FileRouteTypes {
     | '/join'
     | '/settings'
     | '/c/$communityId'
+    | '/c/$communityId/inbox'
+    | '/c/$communityId/memory'
     | '/c/$communityId/settings'
     | '/c/$communityId/'
     | '/c/$communityId/agents/$agentId'
@@ -202,6 +226,20 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/c/$communityId/'
       preLoaderRoute: typeof CCommunityIdIndexRouteImport
+      parentRoute: typeof CCommunityIdRoute
+    }
+    '/c/$communityId/inbox': {
+      id: '/c/$communityId/inbox'
+      path: '/inbox'
+      fullPath: '/c/$communityId/inbox'
+      preLoaderRoute: typeof CCommunityIdInboxRouteImport
+      parentRoute: typeof CCommunityIdRoute
+    }
+    '/c/$communityId/memory': {
+      id: '/c/$communityId/memory'
+      path: '/memory'
+      fullPath: '/c/$communityId/memory'
+      preLoaderRoute: typeof CCommunityIdMemoryRouteImport
       parentRoute: typeof CCommunityIdRoute
     }
     '/c/$communityId/settings': {
@@ -265,6 +303,8 @@ const CCommunityIdChannelsChannelIdRouteWithChildren =
   )
 
 interface CCommunityIdRouteChildren {
+  CCommunityIdInboxRoute: typeof CCommunityIdInboxRoute
+  CCommunityIdMemoryRoute: typeof CCommunityIdMemoryRoute
   CCommunityIdSettingsRoute: typeof CCommunityIdSettingsRoute
   CCommunityIdIndexRoute: typeof CCommunityIdIndexRoute
   CCommunityIdAgentsAgentIdRoute: typeof CCommunityIdAgentsAgentIdRoute
@@ -274,6 +314,8 @@ interface CCommunityIdRouteChildren {
 }
 
 const CCommunityIdRouteChildren: CCommunityIdRouteChildren = {
+  CCommunityIdInboxRoute: CCommunityIdInboxRoute,
+  CCommunityIdMemoryRoute: CCommunityIdMemoryRoute,
   CCommunityIdSettingsRoute: CCommunityIdSettingsRoute,
   CCommunityIdIndexRoute: CCommunityIdIndexRoute,
   CCommunityIdAgentsAgentIdRoute: CCommunityIdAgentsAgentIdRoute,

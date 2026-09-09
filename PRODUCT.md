@@ -131,3 +131,40 @@ automatically using installation configuration. The mounted flow has no
 runtime/model picker, credential input, or runner setup step. New communities
 start with editable tutor and curator agents. Direct messages address the
 agent implicitly; shared channels use mentions.
+
+## Current operating interface (2026-09-06)
+
+See DECISIONS.md §26 and DESIGN.md for the current system; prior Card File art direction remains historical. Settings and Agents use shared layout/navigation/action components with state variants. All user-facing content remains English. Mentions are recognizable inline identities and complete with Tab or Enter. Teachers can bring an active community agent into a channel by mentioning it and sending; students can mention agents already present. Before sending, explain that the added agent can read conversation history. Responsive layouts preserve access to navigation, suggestions, and send actions.
+
+## Educational channel surfaces (§27)
+
+The teacher's learning path begins in shared channels. Artifacts are stable
+materials and activities opened from the header or a guide preview into the
+same context panel used by threads and details. Templates: Module guide,
+Explanation, Practice, Assignment. The tutor remains a contextual private aid:
+Ask privately prepares a question with source context and never auto-sends.
+
+Personal answers, explicit submissions and teacher feedback must have distinct
+labels. Save privately is not Submit to teacher. Teachers receive a submitted
+snapshot, not later drafts. DMs retain their disclosed teacher-readable policy.
+Inbox shows personal attention, not all course traffic. This implementation
+supersedes the earlier foundation-only exclusion of these surfaces; memory,
+automatic mastery inference and generated executable UI remain outside scope.
+
+## Primary Ada agent (2026-09-07, supersedes earlier agent naming restriction)
+
+Ada also names the primary course assistant, formerly Course tutor. It has a
+stable system identity and primary navigation entry. Ask Ada on a message
+starts a contextual direct conversation without posting to the source channel.
+The UI must disclose existing teacher visibility instead of promising owner-only
+privacy. User-authored agent names remain independent.
+
+## Governed memory product contract (§34, 2026-09-08)
+
+Course memory is now in scope: sources, connected knowledge, course activity,
+private learner trajectories and teacher review. Original files persist; Ada
+proposes evidence-backed derived records. Current understanding and historical
+observations coexist. Inferences are explicitly labeled and correctable.
+Teachers see their course learners; learners see only themselves. Shared-channel
+agents never load personal trajectories. New communities always receive primary
+Ada. Preloaded exploration courses are synthetic starting data for demo design.

@@ -9,9 +9,9 @@ that outlives the conversation.
 
 Open source under [Apache-2.0](LICENSE), for organizations that run
 cohort-based courses. The current version is a local, multi-community
-foundation. It supports real conversations and external agent runners;
-the card-memory pipeline exists in the backend, while its interface remains
-paused.
+workspace. It supports real conversations, educational artifacts, and
+governed course memory with sources, revisions, learner trajectories, and
+teacher review. Models run through a separate local Pi installation.
 
 ## Run locally
 
@@ -57,23 +57,27 @@ check, not a deployment runbook.
   this disclosure; teachers view the conversation read-only.
 - Automatically connected classroom agents with separate workspaces and editable rules.
 
-Cards are currently backend memory: there is no mounted cards, Modules, or
-My study interface. Search is limited to workspace navigation, not message
+Course memory exposes derived knowledge and its evidence. Shared artifacts,
+personal work, submissions, and Inbox are also mounted. The historical cards,
+Modules, and My study screens remain unmounted. Search is limited to workspace navigation, not message
 history. Hosted runners, deployment, billing, notifications, reactions,
 attachments, and grading are outside this version's product scope.
 
 ## Use agents
 
-Install Claude Code and sign in once on this machine (`claude auth login`).
-Then run `npm run dev`. New communities include a Course tutor and Knowledge
-curator. Open a direct conversation, or add an agent to a channel and mention
+Pi is installed by `npm ci`. Open `npm run pi`, enter `/login`, choose
+ChatGPT Plus/Pro (Codex), finish sign-in, and exit with `/quit`. Then run
+`npm run dev`. New communities include Ada and an optional Knowledge curator. Open a direct conversation, or add an agent to a channel and mention
 it. Create additional agents with a name, rules, and optional channels; Ada
 connects them automatically. No per-agent model or runner setup is needed.
 
-The separate local host uses your Claude subscription by default. Keep it
+The separate local host uses Pi with your ChatGPT subscription and the
+configured `gpt-5.6-luna` model by default. Keep it
 running while trying the system. Its credentials and workspaces live in the
 ignored `.ada/` directory. If provider login or usage limits prevent a reply,
-check the host terminal; students receive a short failure message.
+check the host terminal; the conversation shows a failed-response retry.
+Governed memory currently requires Pi; retained Claude/Codex adapters fail
+closed for this work.
 
 See [the agent host guide](docs/agent-host.md) for installation configuration,
 API-key mode, state recovery, and the retained manual one-time setup command.
@@ -100,7 +104,7 @@ or the individual commands in [CONTRIBUTING.md](CONTRIBUTING.md).
 | [apps/web](apps/web/AGENTS.md) | React 19, Vite, TanStack Router, and shadcn interface |
 | [apps/server](apps/server/AGENTS.md) | Hono API, SQLite, authorization, and WebSocket delivery |
 | [packages/protocol](packages/protocol/AGENTS.md) | Shared TypeScript types and Zod network contracts |
-| [packages/runner](packages/runner/AGENTS.md) | Outbound Claude/Codex runner and file publication |
+| [packages/runner](packages/runner/AGENTS.md) | Outbound Claude/Codex/Pi runner and file publication |
 | [data](data/AGENTS.md) | Fictional legacy course fixtures used by compatibility checks |
 | [docs](docs/README.md) | Current architecture guide and labeled future design references |
 | [openspec](openspec/README.md) | Specifications and implementation history |
@@ -116,3 +120,16 @@ Ada exists. Historical code and documents remain identified and preserved;
 they do not extend the current product scope. In particular,
 [deploy/](deploy/README.md) retains an earlier single-course deployment and
 is not the runbook for this multi-community version.
+
+To try Pi with a ChatGPT subscription, see [Pi setup](docs/agent-host.md#try-pi-with-a-chatgpt-subscription). `npm run dev:pi` selects it after Pi login.
+
+### Course memory and exploration courses
+
+The governed memory workspace preserves original files and OKF 0.2 knowledge,
+with scope-aware Pi execution, learner history and teacher review. Pi/Luna is
+the default for `npm run dev`; sign in once through `npm run pi`.
+
+Run `npm run seed:exploration` while the app is stopped to preload two synthetic
+courses. Account keys are written to the private `.ada/exploration-accounts.json`.
+Read [course memory](docs/course-memory.md) and the
+[exploration case inventory](docs/memory-exploration.md) before an explicit reset.

@@ -1,0 +1,300 @@
+---
+name: Ada
+description: Course community where humans and agents coexist in channels, and knowledge files itself into cards.
+colors:
+  ground: "#f3f1ee"
+  panel: "#ffffff"
+  panel-2: "#f7f6f3"
+  panel-3: "#efede8"
+  line: "#ebe9e4"
+  line-strong: "#dedbd4"
+  ink: "#1b1b20"
+  ink-2: "#5a5a63"
+  ink-3: "#8b8b95"
+  ink-4: "#b9b9c2"
+  sun: "#ffd43b"
+  sun-soft: "#fff3c4"
+  sun-ink: "#6f5200"
+  seal: "#2f55d4"
+  seal-soft: "#e9eefc"
+  alert: "#e0493f"
+  alert-soft: "#fde9e7"
+  ok: "#d9f4e6"
+  ok-ink: "#1f7a4a"
+  tab-note: "#d9e8ff"
+  tab-note-ink: "#1f55a8"
+  tab-assignment: "#ffe4c7"
+  tab-assignment-ink: "#9a4f0a"
+  tab-decision: "#d7f3de"
+  tab-decision-ink: "#1f6b3c"
+  tab-answer: "#fff0b3"
+  tab-answer-ink: "#7a5a00"
+  tab-submission: "#ffdbe6"
+  tab-submission-ink: "#a8335f"
+  status-active: "#3fbf6b"
+  status-submitted: "#2f55d4"
+  status-archived: "#b9b9c2"
+typography:
+  display:
+    fontFamily: "Literata Variable, Literata, Georgia, serif"
+    fontSize: "25px"
+    fontWeight: 500
+    lineHeight: 1.18
+    letterSpacing: "-0.01em"
+  title:
+    fontFamily: "Literata Variable, Literata, Georgia, serif"
+    fontSize: "14.5px"
+    fontWeight: 500
+    lineHeight: 1.25
+  prose:
+    fontFamily: "Literata Variable, Literata, Georgia, serif"
+    fontSize: "15.5px"
+    fontWeight: 400
+    lineHeight: 1.6
+  headline:
+    fontFamily: "Inter Variable, Inter, system-ui, sans-serif"
+    fontSize: "19px"
+    fontWeight: 600
+    lineHeight: 1.2
+    letterSpacing: "-0.012em"
+  body:
+    fontFamily: "Inter Variable, Inter, system-ui, sans-serif"
+    fontSize: "14.5px"
+    fontWeight: 400
+    lineHeight: 1.55
+    letterSpacing: "-0.006em"
+  ui:
+    fontFamily: "Inter Variable, Inter, system-ui, sans-serif"
+    fontSize: "13.5px"
+    fontWeight: 400
+    lineHeight: 1.5
+  label:
+    fontFamily: "Inter Variable, Inter, system-ui, sans-serif"
+    fontSize: "11px"
+    fontWeight: 600
+    lineHeight: 1.2
+    letterSpacing: "0.04em"
+  code:
+    fontFamily: "Geist Mono Variable, Geist Mono, ui-monospace, monospace"
+    fontSize: "12.5px"
+    fontWeight: 400
+rounded:
+  panel: "22px"
+  card: "16px"
+  card-file: "14px"
+  control: "10px"
+  pill: "999px"
+spacing:
+  xs: "4px"
+  sm: "8px"
+  md: "12px"
+  lg: "16px"
+  xl: "24px"
+components:
+  button-primary:
+    backgroundColor: "{colors.ink}"
+    textColor: "{colors.panel}"
+    rounded: "{rounded.pill}"
+    padding: "0 14px"
+    height: "32px"
+  button-ghost:
+    backgroundColor: "{colors.panel}"
+    textColor: "{colors.ink-2}"
+    rounded: "{rounded.pill}"
+    padding: "0 12px"
+    height: "32px"
+  pill-state:
+    backgroundColor: "{colors.ok}"
+    textColor: "{colors.ok-ink}"
+    rounded: "{rounded.pill}"
+    padding: "0 10px"
+    height: "22px"
+  tab-type:
+    backgroundColor: "{colors.tab-note}"
+    textColor: "{colors.tab-note-ink}"
+    typography: "{typography.label}"
+    rounded: "{rounded.control}"
+    padding: "0 16px 0 12px"
+    height: "22px"
+  card-file:
+    backgroundColor: "{colors.panel}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.card}"
+    padding: "14px 16px"
+  card-file-new:
+    backgroundColor: "{colors.sun}"
+    textColor: "{colors.sun-ink}"
+    rounded: "{rounded.card}"
+    padding: "14px 16px"
+  composer:
+    backgroundColor: "{colors.panel-2}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.card}"
+    padding: "12px 16px"
+---
+
+# Design System: Ada
+
+## Current visible workspace — issues #1/#3/#4 (2026-09-05)
+
+The mounted interface uses ordinary default base-nova shadcn/Base UI
+components, neutral flat surfaces, standard borders/spacing, and initial or
+image avatars. Buzz is the interaction reference: task dialogs, profile
+popovers, routed Agents/Settings, and one auxiliary panel. It is not a
+requirement for gradients, inset-window framing, or decorative avatars.
+
+The community rail is conditional on multiple memberships. Navigation folds
+into a left overlay below 768px; the contextual panel is a resizable split
+at 1024px and wider and a right overlay below that. Channels, threads, new
+messages, Agents, and Settings are route-backed. Empty Inbox is only the
+fallback for a community without joined channels. Messages are open rows;
+icon-only actions need accessible names and mutations need pending/error
+states. Destructive actions use confirmation.
+
+The Card File tokens, typography, tabs, figures, and provenance language
+remain paused history. There is no mounted card strip, card detail panel,
+publication tile, Modules, or My study surface. The older frontmatter and
+dated sections below document that visual exploration and prior shells;
+they do not override this current contract or `DECISIONS.md` §23.
+
+## Historical visible workspace — issue #1 (2026-09-03)
+
+The hosted-service demo uses the default base-nova shadcn visual language inside a Buzz-shaped community shell: narrow community rail, channel/DM/member sidebar, open conversation rows and a desktop thread column that becomes a sheet below 1024px. Agent identity uses the configured avatar URL with a neutral bot-icon fallback; people use initials. This implementation note supersedes the 2026-08-24 mounted-frame, gradient, theme, route and deterministic-figure requirements immediately below.
+
+The Card File system, its typography, tabs, figures and provenance language are paused, not deleted. They remain the design direction for durable card surfaces when card UI returns. In the current shell there is no card strip, publication tile, citation panel, Modules, My study, Inbox, standalone Agents page, broad Settings area or special course/work/private grouping.
+
+## Historical visible workspace — Buzz frame (2026-08-24)
+
+`DECISIONS.md` §21 supersedes the former Card File shell while retaining its document/provenance language inside conversation. The mounted SPA uses the pinned Buzz desktop composition: one continuous full-viewport gradient canvas, 36px compact top chrome, a 300px sidebar that resizes from 220–420px or collapses to 52px, and one rounded 16px inset content surface. The main routes are Inbox, Channel, Agents and scoped Settings. A desktop thread is a 380px auxiliary split that resizes from 300–720px; below 600px it overlays the conversation. Below 768px, the sidebar becomes a 288px sheet. No information is removed merely to fit a narrow viewport.
+
+The code tokens in `apps/web/src/index.css` are authoritative. Light chrome runs from `#e6e6b6` to `#c4d0da`; dark chrome runs from `#4a4616` to `#0a1423`. The accent is a solid workspace action/focus color (`#8839ef` light, `#c6a0f6` dark), never a purple gradient. Content surfaces remain neutral. Inter is used for chrome, settings and conversation; Literata is reserved for durable card content; Geist Mono is reserved for code/version material.
+
+Visible depth comes from the gradient frame, inset surface, restrained popover shadows and internal separators. Messages are open rows with no chat bubbles. Use official shadcn/Base UI and AI Elements primitives; compose triggers through their `render` API and never nest interactive elements. Every icon-only control has an accessible name, every mutation exposes pending/error state, and teacher/student capabilities match the server rather than advertising forbidden actions. Theme, sidebar dimensions and composer drafts persist locally. Motion is limited to meaningful state transitions and obeys `prefers-reduced-motion`.
+
+Agent identity remains Ada-specific: deterministic solid silhouettes, crown/feet and exactly two eyes; people remain pastel circles with initials. Card type color remains limited by the Tab Rule when a citation or publication appears inline. Dedicated Modules, My study and Card File pages are not part of the visible system.
+
+## Overview
+
+**Inline knowledge-artifact north star: "The Card File"**
+
+Ada takes the logic of a card file — cards classified by their color tab, states that get sealed, agents that file things away — and executes it with the reference material from `design/inspiration/01`: a color-washed background (pink → lavender → mint → yellow), white panels floating with a large radius and a soft diffuse shadow, folded tabs with a diagonal cut, a full yellow that marks what's new, and pastel pills that state the status. Colorful and playful with confidence, on par with Berd and Buzz, without an "AI app" look: no gradient purple, sparkles, or bubbles.
+
+Personality lives in the **agents**: each one is a flat procedural character (`src/lib/figure.ts`) — a solid, vivid-colored silhouette, always the same size, with a "crown" on top (loops, leaves, ears, an antenna, horns, a tuft, a dome) and "feet" below (legs, an arch, rounded), and two black dot eyes. No gradients, no shadows, no mouths: minimalist, mascot-like. Generated by seed, so every new agent is born different and can be "rerolled." People are pastel circles with initials. Conversation stays conversation (plain text) and cards are serif documents: that contrast is still the design.
+
+**Key Characteristics:**
+- Color-washed background; floating white panels (22px radius, soft shadow); generous whitespace.
+- A folded color tab = card type; the diagonal cut is the structural signature.
+- Full yellow (#ffd43b) for what's new and for "already on file"; pastel pills for states.
+- Agents = flat, vivid-colored silhouettes with two eyes, all the same size; people = pastel circles.
+- Black pill-shaped primary button; the seal blue only for focus and links.
+- Inter for the UI, Literata for cards, Geist Mono for code.
+
+## Colors
+
+Strategy: **full palette with roles** — warm neutrals, a lead yellow, a black for actions, five tab colors, and pastel status pills.
+
+### Primary
+- **Sun** (#ffd43b / ink #6f5200): the whole new card, the "New" pill, the "Already on file" pill, the root message highlight (`sun-soft` #fff3c4), the community mark. It's the confident color from the reference; it appears at most once per screen on a large surface.
+- **Ink** (#1b1b20): primary button (black pill), active channel in the sidebar, active panel tab, X-ray lines.
+
+### Secondary — tabs by card type
+- **Note** (#d9e8ff / #1f55a8) · **Assignment** (#ffe4c7 / #9a4f0a) · **Decision** (#d7f3de / #1f6b3c) · **Answer** (#fff0b3 / #7a5a00) · **Submission** (#ffdbe6 / #a8335f). Only on folded tabs and on citation dots.
+
+### Tertiary — status and action
+- **Ok** (#d9f4e6 / #1f7a4a): "Archived," submitted. **Alert** (#fde9e7 / #e0493f): errors. **Seal blue** (#2f55d4): focus, links, submitted channel.
+- Agent inks: each character takes a [fill, ink] pair from the playful `FIGURE_COLORS` palette (coral, green, yellow, blue, lilac, pink, teal, orange, red, lime); the ink colors its name.
+
+### Neutral
+- **Ground** (#f3f1ee) under the wash · **Panel** (#ffffff) · **Panel 2** (#f7f6f3) card strip, hover, composer · **Panel 3** (#efede8) gray pills, code · **Line** (#ebe9e4) · **Ink 2/3/4** (#5a5a63, #8b8b95, #b9b9c2).
+
+### Named Rules
+**The Tab Rule.** A type color appears only as a folded tab or as a citation dot. Never on panel backgrounds, buttons, or text.
+
+**The One Sun Rule.** The full yellow covers a single large surface per screen (the new card) and the "already on file" moment's pills. Any more than that and it stops signaling.
+
+## Typography
+
+**Display Font:** Literata Variable (opsz) — titles and card body text.
+**Body Font:** Inter Variable (opsz) with `cv11`, `ss01`, `tnum` — the whole UI.
+**Label/Mono Font:** Geist Mono Variable — inline code and versions.
+
+**Character:** a clear, friendly sans for operating, a reading serif for what gets filed away, mono only where there's code. Three voices with fixed jobs.
+
+### Hierarchy
+- **Display** (Literata 500, 25px, 1.18): the open card's title.
+- **Headline** (Inter 600, 19px, −0.012em): channel name.
+- **Title** (Literata 500, 14.5–19px): card row (14.5, two lines), citation (13.5), message-card (19).
+- **Prose** (Literata 400, 15.5px, 1.6, max 68ch): card body.
+- **Body** (Inter 400, 14.5px, 1.55): messages.
+- **UI** (Inter 400/500/600, 13.5px): sidebar, names, buttons (12.5px 500).
+- **Label** (Inter 600, 11px, 0.04em, UPPERCASE): sidebar sections, "Cards," tabs (10–10.5px). Used sparingly.
+- **Meta** (Inter 400, 12px): version · author · sources.
+
+### Named Rules
+**The Three Voices Rule.** Literata = what gets read and filed. Inter = what gets discussed and operated. Geist Mono = code and version.
+
+## Retained Card File layout reference (not the mounted shell)
+
+This was the 08/22 shell: three floating panels over the color wash with a card strip above conversation. It remains useful only when rendering card artifacts and historical mockups. For the mounted responsive workspace, use the current section above.
+
+## Elevation & Depth
+
+Floating and soft. Three shadows: **panel** (`0 1px 2px rgba(24,24,36,.04), 0 18px 40px -22px rgba(24,24,36,.22)`) for the three panels; **card** (`0 1px 2px …, 0 8px 20px -12px rgba(24,24,36,.18)`) for cards, message-cards, and the thread button; **pop** for overlays. Characters carry their own elliptical shadow. No 1px borders except internal hairlines (`line`).
+
+### Named Rules
+**The Float Rule.** What you can touch floats (card shadow); what contains floats more (panel shadow); everything else is flat on panel-2.
+
+## Shapes
+
+Large radii: panels 22px, tiles 16px, cards 14px, controls 10px, pills and buttons 999px. The folded tab uses `clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 100%, 0 100%)` and a 10px top-left corner; the card loses that radius where the tab is born. Characters: soft, irregular outlines (blob, squircle, drop, bean, cat) with optional details.
+
+## Components
+
+### Buttons
+- **Primary:** black pill (ink), 32px, Inter 500 12.5px, white text; hover 85%.
+- **Secondary / thread:** white pill with card shadow; hover panel-2.
+- **Ghost (panel actions):** transparent pill, ink 2; active = black.
+- **Focus:** 2px seal-blue ring.
+
+### Tab (folded tab)
+- 22px (18px small), Inter 600 10.5px uppercase, background and ink from the type, diagonal cut on the right. Always attached to the top-left of its card.
+
+### Pill
+- 22px, Inter 600 12px, full radius. Tones: sun (new, already on file), ok (archived), gray (visibility, compiling with a pulsing dot), blue (updated), alert.
+
+### Card row
+- 82px, Literata 14.5 title in two lines, meta below. New = full sun background with "New" on the right. Active = 2px ink ring. Base document = panel-2 with no shadow, hairline only.
+
+### Citation
+- 24px pill over panel-2 with the type's dot, Literata 13.5 title, and § in mono.
+
+### Card message tile
+- 520px, folded tab, Literata 19 title, meta, black "Open" button. New = sun background.
+
+### Message
+- 36px avatar (character or circle) · Inter 600 13.5 name (agent in its own ink) · 11.5 ink-4 time · Inter 14.5 body. No bubbles or rules. Root of an open thread sits on sun-soft with a 16 radius.
+
+### Contextual panel
+- Tabs as pills (active = panel-3). Thread: root on panel-2, compact replies (30px), final tile with an "Archived" pill. Card: tab + title tile (sun if new), metadata table with the author's character at 40px, Prose body, action footer in pills.
+
+### Agent character (signature)
+- `Figure` renders `figureParams(seed)`: a fixed body (72×70 in a 100 box) with a variable corner radius, crown and feet drawn via an SVG mask (unions and cutouts), solid fill from `FIGURE_COLORS`, two black eyes (#15151a) with variable position and spacing. No gradients or shadows. Sizes 20–96px; identical at any scale.
+
+### Source X-ray (signature)
+- "View sources" dims the channel to 22% except for the source messages (sun-soft background) and draws 1.5px black curves with a yellow dot at the destination.
+
+## Do's and Don'ts
+
+### Do:
+- **Do** let the color wash show between panels; it's part of the character.
+- **Do** use the full yellow once per screen on a large surface.
+- **Do** give each agent its seed-based character and derived ink.
+- **Do** classify with the folded tab and tell status with pills; no square chips.
+- **Do** animate only state changes: archive (360ms), seal (380ms), X-ray (300ms).
+
+### Don't:
+- **Don't** use purple gradients, sparkles, chat bubbles, "powered by," or "BOT" badges.
+- **Don't** put type colors anywhere outside tabs and citation dots.
+- **Don't** go back to 1px borders as a depth system or 28px row density.
+- **Don't** draw anything on agents beyond the silhouette and two eyes: no mouths, cheeks, gradients, or shadows.
+- **Don't** title cards in Inter or put Literata on controls.

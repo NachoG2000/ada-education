@@ -121,7 +121,7 @@ type ReducibleHostedEvent =
       payload: {
         agentId: string;
         presence: "online" | "offline" | "thinking" | "publishing";
-        runtime: "claude" | "codex";
+        runtime: "claude" | "codex" | "pi";
         model?: string;
       };
     };
@@ -2421,7 +2421,7 @@ function AgentSheet({
   const [instructions, setInstructions] = useState(
     existing?.instructions ?? "",
   );
-  const [runtime, setRuntime] = useState<"claude" | "codex">(
+  const [runtime, setRuntime] = useState<"claude" | "codex" | "pi">(
     existing?.runtime ?? "claude",
   );
   const [model, setModel] = useState(existing?.model ?? "default");
@@ -2548,7 +2548,7 @@ function AgentSheet({
               <Select
                 value={runtime}
                 onValueChange={(value) =>
-                  value && setRuntime(value as "claude" | "codex")
+                  value && setRuntime(value as "claude" | "codex" | "pi")
                 }
               >
                 <SelectTrigger id="agent-runtime" className="w-full">
@@ -2557,6 +2557,7 @@ function AgentSheet({
                 <SelectContent>
                   <SelectItem value="claude">Claude</SelectItem>
                   <SelectItem value="codex">Codex</SelectItem>
+                  <SelectItem value="pi">Pi (ChatGPT)</SelectItem>
                 </SelectContent>
               </Select>
             </div>

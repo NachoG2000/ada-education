@@ -7,7 +7,7 @@
    only its SHA-256 digest is persisted. */
 import { createHash, randomBytes, randomUUID } from "node:crypto"
 import type { DatabaseSync } from "node:sqlite"
-import { agentTemplates, type RunnerHostAgent } from "@ada/protocol"
+import { resolveTextMentions, agentTemplates, type RunnerHostAgent } from "@ada/protocol"
 import type { Channel, Message, Person, Presence } from "@ada/protocol"
 import { WorkspaceError } from "./workspace-errors.js"
 
@@ -54,13 +54,14 @@ export type TenantInvite = {
   revokedAt?: string
 }
 export type TenantAgent = {
+  systemRole?: "ada"
   kind: "agent"
   id: string
   communityId: string
   name: string
   avatarUrl?: string
   instructions: string
-  runtime: "claude" | "codex"
+  runtime: "claude" | "codex" | "pi"
   model: string
   createdBy: string
   status: "active" | "deleted"
@@ -252,6 +253,7 @@ function agentFromRow(database: DatabaseSync, row: Row, presence: ReadonlyMap<st
     id,
     communityId: str(row.community_id) ?? "",
     name: str(row.name) ?? id,
+    ...(row.system_role === "ada" ? { systemRole: "ada" as const } : {}),
     ...(str(row.avatar_url) ? { avatarUrl: str(row.avatar_url) } : {}),
     instructions: str(row.instructions) ?? "",
     runtime: (str(row.runtime) ?? "claude") as TenantAgent["runtime"],
@@ -376,7 +378,7 @@ export function listTenantCommunities(database: DatabaseSync, userId: string): T
   return sessionForUser(database, userId).communities
 }
 
-export function createTenantCommunity(database: DatabaseSync, userId: string, name: string, term: string, starters?: { runtime: "claude" | "codex"; model: string }): TenantCommunity {
+export function createTenantCommunity(database: DatabaseSync, userId: string, name: string, term: string, starters: { runtime: "claude" | "codex" | "pi"; model: string } = { runtime: "pi", model: "gpt-5.6-luna" }, includeCurator = true): TenantCommunity {
   userRow(database, userId)
   const cleanName = name.trim().replace(/\s+/g, " ")
   const cleanTerm = term.trim().replace(/\s+/g, " ")
@@ -389,10 +391,15 @@ export function createTenantCommunity(database: DatabaseSync, userId: string, na
       .run(id, cleanName, cleanTerm, userId, timestamp, timestamp)
     database.prepare("INSERT INTO tenant_memberships (community_id, user_id, role, created_at, updated_at) VALUES (?, ?, 'teacher', ?, ?)")
       .run(id, userId, timestamp, timestamp)
+    new MemoryFiles(database, id).initialize()
     if (starters) {
-      for (const template of agentTemplates) createTenantAgent(database, id, userId, {
+      for (const template of agentTemplates) {
+        if (template.id !== "tutor" && !includeCurator) continue
+        const created = createTenantAgent(database, id, userId, {
         name: template.name, instructions: template.instructions, ...starters, channelIds: [],
       })
+        if (template.id === "tutor") database.prepare("UPDATE tenant_agents SET system_role = 'ada' WHERE id = ?").run(created.agent.id)
+      }
     }
     return communityFromRow(database.prepare("SELECT * FROM tenant_communities WHERE id = ?").get(id) as Row, "teacher")
   })
@@ -728,7 +735,7 @@ export function listTenantChannelAgents(database: DatabaseSync, communityId: str
 }
 
 export function createTenantAgent(database: DatabaseSync, communityId: string, actorId: string, input: {
-  name: string; avatarUrl?: string | null; instructions: string; runtime: "claude" | "codex"; model?: string; channelIds?: string[]
+  name: string; avatarUrl?: string | null; instructions: string; runtime: "claude" | "codex" | "pi"; model?: string; channelIds?: string[]
 }): TenantAgentResult {
   teacher(database, communityId, actorId)
   const name = input.name.trim().replace(/\s+/g, " ")
@@ -749,10 +756,11 @@ export function createTenantAgent(database: DatabaseSync, communityId: string, a
 }
 
 export function updateTenantAgent(database: DatabaseSync, communityId: string, actorId: string, agentId: string, input: {
-  name?: string; avatarUrl?: string | null; instructions?: string; runtime?: "claude" | "codex"; model?: string; channelIds?: string[]; status?: "active" | "deleted"
+  name?: string; avatarUrl?: string | null; instructions?: string; runtime?: "claude" | "codex" | "pi"; model?: string; channelIds?: string[]; status?: "active" | "deleted"
 }, presence: ReadonlyMap<string, Presence | "offline"> = new Map()): TenantAgent {
   teacher(database, communityId, actorId)
   const current = activeCommunityAgent(database, communityId, agentId)
+  if (current.system_role === "ada" && (input.status === "deleted" || input.name !== undefined && input.name !== "Ada")) fail("conflict", "Ada is the primary course agent and cannot be renamed or deleted")
   if (input.channelIds) for (const channelId of input.channelIds) agentAssignmentChannel(database, communityId, channelId)
   const status = input.status ?? (str(current.status) as TenantAgent["status"])
   const timestamp = now()
@@ -796,7 +804,12 @@ export function createTenantMessage(database: DatabaseSync, communityId: string,
 }): TenantMessage {
   canPostTenantChannel(database, communityId, channelId, actorId)
   if (!nonEmptyBody(input)) fail("invalid_input", "Message cannot be empty")
-  const body = input.paragraphs !== undefined ? { paragraphs: input.paragraphs } : { text: input.text ?? "" }
+  const identities = [...listTenantAgents(database, communityId, actorId), ...listTenantMembers(database, communityId, actorId)]
+    .map((member) => ({ id: member.id, name: "name" in member ? member.name : member.displayName }))
+  const paragraphs = (input.paragraphs ?? [[{ kind: "text", text: input.text ?? "" }]]) as Message["paragraphs"]
+  const normalized = paragraphs.map((paragraph) => paragraph.flatMap((block) => block.kind === "text" ? resolveTextMentions(block.text, identities) : [block]))
+  const body = { paragraphs: normalized }
+
   if (!Object.keys(body).length) fail("invalid_input", "Message body is required")
   if (input.threadId) {
     const thread = database.prepare("SELECT * FROM tenant_threads WHERE id = ? AND community_id = ? AND channel_id = ?").get(input.threadId, communityId, channelId)
@@ -809,6 +822,20 @@ export function createTenantMessage(database: DatabaseSync, communityId: string,
   const id = `message-${randomUUID()}`
   const timestamp = now()
   return transaction(database, () => {
+    const channel = channelRow(database, communityId, channelId)
+    const mentionedIds = new Set(normalized.flat().filter((block) => block.kind === "mention").map((block) => block.memberId))
+    for (const memberId of mentionedIds) {
+      const identity = identities.find((item) => item.id === memberId)
+      if (!identity) fail("invalid_input", "A mentioned member is no longer available in this community")
+      for (const block of normalized.flat()) if (block.kind === "mention" && block.memberId === memberId) block.text = `@${identity.name}`
+      if (channelMembership(database, communityId, channelId, memberId)) continue
+      const agent = database.prepare("SELECT id FROM tenant_agents WHERE id = ? AND community_id = ? AND status = 'active'").get(memberId, communityId)
+      if (!agent || channel.kind === "dm") fail("forbidden", "Only members of this conversation can be mentioned")
+      if (role(database, communityId, actorId) !== "teacher") fail("forbidden", "Only teachers can add an agent by mentioning it")
+      database.prepare("INSERT INTO tenant_channel_members (channel_id, community_id, member_id, member_kind, created_at) VALUES (?, ?, ?, 'agent', ?)").run(channelId, communityId, memberId, timestamp)
+      database.prepare("UPDATE tenant_agents SET updated_at = ? WHERE id = ?").run(timestamp, memberId)
+      database.prepare("UPDATE tenant_channels SET updated_at = ? WHERE id = ?").run(timestamp, channelId)
+    }
     database.prepare(`INSERT INTO tenant_messages (id, community_id, channel_id, author_id, author_kind, body, thread_id, client_id, created_at)
       VALUES (?, ?, ?, ?, 'user', ?, ?, ?, ?)`).run(id, communityId, channelId, actorId, JSON.stringify(body), input.threadId ?? null, input.clientId ?? null, timestamp)
     return messageFromRow(database.prepare("SELECT * FROM tenant_messages WHERE id = ?").get(id) as Row)
@@ -1024,7 +1051,7 @@ export function syncLegacyToTenant(database: DatabaseSync): void {
 }
 
 /** Called only after installation-host authentication, never with a user token. */
-export function enrollRunnerHost(database: DatabaseSync, known: { agentId: string; runnerToken: string }[], defaults: { runtime: "claude" | "codex"; model: string }): RunnerHostAgent[] {
+export function enrollRunnerHost(database: DatabaseSync, known: { agentId: string; runnerToken: string }[], defaults: { runtime: "claude" | "codex" | "pi"; model: string }): RunnerHostAgent[] {
   const credentials = new Map(known.map((entry) => [entry.agentId, entry.runnerToken]))
   return transaction(database, () => {
     const rows = database.prepare("SELECT id, community_id, runner_token_digest FROM tenant_agents WHERE status = 'active' ORDER BY id").all() as Row[]
@@ -1045,6 +1072,7 @@ export function tenantWorkAgentsForMessage(database: DatabaseSync, message: Tena
   return listTenantChannelAgents(database, message.communityId, message.channelId, presence).filter((agent) => {
     if (channel.kind === "dm") return channel.dm_agent_id === agent.id && channel.created_by === message.authorId
     const mention = `@${agent.name}`.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-    return message.paragraphs.flat().some((block) => block.kind === "text" && new RegExp(`(?:^|\\s)${mention}(?=$|\\s|[.,!?;:])`, "i").test(block.text))
+    return message.paragraphs.flat().some((block) => (block.kind === "mention" && block.memberId === agent.id) || block.kind === "text" && new RegExp(`(?:^|\\s)${mention}(?=$|\\s|[.,!?;:])`, "i").test(block.text))
   })
 }
+import { MemoryFiles } from "./memory-files.js"

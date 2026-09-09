@@ -11,3 +11,22 @@ starting points. Community creation can request starters; agent creation
 defaults runtime/model for compatibility. Host enrollment schemas are a
 dedicated installation-only boundary, never a browser projection. Work frames
 can include current instructions.
+
+**Identity-aware mentions (§26):** MessageBlock includes `{ kind: "mention", memberId, text }` in both legacy and hosted Zod boundaries. `mentions.ts` resolves unambiguous legacy text names with complete-name boundaries; code blocks remain literal. IDs are authoritative, display labels are canonicalized by the server, and same-name identities must not be guessed.
+
+`education.ts` owns typed educational templates, artifact versions, personal
+work, submission snapshots and Inbox read-state responses (§27). Practice and
+assignment templates require questions. These contracts do not change runner
+memory cards or grant agent credentials access to hosted user endpoints.
+
+**Pi runtime (§28):** hosted runtime and retained runner-event schemas also
+accept `pi`. Authentication, enrollment, presence and agent projections retain
+the same shape; provider authentication stays outside these contracts.
+
+**Primary Ada (§30):** optional `systemRole: 'ada'` in agent projections is the
+stable primary identity. Clients must not infer that role from an editable name.
+
+`memory.ts` defines strict governed sources, proposals, records, views, reviews,
+processing states and correlated `memory.work`/`memory.result` frames. Models
+cannot supply trusted generation/review fields. UI and runner parse these shared
+schemas. Keep domain extensions in the OKF serializer in the server, not here.

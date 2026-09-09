@@ -1,3 +1,5 @@
+import { educationClient } from "@/lib/education-api"
+import { memoryClient } from "@/lib/memory-api"
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type {
   ActiveAgent,
@@ -178,7 +180,7 @@ function ReadyHostedWorkspace({
       setAddCommunityOpen(true)
       return
     }
-    if (route.kind === 'root' || route.kind === 'inbox' && route.communityId === active.id) {
+    if (route.kind === 'root' || route.kind === 'inbox' && route.restoreChannel && route.communityId === active.id) {
       const remembered = readLastChannel(active.id)
       const target = snapshot.channels.find((channel) => channel.id === remembered && channel.status === 'active') ?? firstChannel(snapshot)
       if (target) void navigateTo({ kind: 'channel', channelId: target.id }, { replace: true })
@@ -289,7 +291,11 @@ function ReadyHostedWorkspace({
     setTyping: () => undefined,
   }), [active.id, mapped.messages, onCommunities, onUser, refresh, server, token])
 
+  const education = useMemo(() => educationClient(server, token, active.id), [server, token, active.id])
+  const memory = useMemo(() => memoryClient(server, token, active.id), [server, token, active.id])
   const hostedValue = useMemo<HostedWorkspaceContextValue>(() => ({
+    education,
+    memory,
     user,
     communities,
     activeCommunity: active,
@@ -339,7 +345,7 @@ function ReadyHostedWorkspace({
       await refresh()
       return channel.id
     },
-  }), [active, communities, navigateTo, onCommunities, onCreateCommunity, onLeaveCommunity, onRedeemInvite, onSwitch, onUser, refresh, requestLeaveCommunity, server, snapshot, token, user])
+  }), [education, memory, active, communities, navigateTo, onCommunities, onCreateCommunity, onLeaveCommunity, onRedeemInvite, onSwitch, onUser, refresh, requestLeaveCommunity, server, snapshot, token, user])
 
   const sendMessage = useCallback(async (input: MessageInput) => {
     await createMessage(server, token, active.id, input)
@@ -529,6 +535,7 @@ function mapAgent(agent: ActiveAgent | CommunityAgent): Agent {
     kind: 'agent',
     id: agent.id,
     name: agent.name,
+    systemRole: agent.systemRole,
     scope: 'community',
     createdBy: agent.createdBy,
     avatarUrl: agent.avatarUrl,

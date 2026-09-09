@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from "react";
+import { lazy, Suspense, useSyncExternalStore } from "react";
 import { readHash, subscribeToHash } from "@/lib/hash";
 import { configuredServer } from "@/lib/api";
 import { ErrorBoundary } from "@/components/ada/boundary";
@@ -9,6 +9,7 @@ import { FigureSheet } from "@/screens/FigureSheet";
 
 /* The hosted shell uses the configured API or the page's same-origin server. */
 const SERVER = configuredServer();
+const DesignSystem = lazy(() => import("@/screens/DesignSystem").then((module) => ({ default: module.DesignSystem })));
 
 /* The hash is the whole router (lib/hash.ts holds the one subscription; the
    community provider derives the in-shell view from the same source). Read
@@ -37,6 +38,7 @@ export default function App() {
 }
 
 function screen(hash: string) {
+  if (hash === "#design-system") return <Suspense fallback={<div className="p-6 text-sm">Loading interface reference…</div>}><DesignSystem /></Suspense>;
   if (hash === "#figures") return <FigureSheet />;
   return <HostedApp server={SERVER ?? location.origin} />;
 }

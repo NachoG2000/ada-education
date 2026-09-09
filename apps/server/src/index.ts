@@ -103,6 +103,10 @@ export function startServer(): RunningServer {
     onReportUpdated: (report) => hub?.broadcast({ type: "report.updated", payload: { report } }),
     onTenantEvent: (event) => {
       hub?.broadcastHosted(event)
+      if (event.type === "message.updated") {
+        const payload = event.payload as { message?: TenantMessage }
+        if (payload.message) queueMemoryMessage(database, payload.message, false)
+      }
       if (event.type === "message.created") {
         const payload = event.payload as { message?: TenantMessage }
         if (payload.message) hub?.dispatchHostedWork(payload.message)
@@ -164,6 +168,12 @@ export function startServer(): RunningServer {
       return createReport(database, agentId, input)
     },
     hosted: {
+      memory: {
+        enqueue: (message) => queueMemoryMessage(database, message),
+        claim: (communityId, agentId) => claimMemoryWork(database, communityId, agentId),
+        complete: (communityId, agentId, frame) => completeMemoryWork(database, communityId, agentId, frame),
+        release: (agentId) => releaseMemoryWork(database, agentId),
+      },
       userByToken(token) {
         const user = findTenantUserByToken(database, token)
         return user ? { id: user.id, displayName: user.displayName, createdAt: user.createdAt, updatedAt: user.updatedAt } : undefined
@@ -267,3 +277,4 @@ function closeHttpServer(server: Server): Promise<void> {
     server.close((error) => error ? reject(error) : resolve())
   })
 }
+import { claimMemoryWork, completeMemoryWork, queueMemoryMessage, releaseMemoryWork } from "./memory-jobs.js"

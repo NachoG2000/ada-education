@@ -40,7 +40,7 @@ export function MemberProfilePopover({
           <PopoverHeader className="min-w-0 flex-1 pt-0.5">
             <PopoverTitle className="truncate text-base">{member.name}</PopoverTitle>
             <PopoverDescription className="flex flex-wrap items-center gap-1.5">
-              {member.kind === "person" ? member.role ?? "member" : `${member.runtime ?? "runner"} · ${member.model ?? member.provider.model}`}
+              {member.kind === "person" ? member.role ?? "member" : "Course agent"}
             </PopoverDescription>
           </PopoverHeader>
         </div>

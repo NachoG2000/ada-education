@@ -49,6 +49,7 @@ export function Inline({ blocks, onOpenCard }: { blocks: MessageBlock[]; onOpenC
   return (
     <>
       {blocks.map((b, i) => {
+        if (b.kind === "mention") return <span key={i} className="mention-chip">{b.text}</span>
         if (b.kind === "text") return <Fragment key={i}>{withMentions(b.text, byId)}</Fragment>
         if (b.kind === "code")
           return (

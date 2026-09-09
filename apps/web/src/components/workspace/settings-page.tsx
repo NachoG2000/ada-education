@@ -1,16 +1,12 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { settingsSections } from './settings-navigation'
+import { useEffect, useState } from 'react'
 import type { InviteMetadata, Person } from '@ada/protocol'
-import type { LucideIcon } from 'lucide-react'
 import {
-  ArrowLeftIcon,
-  CommandIcon,
   EllipsisIcon,
   LogOutIcon,
-  SettingsIcon,
   ShieldIcon,
   UserIcon,
   UserPlusIcon,
-  UsersIcon,
 } from 'lucide-react'
 import { WorkspaceAvatar as MemberAvatar } from './workspace-avatar'
 import { Badge } from '@/components/ui/badge'
@@ -25,63 +21,21 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Field, FieldDescription, FieldGroup, FieldLabel, FieldTitle } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { toast } from '@/components/ui/toast'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useCommunity } from '@/lib/community'
-import { useAppNavigation, type SettingsSection } from '@/lib/routes'
-import { cn } from '@/lib/utils'
+import { type SettingsSection } from '@/lib/routes'
+import { ActionSection, PageHeader, PageScroller } from './page-layout'
 import { DestructiveConfirmation } from './destructive-confirmation'
 import { useHostedWorkspace } from './hosted-context'
 
-const COMMON_SETTINGS: Array<{ section: SettingsSection; label: string; icon: LucideIcon }> = [
-  { section: 'profile', label: 'Profile', icon: UserIcon },
-  { section: 'shortcuts', label: 'Keyboard shortcuts', icon: CommandIcon },
-  { section: 'account', label: 'Account', icon: LogOutIcon },
-]
-const TEACHER_SETTINGS: Array<{ section: SettingsSection; label: string; icon: LucideIcon }> = [
-  { section: 'community', label: 'Community', icon: SettingsIcon },
-  { section: 'members', label: 'Members', icon: UsersIcon },
-  { section: 'invites', label: 'Invites', icon: UserPlusIcon },
-]
-
-export function HostedSettingsPage({ section, onBack }: { section?: SettingsSection; onBack: () => void }) {
-  const { community, me } = useCommunity()
-  const navigateTo = useAppNavigation(community.id)
-  const teacher = me.kind === 'person' && me.role === 'teacher'
-  const settings = teacher
-    ? [COMMON_SETTINGS[0], ...TEACHER_SETTINGS, ...COMMON_SETTINGS.slice(1)]
-    : COMMON_SETTINGS
+export function HostedSettingsPage({ section }: { section?: SettingsSection }) {
+  const { me } = useCommunity()
+  const settings = settingsSections(me.kind === 'person' && me.role === 'teacher')
   const active = settings.some((item) => item.section === section) ? section ?? 'profile' : 'profile'
-  const select = (next: SettingsSection) => void navigateTo({ kind: 'settings', section: next }, { replace: true })
-
-  return (
-    <div className="flex size-full min-h-0">
-      <aside className="hidden w-60 shrink-0 flex-col border-r bg-muted/20 sm:flex" aria-label="Settings sections">
-        <div className="flex min-h-14 items-center px-4"><Button type="button" variant="ghost" size="sm" onClick={onBack}><ArrowLeftIcon data-icon="inline-start" />Back to Ada</Button></div>
-        <nav className="flex flex-col gap-1 px-2 py-2">
-          {settings.map((item) => {
-            const Icon = item.icon
-            return <button key={item.section} type="button" onClick={() => select(item.section)} aria-current={active === item.section ? 'page' : undefined} className={cn('flex h-8 items-center gap-2 rounded-md px-2 text-left text-sm outline-none hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-ring', active === item.section && 'bg-background/80 font-medium')}><Icon aria-hidden />{item.label}</button>
-          })}
-        </nav>
-      </aside>
-      <main className="min-w-0 flex-1 overflow-y-auto px-4 py-6 sm:px-8 sm:py-8">
-        <div className="mx-auto max-w-3xl">
-          <div className="mb-5 flex items-center gap-2 sm:hidden">
-            <Button type="button" variant="ghost" size="icon-sm" onClick={onBack} aria-label="Back to Ada"><ArrowLeftIcon /></Button>
-            <Select items={settings.map((item) => ({ value: item.section, label: item.label }))} value={active} onValueChange={(value) => select(value as SettingsSection)}>
-              <SelectTrigger aria-label="Settings section" className="flex-1"><SelectValue /></SelectTrigger>
-              <SelectContent><SelectGroup>{settings.map((item) => <SelectItem key={item.section} value={item.section}>{item.label}</SelectItem>)}</SelectGroup></SelectContent>
-            </Select>
-          </div>
-          <SettingsPanel section={active} />
-        </div>
-      </main>
-    </div>
-  )
+  return <PageScroller><SettingsPanel key={active} section={active} /></PageScroller>
 }
 
 function SettingsPanel({ section }: { section: SettingsSection }) {
@@ -156,9 +110,9 @@ function CommunitySettings() {
         <div><Button size="sm" onClick={() => void save()} disabled={pending || !name.trim() || !term.trim()}>{pending ? 'Saving…' : 'Save community'}</Button></div>
       </FieldGroup>
       <Separator className="my-8" />
-      <div className="flex items-center justify-between gap-4"><div><h2 className="text-sm font-semibold">Invites</h2><p className="mt-1 text-sm text-muted-foreground">Create a role-bound code for a new member.</p></div><Button variant="outline" size="sm" onClick={hosted.requestInvite}><UserPlusIcon data-icon="inline-start" />Invite</Button></div>
+      <ActionSection title="Invites" description="Create an invitation for a new member." action={<Button variant="outline" size="sm" onClick={hosted.requestInvite}><UserPlusIcon data-icon="inline-start" />Invite</Button>} />
       <Separator className="my-8" />
-      <div className="flex items-center justify-between gap-4"><div><h2 className="text-sm font-semibold">Leave community</h2><p className="mt-1 text-sm text-muted-foreground">{hosted.leaveCommunityBlockedReason ?? 'You will need a new invite to return.'}</p></div><Button variant="destructive" size="sm" disabled={!hosted.canLeaveCommunity} title={hosted.leaveCommunityBlockedReason} onClick={hosted.requestLeaveCommunity}>Leave community</Button></div>
+      <ActionSection destructive title="Leave community" description={hosted.leaveCommunityBlockedReason ?? 'You will need a new invite to return.'} action={<Button variant="destructive" size="sm" disabled={!hosted.canLeaveCommunity} title={hosted.leaveCommunityBlockedReason} onClick={hosted.requestLeaveCommunity}>Leave community</Button>} />
     </>
   )
 }
@@ -197,7 +151,7 @@ function MemberSettings() {
 
   return (
     <>
-      <PageHeader title="Members" description="Manage community roles and membership without weakening the last-teacher safeguard." action={<Button size="sm" onClick={hosted.requestInvite}><UserPlusIcon data-icon="inline-start" />Invite</Button>} />
+      <PageHeader title="Members" description="Manage the people and roles in this community." action={<Button size="sm" onClick={hosted.requestInvite}><UserPlusIcon data-icon="inline-start" />Invite</Button>} />
       <div className="mt-8 overflow-hidden rounded-xl border">
         <Table>
           <TableHeader><TableRow><TableHead>Member</TableHead><TableHead>Role</TableHead><TableHead>Joined</TableHead><TableHead><span className="sr-only">Actions</span></TableHead></TableRow></TableHeader>
@@ -259,7 +213,7 @@ function InviteSettings() {
   }
   return (
     <>
-      <PageHeader title="Invites" description="Active invite metadata is safe to review here; raw codes are shown only when created." action={<Button size="sm" onClick={hosted.requestInvite}><UserPlusIcon data-icon="inline-start" />Create invite</Button>} />
+      <PageHeader title="Invites" description="Invite people to this community and manage active invitations." action={<Button size="sm" onClick={hosted.requestInvite}><UserPlusIcon data-icon="inline-start" />Create invite</Button>} />
       {error ? <p className="mt-6 text-sm text-destructive" role="alert">{error}</p> : null}
       <div className="mt-8 overflow-hidden rounded-xl border">
         <Table>
@@ -276,7 +230,7 @@ function InviteSettings() {
 }
 
 const SHORTCUTS = [
-  ['Search Ada', '⌘ K'], ['Browse channels', '⇧ ⌘ O'], ['Create channel', '⇧ ⌘ N'], ['New message', '⇧ ⌘ K'], ['Settings', '⌘ ,'], ['Back / forward', '⌘ [ / ⌘ ]'], ['Close panel or dialog', 'Esc'], ['Send message', 'Enter'], ['New line', '⇧ Enter'],
+  ['Search Ada', '⌘ K'], ['Browse channels', '⇧ ⌘ O'], ['Create channel', '⇧ ⌘ N'], ['New message', '⇧ ⌘ K'], ['Settings', '⌘ ,'], ['Back / forward', '⌘ [ / ⌘ ]'], ['Close panel or dialog', 'Esc'], ['Complete mention', 'Tab / Enter'], ['Send message', 'Enter'], ['New line', '⇧ Enter'],
 ]
 
 function ShortcutSettings() {
@@ -293,7 +247,7 @@ function AccountSettings() {
         <Field><FieldTitle>User token</FieldTitle><FieldDescription>Your token was shown once when you created the account. If you lose it, create a new account.</FieldDescription></Field>
       </FieldGroup>
       <Separator className="my-8" />
-      <div className="flex items-center justify-between gap-4"><div><h2 className="text-sm font-semibold">Sign out on this device</h2><p className="mt-1 text-sm text-muted-foreground">You will need your user token to sign back in.</p></div><Button variant="destructive" size="sm" onClick={hosted.requestSignOut}>Sign out</Button></div>
+      <ActionSection destructive title="Sign out on this device" description="You will need your user token to sign back in." action={<Button variant="destructive" size="sm" onClick={hosted.requestSignOut}>Sign out</Button>} />
     </>
   )
 }
@@ -302,8 +256,4 @@ function formatDate(value?: string) {
   if (!value) return '—'
   const date = new Date(value)
   return Number.isNaN(date.getTime()) ? '—' : new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(date)
-}
-
-function PageHeader({ title, description, action }: { title: string; description: string; action?: ReactNode }) {
-  return <header className="flex flex-wrap items-start justify-between gap-4"><div className="min-w-0"><h1 className="text-2xl font-semibold tracking-[-0.025em]">{title}</h1><p className="mt-1 max-w-[68ch] text-sm leading-5 text-muted-foreground">{description}</p></div>{action}</header>
 }

@@ -3,7 +3,7 @@
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { ProviderError, runClaude, runCodex, providerTestLimits } from "../src/runtimes/providers.js"
+import { ProviderError, runClaude, runCodex, runPi, providerTestLimits } from "../src/runtimes/providers.js"
 import { parseRunnerConfig } from "../src/config.js"
 import { createBootstrapFile, safeWorkspacePath } from "../src/workspace.js"
 
@@ -42,22 +42,33 @@ if (process.env.ADA_FAKE_MODE === 'timeout') setTimeout(() => {}, 60000)
 if (process.env.ADA_FAKE_MODE === 'codex') {
   const output = args[args.indexOf('--output-last-message') + 1]
   fs.writeFileSync(output, 'codex answer from output file')
+} else if (process.env.ADA_FAKE_MODE === 'pi') {
+  process.stdout.write('Pi answer with [[concept.md]]')
+} else if (process.env.ADA_FAKE_MODE === 'pi-auth') {
+  process.stderr.write('No API key found for openai-codex. Use /login')
+  process.exit(1)
+} else if (process.env.ADA_FAKE_MODE === 'empty') {
+  process.exit(0)
 } else {
   process.stdout.write(JSON.stringify({ result: 'claude answer from stdin' }))
 }
 `)
 chmodSync(fake, 0o755)
 
-const base = { cwd: agent, prompt: "hello from Ada", timeoutMs: 2_000, binary: fake, env: { ADA_FAKE_LOG: logFile, ADA_OWNER_TOKEN: "owner-secret", ADA_AGENT_SECRET: "agent-secret", OPENAI_API_KEY: "must-not-pass", ANTHROPIC_API_KEY: "must-not-pass" } }
+const base = { agentName: "Course tutor", cwd: agent, prompt: "hello from Ada", timeoutMs: 2_000, binary: fake, env: { ADA_FAKE_LOG: logFile, ADA_OWNER_TOKEN: "owner-secret", ADA_AGENT_SECRET: "agent-secret", OPENAI_API_KEY: "must-not-pass", ANTHROPIC_API_KEY: "must-not-pass" } }
 const claude = await runClaude(base)
 const claudeCall = JSON.parse(readFileSync(logFile, "utf8")) as { args: string[]; cwd: string; input: string; hasAdaToken: boolean; hasProviderApiKey: boolean }
 check(claude === "claude answer from stdin", "Claude adapter returns the JSON result")
 check(claudeCall.cwd === realpathSync(agent) && claudeCall.input === base.prompt && !claudeCall.hasAdaToken && !claudeCall.hasProviderApiKey, "Claude receives the prompt on stdin, runs in the agent cwd, and gets no Ada or provider API token")
 check(claudeCall.args[0] === "-p" && claudeCall.args.includes("--output-format") && !claudeCall.args.includes(base.prompt), "Claude uses noninteractive flags without putting the prompt in argv")
 
-await runClaude({ ...base, prompt: "do not forward ada-secret to the provider", secrets: ["ada-secret"] })
-const redactedPromptCall = JSON.parse(readFileSync(logFile, "utf8")) as { input: string }
+await runClaude({ ...base, agentName: "Tutor ada-secret", prompt: "do not forward ada-secret to the provider", secrets: ["ada-secret"] })
+const redactedPromptCall = JSON.parse(readFileSync(logFile, "utf8")) as { input: string; args: string[] }
 check(!redactedPromptCall.input.includes("ada-secret") && redactedPromptCall.input.includes("[redacted]"), "provider stdin redacts Ada secrets pasted into prompt context")
+
+check(!redactedPromptCall.args.join(" ").includes("ada-secret"), "shared system instructions redact secrets from agent identity")
+const claudeSystem = claudeCall.args[claudeCall.args.indexOf("--append-system-prompt") + 1]
+check(claudeSystem.includes("Course tutor") && claudeSystem.includes("unspecified (provider default)"), "Claude receives shared identity and explicit unknown model through system instructions")
 
 const codex = await runCodex({ ...base, env: { ADA_FAKE_LOG: logFile, ADA_OWNER_TOKEN: "owner-secret", ADA_INVITE_CODE: "invite-secret", ADA_AGENT_SECRET: "agent-secret", ADA_FAKE_MODE: "codex" }, model: "gpt-5.6" })
 const codexCall = JSON.parse(readFileSync(logFile, "utf8")) as { args: string[]; cwd: string; input: string; hasAdaToken: boolean; hasProviderApiKey: boolean }
@@ -65,6 +76,32 @@ check(codex === "codex answer from output file", "Codex adapter reads --output-l
 check(codexCall.cwd === realpathSync(agent) && codexCall.input === base.prompt && !codexCall.hasAdaToken && !codexCall.hasProviderApiKey, "Codex receives the prompt on stdin, runs in the agent cwd, and gets no Ada or provider API token")
 check(codexCall.args.slice(0, 2).join(" ") === "exec --cd" && codexCall.args.includes(agent) && codexCall.args.includes("--sandbox") && codexCall.args.includes("workspace-write"), "Codex uses exec, --cd, and workspace-write")
 check(codexCall.args.includes("--ephemeral") && codexCall.args.includes("--skip-git-repo-check") && codexCall.args.includes("--model") && codexCall.args.includes("gpt-5.6") && !codexCall.args.includes("--add-dir"), "Codex is ephemeral, supports fresh folders, model override, and has no writable materials root")
+
+const codexSystem = codexCall.args.find((arg) => arg.startsWith("developer_instructions="))
+check(Boolean(codexSystem?.includes("Course tutor") && codexSystem.includes("gpt-5.6")), "Codex receives shared identity and configured model through developer instructions")
+
+const pi = await runPi({ ...base, model: "test-model", env: { ...base.env, ADA_FAKE_MODE: "pi" } })
+const piCall = JSON.parse(readFileSync(logFile, "utf8")) as typeof codexCall
+check(pi === "Pi answer with [[concept.md]]", "Pi returns the final print-mode answer with citations intact")
+check(piCall.input === base.prompt && piCall.cwd === realpathSync(agent) && !piCall.hasAdaToken && !piCall.hasProviderApiKey, "Pi uses scoped cwd and secret-free stdin/environment")
+check(piCall.args.includes("openai-codex") && piCall.args.includes("test-model") && piCall.args.includes("--no-session"), "Pi fixes the subscription provider and uses an ephemeral session")
+check(["--no-approve", "--no-extensions", "--no-skills", "--no-context-files", "--no-builtin-tools", "ada_read,ada_write,ada_edit"].every((flag) => piCall.args.includes(flag)), "Pi disables discovered resources and enables only Ada file tools")
+const piSystem = piCall.args[piCall.args.indexOf("--system-prompt") + 1]
+check(piSystem.includes("Course tutor") && piSystem.includes("test-model") && piSystem.includes("ada_read"), "Pi combines shared identity and configured model with its tool system instructions")
+for (const [mode, code] of [["pi-auth", "auth"], ["empty", "invalid_output"], ["timeout", "timeout"], ["nonzero", "exit"]] as const) {
+  await runPi({ ...base, timeoutMs: mode === "timeout" ? 50 : 2_000, env: { ...base.env, ADA_FAKE_MODE: mode, FAKE_TOKEN: "private-token" }, secrets: ["private-token"] }).then(
+    () => check(false, `Pi rejects ${mode}`),
+    (error: unknown) => check(error instanceof ProviderError && error.code === code && !String(error).includes("private-token"), `Pi rejects ${mode} with a redacted actionable error`),
+  )
+}
+await runPi({ ...base, model: "openai/api-billed-model" }).then(
+  () => check(false, "Pi rejects provider override"),
+  (error: unknown) => check(error instanceof ProviderError, "Pi rejects model prefixes that override the subscription provider"),
+)
+await runPi({ ...base, env: { ...base.env, ADA_PROVIDER_AUTH: "api-key" } }).then(
+  () => check(false, "Pi rejects API-key mode"),
+  (error: unknown) => check(error instanceof ProviderError && error.code === "auth", "Pi refuses API-key mode instead of changing billing"),
+)
 
 await runCodex({ ...base, env: { ADA_FAKE_LOG: logFile, ADA_AGENT_TOKEN: "ada-secret", FAKE_TOKEN: "ada-secret", ADA_FAKE_MODE: "auth" }, secrets: ["ada-secret"] }).then(
   () => check(false, "signed-out Codex failure is rejected"),
@@ -92,6 +129,7 @@ const parsed = parseRunnerConfig(
 )
 check(parsed.server === "https://ada.example" && parsed.communityId === "community one" && parsed.agentId === "agent one" && parsed.runtime === "codex" && parsed.timeoutMs === 12_000, "CLI config accepts explicit tenant, runtime, model, timeout, and paths with spaces")
 check(parsed.token === "secret-token-with-more-than-twenty-chars", "config retains the token only for the socket auth frame")
+check(parseRunnerConfig([], { ADA_AGENT_CWD: agent, ADA_COMMUNITY_ID: "c", ADA_AGENT_ID: "a", ADA_AGENT_TOKEN: "secret-token-with-more-than-twenty-chars", ADA_RUNTIME: "pi" }).runtime === "pi", "installation configuration accepts Pi")
 const defaultModel = parseRunnerConfig(["--server", "https://ada.example", "--community", "c", "--agent", "a", "--token", "secret-token-with-more-than-twenty-chars", "--cwd", agent, "--model", "default"], {})
 check(defaultModel.model === undefined, "model default is omitted from provider configuration")
 const newAgent = join(scratch, "new agent folder")

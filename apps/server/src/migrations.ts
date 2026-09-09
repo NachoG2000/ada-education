@@ -1,7 +1,8 @@
 import type { DatabaseSync } from "node:sqlite"
+import { MEMORY_JOBS_SQL } from "./memory-jobs.js"
 
 /** The schema version represented by schema.sql and the migrations below. */
-export const LATEST_SCHEMA_VERSION = 6
+export const LATEST_SCHEMA_VERSION = 10
 
 const BACKFILL_TIME = "1970-01-01T00:00:00.000Z"
 
@@ -242,4 +243,60 @@ const MIGRATIONS: Migration[] = [
       database.exec(`ALTER TABLE members ADD COLUMN avatar_url TEXT;`)
     },
   },
+  { version: 7, apply(database) { database.exec(`
+CREATE TABLE IF NOT EXISTS educational_artifacts (
+  id TEXT PRIMARY KEY, community_id TEXT NOT NULL, channel_id TEXT NOT NULL REFERENCES tenant_channels(id),
+  author_id TEXT NOT NULL, version INTEGER NOT NULL, content TEXT NOT NULL,
+  created_at TEXT NOT NULL, updated_at TEXT NOT NULL, deleted_at TEXT
+);
+CREATE INDEX IF NOT EXISTS educational_artifacts_channel ON educational_artifacts(community_id, channel_id);
+CREATE TABLE IF NOT EXISTS educational_artifact_versions (
+  artifact_id TEXT NOT NULL REFERENCES educational_artifacts(id), version INTEGER NOT NULL,
+  content TEXT NOT NULL, editor_id TEXT NOT NULL, created_at TEXT NOT NULL, PRIMARY KEY(artifact_id, version)
+);
+CREATE TABLE IF NOT EXISTS educational_work (
+  artifact_id TEXT NOT NULL REFERENCES educational_artifacts(id), user_id TEXT NOT NULL,
+  answers TEXT NOT NULL, version INTEGER NOT NULL, artifact_version INTEGER NOT NULL, updated_at TEXT NOT NULL,
+  PRIMARY KEY(artifact_id, user_id)
+);
+CREATE TABLE IF NOT EXISTS educational_submissions (
+  id TEXT PRIMARY KEY, artifact_id TEXT NOT NULL REFERENCES educational_artifacts(id), user_id TEXT NOT NULL,
+  artifact_version INTEGER NOT NULL, work_version INTEGER NOT NULL, answers TEXT NOT NULL, created_at TEXT NOT NULL,
+  feedback TEXT NOT NULL DEFAULT '', reviewed_at TEXT,
+  UNIQUE(artifact_id, user_id, work_version)
+);
+CREATE TABLE IF NOT EXISTS personal_inbox_reads (
+  community_id TEXT NOT NULL, user_id TEXT NOT NULL, message_id TEXT NOT NULL,
+  PRIMARY KEY(community_id, user_id, message_id)
+);
+`) } },
+  {
+    version: 8,
+    apply(database) {
+      // SQLite CHECK constraints require a table rebuild. No tables reference
+      // tenant_agents by foreign key; identity and every existing column stay.
+      database.exec(`
+        CREATE TABLE tenant_agents_v8 (
+          id TEXT PRIMARY KEY, community_id TEXT NOT NULL REFERENCES tenant_communities(id) ON DELETE CASCADE,
+          name TEXT NOT NULL, avatar_url TEXT, instructions TEXT NOT NULL,
+          runtime TEXT NOT NULL CHECK (runtime IN ('claude', 'codex', 'pi')), model TEXT NOT NULL DEFAULT '',
+          created_by TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'deleted')),
+          runner_token_digest TEXT NOT NULL UNIQUE, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, deleted_at TEXT, deleted_by TEXT
+        );
+        INSERT INTO tenant_agents_v8 SELECT * FROM tenant_agents;
+        DROP TABLE tenant_agents;
+        ALTER TABLE tenant_agents_v8 RENAME TO tenant_agents;
+        CREATE INDEX tenant_agents_community ON tenant_agents(community_id, status, created_at);
+      `)
+    },
+  },
+  { version: 9, apply(database) { database.exec(`
+    ALTER TABLE tenant_agents ADD COLUMN system_role TEXT CHECK (system_role IS NULL OR system_role = 'ada');
+    CREATE UNIQUE INDEX tenant_agents_primary ON tenant_agents(community_id) WHERE system_role = 'ada';
+    UPDATE tenant_agents SET system_role = 'ada', name = 'Ada'
+      WHERE id IN (SELECT id FROM (SELECT id, ROW_NUMBER() OVER (PARTITION BY community_id ORDER BY created_at, id) AS position FROM tenant_agents WHERE name = 'Course tutor' AND status = 'active') WHERE position = 1);
+    UPDATE tenant_channels SET name = 'DM · Ada' WHERE kind = 'dm' AND dm_agent_id IN (SELECT id FROM tenant_agents WHERE system_role = 'ada');
+  `) } },
+
+  { version: 10, apply(database) { database.exec(MEMORY_JOBS_SQL) } },
 ]

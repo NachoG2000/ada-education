@@ -26,3 +26,35 @@ Subscription-backed execution remains the default and strips provider API keys.
 removes OAuth token overrides. The server never receives these credentials.
 `apps/server/scripts/automatic-agents-check.ts` exercises real host/workers
 with a fake provider. See `docs/agent-host.md` for recovery and limitations.
+
+**Development reload (2026-09-07):** `npm run dev` uses `runner:host:dev`, with tsx watch explicitly including runner and protocol sources. The host imports only part of the runner graph; its child processes otherwise retain old schemas until restart. Standalone `runner:host` remains unwatched. Source reload may interrupt active work; this is a development tool, not durable job delivery.
+
+## Pi runtime (2026-09-07)
+
+`ADA_RUNTIME=pi` uses the pinned Pi CLI in ephemeral print mode with its own
+ChatGPT OAuth login and the `openai-codex` provider. `pi-extension.ts` registers
+only three wrappers around official Pi file tools; `pi-workspace.ts` confines
+them to wiki markdown/log writes and read-only workspace instructions. Built-in
+and discovered tools/resources are disabled. This is not OS sandboxing.
+`check:providers` includes real Pi tool/loader and signed-out CLI checks;
+`check:agents:pi` in the server verifies the full host path with a fake binary.
+See `docs/agent-host.md` for login and `npm run dev:pi`. Existing runtimes remain.
+
+**Shared voice (2026-09-07):** `agent-prompt.ts` supplies role-focused, honest
+identity guidance and configured runtime/model facts to every provider's
+system/developer instruction channel. `cli.ts` supplies the authenticated agent
+name. Keep this separate from editable course rules and preserve existing wiki
+files. Meta-conversation is excluded from card creation by prompt guidance.
+
+## Governed memory (§34)
+
+Hosted work now uses `memory-run.ts` and `memory.work` frames. The runner creates
+a fresh temporary authorized view, runs Pi with `pi-memory-extension.ts`, parses
+strict proposals from result.json, and returns one correlated result. The server
+owns admission and publication. Old wiki/material prompts are never mixed in.
+Read/write tools validate traversal, links and special files on each operation;
+no shell, built-ins, discovered context or sessions are enabled. Cleanup runs on
+success and handled failure. This is a model tool boundary, not OS isolation.
+Claude/Codex governed work fails closed until equivalent tools exist. Legacy
+adapters remain tested separately. Run `check:memory` and the server's real
+host/fake-Pi integration check after changing this boundary.

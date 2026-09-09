@@ -1,3 +1,5 @@
+import type { EducationClient } from "@/lib/education-api"
+import type { MemoryClient } from "@/lib/memory-api"
 import { createContext, useContext, type ReactNode } from 'react'
 import type {
   CommunitySummary,
@@ -11,6 +13,8 @@ import type {
 } from '@ada/protocol'
 
 export interface HostedWorkspaceContextValue {
+  education: EducationClient
+  memory: MemoryClient
   user: User
   communities: CommunitySummary[]
   activeCommunity: CommunitySummary

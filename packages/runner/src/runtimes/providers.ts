@@ -2,14 +2,19 @@ import { mkdtemp, readFile, rm } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { spawn } from "node:child_process"
+import { fileURLToPath } from "node:url"
+import { agentSystemPrompt } from "../agent-prompt.js"
+import { MEMORY_SYSTEM_PROMPT } from "../memory-run.js"
 
-export type ProviderName = "claude" | "codex"
+export type ProviderName = "claude" | "codex" | "pi"
 
 export type ProviderOptions = {
   cwd: string
   prompt: string
   timeoutMs: number
   model?: string
+  agentName?: string
+  governedMemory?: boolean
   /** Test-only command overrides. Production defaults stay on PATH. */
   binary?: string
   env?: NodeJS.ProcessEnv
@@ -63,12 +68,14 @@ function boundedAppend(current: string, chunk: Buffer, limit: number): string {
 }
 
 function authFailure(provider: ProviderName, text: string): boolean {
+  if (provider === "pi") return /(not logged in|not authenticated|authentication required|login required|unauthorized|no (?:API key|credentials)|\/login|refresh.*(?:failed|expired)|invalid_grant)/i.test(text)
   return provider === "codex"
     ? /(not logged in|not authenticated|run\s+codex\s+login|authentication required|login required|unauthorized)/i.test(text)
     : /(not logged in|not authenticated|authentication required|login required|unauthorized|could not authenticate)/i.test(text)
 }
 
 function commandHint(provider: ProviderName): string {
+  if (provider === "pi") return "Run `npm run pi` from the repository root, choose `/login` then ChatGPT Plus/Pro (Codex), and retry."
   return provider === "codex" ? "Run `codex login` in this terminal, then start ada-runner again." : "Run `claude` in this terminal to finish sign-in, then start ada-runner again."
 }
 
@@ -78,7 +85,7 @@ function runChild(binary: string, args: string[], options: ProviderOptions, prov
   const env = { ...process.env, ...options.env }
   if (env.ADA_PROVIDER_AUTH && !["subscription", "api-key"].includes(env.ADA_PROVIDER_AUTH)) throw new ProviderError("ADA_PROVIDER_AUTH must be subscription or api-key.", "auth")
   if (env.ADA_PROVIDER_AUTH === "api-key") {
-    if (provider !== "claude") throw new ProviderError("API-key mode currently supports Claude. Use subscription mode for Codex.", "auth")
+    if (provider !== "claude") throw new ProviderError("API-key mode currently supports Claude. Use subscription mode for Codex or Pi.", "auth")
     const key = env.ANTHROPIC_API_KEY
     if (!key) throw new ProviderError("The installation administrator must configure the provider API key.", "auth")
     // Explicit API mode must not fall back to a subscription token.
@@ -95,7 +102,8 @@ function runChild(binary: string, args: string[], options: ProviderOptions, prov
     // Avoid inheriting a parent agent session while preserving user-selected
     // config locations that may contain the CLI's normal login state.
     if (provider === "claude" && key === "CLAUDECODE") delete env[key]
-    if (provider === "codex" && ["CODEX_CI", "CODEX_SESSION_ID", "CODEX_THREAD_ID", "CODEX_MANAGED_BY_NPM", "CODEX_MANAGED_PACKAGE_ROOT"].includes(key)) delete env[key]
+    if ((provider === "codex" || provider === "pi") && ["CODEX_CI", "CODEX_SESSION_ID", "CODEX_THREAD_ID", "CODEX_MANAGED_BY_NPM", "CODEX_MANAGED_PACKAGE_ROOT"].includes(key)) delete env[key]
+    if (provider === "pi" && key === "CLAUDE_CODE_OAUTH_TOKEN") delete env[key]
   }
   return new Promise((resolve, reject) => {
     const child = spawn(binary, args, {
@@ -174,6 +182,7 @@ export async function runClaude(options: ProviderOptions): Promise<string> {
     "--output-format", "json",
     "--permission-mode", "acceptEdits",
     "--allowedTools", "Read,Write,Edit,MultiEdit,Glob,Grep",
+    "--append-system-prompt", sharedPrompt("claude", options),
   ]
   if (options.model) args.push("--model", options.model)
   const result = await runChild(options.binary ?? "claude", args, options, "claude")
@@ -192,6 +201,7 @@ export async function runCodex(options: ProviderOptions): Promise<string> {
       "--ephemeral",
       "--skip-git-repo-check",
       "--output-last-message", outputPath,
+      "-c", `developer_instructions=${JSON.stringify(sharedPrompt("codex", options))}`,
     ]
     if (options.model) args.push("--model", options.model)
     // There is deliberately no --add-dir here. Codex treats additional roots
@@ -209,8 +219,42 @@ export async function runCodex(options: ProviderOptions): Promise<string> {
   }
 }
 
+export async function runPi(options: ProviderOptions): Promise<string> {
+  // A provider-qualified model can override --provider in Pi. Keep this adapter
+  // on the subscription provider; never silently select API-billed OpenAI.
+  if (options.model && (options.model.includes("/") || options.model.startsWith("-"))) {
+    throw new ProviderError("Pi expects an OpenAI Codex model ID without a provider prefix.", "invalid_output")
+  }
+  const args = [
+    "--print", "--mode", "text", "--provider", "openai-codex", "--no-session",
+    "--no-approve", "--no-extensions", "--no-skills", "--no-prompt-templates",
+    "--no-themes", "--no-context-files", "--no-builtin-tools",
+    "--extension", fileURLToPath(new URL(options.governedMemory ? "./pi-memory-extension.ts" : "./pi-extension.ts", import.meta.url)),
+    "--tools", options.governedMemory ? "ada_memory_read,ada_memory_write" : "ada_read,ada_write,ada_edit",
+    "--system-prompt", options.governedMemory ? `${sharedPrompt("pi", options)}\n\n${MEMORY_SYSTEM_PROMPT}` : `${sharedPrompt("pi", options)}\n\nUse ada_read to read AGENTS.md and consult wiki/index.md for course questions. Use ada_write and ada_edit to maintain durable course knowledge in wiki/ and log.md. Agent instructions are read-only. Course materials and conversation context are supplied in the request. Cite relevant wiki cards with [[path relative to wiki/]].`,
+  ]
+  if (options.model) args.push("--model", options.model)
+  // npm's workspace scripts put the pinned local Pi binary on PATH, just as
+  // the other adapters use their installed CLI. Tests supply a fake binary.
+  const result = await runChild(options.binary ?? "pi", args, options, "pi")
+  if (result.code !== 0) throw nonZeroError("pi", result, options)
+  if (result.stdout.length >= MAX_STDOUT) throw new ProviderError("Pi response exceeded the output limit.", "invalid_output")
+  const answer = result.stdout.trim()
+  // Governed runs return result.json through the scoped write tool. Pi's print
+  // mode emits only final assistant text, which may legitimately be absent.
+  // runMemoryWork validates the required file before acknowledging success.
+  if (!answer && !options.governedMemory) throw new ProviderError("Pi returned an empty answer.", "invalid_output")
+  return answer
+}
+
 export async function runProvider(provider: ProviderName, options: ProviderOptions): Promise<string> {
+  if (options.governedMemory && provider !== "pi") throw new ProviderError("Governed course memory requires Pi's scoped tools. Start the installation with npm run dev:pi.", "invalid_output")
+  if (provider === "pi") return runPi(options)
   return provider === "claude" ? runClaude(options) : runCodex(options)
 }
 
 export const providerTestLimits = { maxStdout: MAX_STDOUT, maxStderr: MAX_STDERR }
+
+function sharedPrompt(runtime: ProviderName, options: ProviderOptions): string {
+  return redact(agentSystemPrompt({ name: options.agentName, runtime, model: options.model }), secretsFor(options))
+}

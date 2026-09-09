@@ -20,13 +20,17 @@
     "typecheck:web": "tsc -b apps/web",
     "check": "npm run lint && npm run check:docs && npm run check:hosted && npm run check:legacy",
     "check:docs": "node scripts/docs-check.mjs",
-    "check:hosted": "npm run typecheck && npm run check:hosted -w @ada/protocol && npm run check:issue1 -w @ada/server && npm run check:providers -w @ada/runner && npm run check:agents -w @ada/server && npm run build",
+    "check:hosted": "npm run typecheck && npm run check:hosted -w @ada/protocol && npm run check:issue1 -w @ada/server && npm run check:providers -w @ada/runner && npm run check:agents -w @ada/server && npm run build && npm run check:mentions -w @ada/server && npm run check:education -w @ada/server && npm run check:agents:pi -w @ada/server && npm run check:memory -w @ada/server && npm run check:memory -w @ada/runner",
     "check:legacy": "npm run check:workspace && npm run check:scripted -w @ada/runner && npm run check:seed -w @ada/server && npm run check:e2e -w @ada/server && npm run check:gated -w @ada/server && npm run smoke",
     "smoke": "npm run smoke -w @ada/server",
     "check:workspace": "npm run check:workspace -w @ada/server",
     "check:issue1": "npm run check:hosted",
     "check:docker": "bash deploy/check-docker.sh",
-    "runner:host": "tsx packages/runner/src/host.ts"
+    "runner:host": "tsx packages/runner/src/host.ts",
+    "runner:host:dev": "tsx watch --clear-screen=false --include \"packages/runner/src/**/*.ts\" --include \"packages/protocol/src/**/*.ts\" packages/runner/src/host.ts",
+    "dev:pi": "ADA_RUNTIME=pi ADA_MODEL=gpt-5.6-luna npm run dev",
+    "pi": "pi",
+    "seed:exploration": "npm run seed:exploration -w @ada/server --"
   },
   "devDependencies": {
     "concurrently": "^10.0.5",

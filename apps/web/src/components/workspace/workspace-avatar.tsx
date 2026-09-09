@@ -1,5 +1,5 @@
 import type { Member } from "@ada/protocol"
-import { BotIcon } from "lucide-react"
+import { BookOpenIcon, BotIcon } from "lucide-react"
 import { Avatar, AvatarBadge, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
 
@@ -7,10 +7,10 @@ export function WorkspaceAvatar({ member, size = 32, presence = false, className
   const initials = member.kind === "person" ? member.initials : member.name.slice(0, 2).toUpperCase()
   const image = member.kind === "agent" ? member.avatarUrl : undefined
   return (
-    <Avatar className={cn("bg-muted", className)} style={{ width: size, height: size }} aria-label={presence ? `${member.name} · ${member.presence === "away" ? "offline" : member.presence}` : member.name}>
+    <Avatar className={cn("bg-muted", member.kind === "agent" && member.systemRole === "ada" && "rounded-xl bg-primary text-primary-foreground [&_[data-slot=avatar-fallback]]:bg-primary [&_[data-slot=avatar-fallback]]:text-primary-foreground", className)} style={{ width: size, height: size }} aria-label={presence ? `${member.name} · ${member.presence === "away" ? "offline" : member.presence}` : member.name}>
       {image ? <AvatarImage src={image} alt="" /> : null}
-      <AvatarFallback style={{ fontSize: Math.max(10, Math.round(size * 0.34)) }}>{member.kind === "agent" && !image ? <BotIcon className="size-1/2" /> : initials}</AvatarFallback>
-      {presence ? <AvatarBadge className={member.presence === "away" ? "bg-muted-foreground" : member.presence === "thinking" ? "bg-amber-500" : member.presence === "publishing" ? "bg-blue-500" : "bg-green-600"} /> : null}
+      <AvatarFallback style={{ fontSize: Math.max(10, Math.round(size * 0.34)) }}>{member.kind === "agent" && !image ? member.systemRole === "ada" ? <BookOpenIcon className="size-1/2" /> : <BotIcon className="size-1/2" /> : initials}</AvatarFallback>
+      {presence ? <AvatarBadge className={member.presence === "away" ? "bg-muted-foreground" : member.presence === "thinking" ? "bg-warning" : member.presence === "publishing" ? "bg-info" : "bg-success"} /> : null}
     </Avatar>
   )
 }
